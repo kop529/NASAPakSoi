@@ -174,6 +174,21 @@ console.log('closed loop, organizer law (REACTION, SUN, target 0, lamp at +30 de
   }
 }
 
+console.log('tools/team_setup.txt (what team_setup.ps1 sends after an upload)');
+{
+  const lines = fs.readFileSync(path.join(__dirname, '..', 'tools', 'team_setup.txt'), 'utf8').split(/\r?\n/).map((l) => l.replace(/#.*$/, '').trim()).filter(Boolean);
+  const nvs = tmpNvs();
+  const out = run(['PING', 'TEAM_INFO', 'STOP', ...lines, 'TEAM_SAVE', '#WAIT 20'], nvs);
+  const acks = all(out, /^ACK,TEAM_SET,/);
+  check(`every line accepted (${lines.length})`, acks.length === lines.length && !find(out, /^ERR,/), find(out, /^ERR,/) || '');
+  const out2 = run(['TEAM_LIST', '#WAIT 50'], nvs);
+  const has = (k, v) => !!find(out2, new RegExp(`^TM,TEAM_PARAM,${k.replace('.', '\\.')},${v}$`));
+  const want = lines.map((l) => l.split(',')).map(([, k, v]) => [k, String(+v)]);
+  const miss = want.filter(([k, v]) => !has(k, v));
+  check('all of them survive a reset', miss.length === 0, miss.map((m) => m.join('=')).join(' '));
+  fs.rmSync(nvs, { force: true });
+}
+
 console.log('RW_CMD (T02 assist, ported from the workshop firmware)');
 {
   const out = run(['RW_CMD,+20,+80,300', 'ADCS_STRATEGY,MOMENTUM', 'RW_BIAS,40', '#WAIT 500', 'RW_CMD,+20,+80,300', '#WAIT 100', '#STATE',

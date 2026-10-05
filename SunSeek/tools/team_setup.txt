@@ -1,0 +1,17 @@
+# Team settings sent by team_setup.ps1 after every firmware upload (or after TEAM_DEFAULTS).
+# One command per line; '#' starts a comment. Change values here, not in the script.
+# Values that only the board knows after a measurement (sun.* calibration, LUT, th0) are NOT here:
+# they come from the calibration page (NasaSat Lab, step 7/8) and live in the board's flash.
+
+# wheel (T01, 5 Oct; re-measure Min Start with t01.ps1: the first run waited only 3 s after STOP)
+TEAM_SET,rw.minStart,10
+TEAM_SET,rw.minStable,5
+# wheel command slew limit: +100 -> -100 takes 0.4 s instead of a jump (the balance ring flew off on 5 Oct)
+TEAM_SET,rw.slew,500
+
+# control (simulation starting point, F4 scan 5 Oct; tune on the contest platform)
+TEAM_SET,adcs.kp,4
+TEAM_SET,adcs.kd,1
+TEAM_SET,adcs.ki,1
+TEAM_SET,adcs.db,0.5
+TEAM_SET,adcs.dzc,0
