@@ -32,6 +32,11 @@ inline void ttcHelp(){sendTelemetry("TM,HELP,PAYLOAD_STATUS|PAYLOAD_PING|CAPTURE
 inline bool parseTune(String p,float&kp,float&kd,float&b){int a=p.indexOf(','),c=p.indexOf(',',a+1);if(a<0||c<0||p.indexOf(',',c+1)>=0)return false;return ttcParseNumber(p.substring(0,a),kp)&&ttcParseNumber(p.substring(a+1,c),kd)&&ttcParseNumber(p.substring(c+1),b);}
 inline void processTelecommand(String command){command=ttcNormalizeCommand(command);if(!command.length())return;
  if(command=="PING"){sendTelemetry("PONG");return;}
+ // TEAM NasaPakSoi: the T03 calibration assistants (GYRO_OFFSET, MAG_CAL_START/STOP in System_Telemetry.h) were never routed in v2.1.
+ // GYRO_OFFSET waits ~3 s inside delay(): only in MANUAL with the wheel stopped.
+ if(command=="GYRO_OFFSET"){if(adcsGet().mode==ADCS_AUTO||rwGetMotorCommand()!=0){sendTelemetry("ERR,GYRO_OFFSET_REQUIRES_MANUAL_WHEEL_STOPPED");return;}sensorGyroOffsetAssistant();return;}
+ if(command=="MAG_CAL_START"){sensorMagCalStart();return;}
+ if(command=="MAG_CAL_STOP"){sensorMagCalStop();return;}
  if(command=="PAYLOAD_PING"){payloadSendCommand("PING");sendTelemetry("ACK,PAYLOAD_PING");return;}
  if(command=="PAYLOAD_STATUS"){payloadSendCommand("STATUS");sendTelemetry("ACK,PAYLOAD_STATUS");return;}
  if(command=="CAPTURE"){payloadSendCommand("CAPTURE");sendTelemetry("ACK,CAPTURE");return;}
