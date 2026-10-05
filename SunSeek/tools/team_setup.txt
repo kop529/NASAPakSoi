@@ -15,3 +15,9 @@ TEAM_SET,adcs.kd,1
 TEAM_SET,adcs.ki,1
 TEAM_SET,adcs.db,0.5
 TEAM_SET,adcs.dzc,0
+
+# --- turn on after the checks they depend on (remove the leading '# ' and run team_setup.ps1 again) ---
+# F7 sun search when the lamp is lost (needs the calibration page step 7 = sun.minS / sun.dmax, and the sign page)
+# TEAM_SET,adcs.srate,15
+# F6 gyro bias at every boot (the satellite must be still while it powers up; or use TEAM_GYRO_ZERO by hand)
+# TEAM_SET,imu.autoz,1

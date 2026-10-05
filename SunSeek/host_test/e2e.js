@@ -189,6 +189,70 @@ console.log('tools/team_setup.txt (what team_setup.ps1 sends after an upload)');
   fs.rmSync(nvs, { force: true });
 }
 
+console.log('F6 gyro zero (TEAM_GYRO_ZERO, imu.autoz) + organizer T03 assistants routed');
+{
+  const z = run(['#SET gyroBias 1.5', '#SET lamp 0', '#WAIT 300', 'TEAM_GYRO_ZERO', '#WAIT 2300', 'TEAM_GET,imu.gbz', 'TEAM_INFO', '#WAIT 20']);
+  const evt = find(z, /^EVT,TEAM_GYRO_ZERO,BZ,/);
+  check('ACK at once, EVT with the bias after 2 s', !!find(z, /^ACK,TEAM_GYRO_ZERO,2000$/) && !!evt && Math.abs(+evt.split(',')[3] - 1.5) < 0.05, evt || '');
+  check('imu.gbz set in RAM (unsaved)', !!find(z, /^TM,TEAM_PARAM,imu\.gbz,1\.4\d*|^TM,TEAM_PARAM,imu\.gbz,1\.5\d*/) && !!find(z, /^TM,TEAM_FW,[^,]+,SUN_MODEL,0,UNSAVED,1,/));
+  const mv = run(['#SET drag 0', '#SET lamp 0', '#WAIT 300', '#SET bodyRate 3', 'TEAM_GYRO_ZERO', '#WAIT 2300']);
+  check('turning slowly (3 deg/s, steady gyro) is caught by the sun angle', !!find(mv, /^ERR,TEAM_GYRO_ZERO_MOVING,SD,[^,]+,DRIFT,/) && !find(mv, /^EVT,TEAM_GYRO_ZERO,BZ/), find(mv, /^ERR,TEAM_GYRO/) || '');
+  const wh = run(['RW,30', 'TEAM_GYRO_ZERO', 'STOP', 'ADCS_MODE,AUTO', 'TEAM_GYRO_ZERO', 'STOP', 'TEAM_GYRO_ZERO,100', '#WAIT 20']);
+  check('refused with the wheel on / in AUTO / bad time', !!find(wh, /^ERR,TEAM_GYRO_ZERO_WHEEL_ON$/) && !!find(wh, /^ERR,TEAM_REQUIRES_MANUAL,TEAM_GYRO_ZERO$/) && !!find(wh, /^ERR,TEAM_GYRO_ZERO_RANGE_500_TO_10000$/));
+  const ab = run(['#SET lamp 0', 'TEAM_GYRO_ZERO,3000', '#WAIT 500', 'RW,20', '#WAIT 3000', 'STOP']);
+  check('wheel started during the measurement -> aborted, nothing set', !!find(ab, /^ERR,TEAM_GYRO_ZERO_ABORTED$/) && !find(ab, /^EVT,TEAM_GYRO_ZERO,BZ/));
+  const nvs = tmpNvs();
+  run(['TEAM_SET,imu.autoz,1', 'TEAM_SAVE', '#WAIT 10'], nvs);
+  const boot = run(['#SET gyroBias -0.8', '#SET lamp 0', '#WAIT 2500', 'TEAM_INFO', '#WAIT 20'], nvs);
+  const be = find(boot, /^EVT,TEAM_GYRO_ZERO,BOOT,BZ,/);
+  check('imu.autoz 1: measured at boot, RAM only', !!find(boot, /^EVT,TEAM_GYRO_ZERO,BOOT,KEEP_STILL$/) && !!be && Math.abs(+be.split(',')[4] + 0.8) < 0.05 && !!find(boot, /UNSAVED,0,/), be || '');
+  fs.rmSync(nvs, { force: true });
+  const t3 = run(['GYRO_OFFSET', '#WAIT 100', 'MAG_CAL_START', '#WAIT 500', 'MAG_CAL_STOP', '#WAIT 50', 'RW,30', 'GYRO_OFFSET', 'STOP']);
+  check('GYRO_OFFSET routed (organizer assistant)', !!find(t3, /^ACK,GYRO_OFFSET$/) && !!find(t3, /^TM,CAL_GYRO_OFFSET,X,/));
+  check('MAG_CAL_START / STOP routed', !!find(t3, /^ACK,MAG_CAL_START$/) && !!find(t3, /^ACK,MAG_CAL_STOP$/));
+  check('GYRO_OFFSET refused with the wheel on (it blocks ~3 s)', !!find(t3, /^ERR,GYRO_OFFSET_REQUIRES_MANUAL_WHEEL_STOPPED$/));
+}
+
+console.log('F7 sun search (adcs.srate): lamp behind the satellite at 150 deg, REACTION, drag 0.15/s');
+{
+  const lost = (extra) => {
+    const out = run(['#SET drag 0.15', '#SET rateSign -1', '#SET lamp 150', '#WAIT 300', ...CAL, 'TEAM_SET,rw.minStart,10', 'TEAM_SET,rw.minStable,5',
+      'TEAM_SET,adcs.kp,4', 'TEAM_SET,adcs.kd,1', 'TEAM_SET,adcs.ki,1', 'TEAM_SET,adcs.db,0.5', ...extra,
+      'ADCS_STRATEGY,REACTION', 'ADCS_MODE,AUTO', ...Array.from({ length: 60 }, () => ['#WAIT 1000', '#STATE']).flat(), 'STOP', '#WAIT 10']);
+    const s = states(out);
+    const t1 = s.find((x) => Math.abs(x.sun) < 2);
+    return { out, end: s[s.length - 1], wob: Math.max(...s.slice(-10).map((x) => Math.abs(x.sun))), t1: t1 ? t1.t : NaN };
+  };
+  const off = lost([]);
+  const on = lost(['TEAM_SET,adcs.srate,15']);
+  console.log(`       srate 0 : sun ${off.end.sun.toFixed(1)} deg after 60 s · srate 15: |e| < 2 at ${on.t1.toFixed(1)} s, worst of the last 10 s ${on.wob.toFixed(2)} deg`);
+  check('without search (organizer behaviour) the lamp is never found', Math.abs(off.end.sun) > 20);
+  check('search starts, finds the lamp, then holds it (< 1 deg over the last 10 s)', !!find(on.out, /^EVT,TEAM_SUN_SEARCH,START,DIR,/) && !!find(on.out, /^EVT,TEAM_SUN_SEARCH,FOUND,/) && on.wob < 1, `${on.wob.toFixed(2)}`);
+}
+
+console.log('F5 hold at the target (adcs.lock / unlock / hgain): noise 6 mV + flicker 10 %, lamp +30, then a 10 deg/s push');
+{
+  const hold = (extra) => {
+    const out = run(['#SET drag 0.15', '#SET rateSign -1', '#SET noise 6', '#SET flicker 0.1', '#SET lamp 30', '#WAIT 300', ...CAL,
+      'TEAM_SET,rw.minStart,10', 'TEAM_SET,rw.minStable,5', 'TEAM_SET,adcs.kp,4', 'TEAM_SET,adcs.kd,1', 'TEAM_SET,adcs.ki,1', 'TEAM_SET,adcs.db,0.5', ...extra,
+      'ADCS_STRATEGY,REACTION', 'ADCS_MODE,AUTO', ...Array.from({ length: 150 }, () => ['#WAIT 200', '#STATE']).flat(),
+      '#SET bodyRate 10', ...Array.from({ length: 100 }, () => ['#WAIT 200', '#STATE']).flat(), 'STOP', '#WAIT 10']);
+    const s = states(out);
+    const quiet = s.slice(75, 150); // 15..30 s: settled, before the push
+    const act = quiet.slice(1).reduce((a, x, i) => a + Math.abs(x.cmd - quiet[i].cmd), 0) / (quiet.length - 1);
+    const rms = Math.sqrt(quiet.reduce((a, x) => a + x.sun * x.sun, 0) / quiet.length);
+    const after = s.slice(-25); // last 5 s after the push
+    return { out, act, rms, back: Math.max(...after.map((x) => Math.abs(x.sun))) };
+  };
+  const a = hold([]);
+  const b = hold(['TEAM_SET,adcs.lock,1', 'TEAM_SET,adcs.unlock,2', 'TEAM_SET,adcs.hgain,0.5']);
+  console.log(`       lock off: wheel activity ${a.act.toFixed(2)} %/step, rms ${a.rms.toFixed(2)} deg, after push ${a.back.toFixed(2)} · lock 1/2: activity ${b.act.toFixed(2)}, rms ${b.rms.toFixed(2)}, after push ${b.back.toFixed(2)}`);
+  check('HOLD ON when settled, OFF on the push, ON again', all(b.out, /^EVT,TEAM_HOLD,ON,/).length >= 2 && !!find(b.out, /^EVT,TEAM_HOLD,OFF,/));
+  check('in HOLD the wheel moves less and pointing stays inside the lock', b.act < a.act && b.rms < 1, `${b.act.toFixed(2)} vs ${a.act.toFixed(2)}`);
+  check('recovers from the push', b.back < 1.5, `${b.back.toFixed(2)}`);
+  check('lock 0 = no HOLD events (organizer behaviour)', !find(a.out, /^EVT,TEAM_HOLD/));
+}
+
 console.log('RW_CMD (T02 assist, ported from the workshop firmware)');
 {
   const out = run(['RW_CMD,+20,+80,300', 'ADCS_STRATEGY,MOMENTUM', 'RW_BIAS,40', '#WAIT 500', 'RW_CMD,+20,+80,300', '#WAIT 100', '#STATE',

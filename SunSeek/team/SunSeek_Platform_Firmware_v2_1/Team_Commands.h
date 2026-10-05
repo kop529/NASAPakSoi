@@ -18,6 +18,8 @@
      TEAM_LUT_CLEAR / TEAM_LUT_INFO
      TEAM_SUN                         one TM,TEAM_T line now
      TEAM_STREAM,<0..20>              TM,TEAM_T at that rate over USB only (0 = off) = TEAM_SET,team.tm
+     TEAM_GYRO_ZERO[,<ms 500..10000>] ACK now, then EVT,TEAM_GYRO_ZERO,BZ,<dps>,SD,..  (imu.gbz in RAM; TEAM_SAVE keeps it)
+                                      or ERR,TEAM_GYRO_ZERO_MOVING / _WHEEL_ON / _NO_GYRO / _ABORTED (MANUAL, wheel stopped)
 
    sun.model, adcs.sign and imu.rsign change the meaning of the control loop, so they (and
    TEAM_DEFAULTS) are refused in AUTO. */
@@ -70,6 +72,59 @@ inline void teamSendParam(int i) {
 inline void _teamApply(const String& key) {
   if (key == "adcs.kp" || key == "adcs.kd" || key == "adcs.bias")
     adcsTune(TP.adcsKp, TP.adcsKd, (int)lroundf(TP.adcsBias));
+}
+
+// ---- F6: gyro Z bias from a still satellite, without blocking the loop (the organizer's GYRO_OFFSET waits 3 s in
+// delay() and only prints the result). TEAM_GYRO_ZERO[,ms] or at boot with imu.autoz 1.
+// A slowly turning body has a steady gyro reading too, so "still" also needs the sun angle not to move.
+#define TEAM_GZ_MAX_SD_DPS 0.5f     // gyro noise is ~0.1 dps; more = something moves or vibrates
+#define TEAM_GZ_MAX_DRIFT_DEG 0.3f  // team sun angle change over the window (when the lamp is seen)
+struct TeamGyroZero { bool on = false, boot = false, light0 = false; unsigned long t0 = 0, dur = 0, last = 0; double s = 0, s2 = 0; int n = 0; float ang0 = 0; };
+static TeamGyroZero _tgz;
+static bool _tgzBootDone = false;
+
+inline bool teamGyroZeroStart(unsigned long ms, bool boot) {
+  if (!imuGyroReady()) { sendTelemetry("ERR,TEAM_GYRO_ZERO_NO_GYRO"); return false; }
+  if (adcsGet().mode == ADCS_AUTO) { sendTelemetry("ERR,TEAM_REQUIRES_MANUAL,TEAM_GYRO_ZERO"); return false; }
+  if (rwGetMotorCommand() != 0) { sendTelemetry("ERR,TEAM_GYRO_ZERO_WHEEL_ON"); return false; }
+  SunSample s;
+  sunSensorRead(s);
+  _tgz = TeamGyroZero();
+  _tgz.on = true; _tgz.boot = boot; _tgz.t0 = millis(); _tgz.dur = ms; _tgz.light0 = s.light; _tgz.ang0 = s.teamAngle;
+  return true;
+}
+
+inline void teamGyroZeroUpdate() {
+  if (!_tgzBootDone) {  // first loop after boot
+    _tgzBootDone = true;
+    if (TP.imuAutoZ && imuGyroReady() && teamGyroZeroStart(2000, true)) sendTelemetry("EVT,TEAM_GYRO_ZERO,BOOT,KEEP_STILL");
+  }
+  if (!_tgz.on) return;
+  const unsigned long now = millis();
+  if (adcsGet().mode == ADCS_AUTO || rwGetMotorCommand() != 0) { _tgz.on = false; sendTelemetry("ERR,TEAM_GYRO_ZERO_ABORTED"); return; }
+  if (now - _tgz.last >= 10) {
+    _tgz.last = now;
+    IMURawSample r;
+    if (imuReadRaw(r)) { const double v = r.gz * GYRO_SENSITIVITY_DPS_PER_LSB; _tgz.s += v; _tgz.s2 += v * v; _tgz.n++; }
+  }
+  if (now - _tgz.t0 < _tgz.dur) return;
+  _tgz.on = false;
+  const String tag = _tgz.boot ? "BOOT," : "";
+  if (_tgz.n < 50) { sendTelemetry("ERR,TEAM_GYRO_ZERO_SAMPLES," + String(_tgz.n)); return; }
+  const double mean = _tgz.s / _tgz.n;
+  const double sd = sqrt(fmax(0.0, _tgz.s2 / _tgz.n - mean * mean));
+  SunSample s;
+  sunSensorRead(s);
+  const bool seen = _tgz.light0 && s.light;
+  const float drift = seen ? fabsf(s.teamAngle - _tgz.ang0) : 0.0f;
+  if (sd > TEAM_GZ_MAX_SD_DPS || drift > TEAM_GZ_MAX_DRIFT_DEG || !(fabs(mean) <= 50.0)) {
+    sendTelemetry("ERR,TEAM_GYRO_ZERO_MOVING," + tag + "SD," + teamFmt(sd) + ",DRIFT," + teamFmt(drift));
+    return;
+  }
+  TP.imuGbz = (float)mean;
+  if (!_tgz.boot) { const int i = teamParamFind("imu.gbz"); if (i >= 0) _tpDirty[i] = true; }  // boot value: RAM only
+  sendTelemetry("EVT,TEAM_GYRO_ZERO," + tag + "BZ," + teamFmt(mean) + ",SD," + teamFmt(sd) + ",N," + String(_tgz.n) +
+                ",SUN_CHECK," + String(seen ? 1 : 0));
 }
 
 // splits "a,b,c" after the command name; returns the number of fields
@@ -200,6 +255,13 @@ inline void teamHandleCommand(const String& command) {
 
   if (command == "TEAM_LUT_INFO") { sendTelemetry("ACK,TEAM_LUT_INFO"); teamSendLutInfo(); return; }
 
+  if (command == "TEAM_GYRO_ZERO" || command.startsWith("TEAM_GYRO_ZERO,")) {
+    double ms = 2000;
+    if (command.length() > 14 && (!teamParseNum(command.substring(15), ms) || ms < 500 || ms > 10000)) { sendTelemetry("ERR,TEAM_GYRO_ZERO_RANGE_500_TO_10000"); return; }
+    if (teamGyroZeroStart((unsigned long)ms, false)) sendTelemetry("ACK,TEAM_GYRO_ZERO," + String((unsigned long)ms));
+    return;
+  }
+
   if (command == "TEAM_SUN") { sendTelemetry("ACK,TEAM_SUN"); sendTelemetry(teamTelemetryLine()); return; }
 
   if (command.startsWith("TEAM_STREAM,")) {
@@ -217,6 +279,7 @@ inline void teamHandleCommand(const String& command) {
 
 static unsigned long _teamTmLast = 0;
 inline void teamTelemetryUpdate() {
+  teamGyroZeroUpdate();  // F6 (here so the organizer's loop() keeps one team call)
   if (TP.tmHz <= 0) return;
   const unsigned long now = millis();
   if (now - _teamTmLast < 1000UL / (unsigned long)TP.tmHz) return;

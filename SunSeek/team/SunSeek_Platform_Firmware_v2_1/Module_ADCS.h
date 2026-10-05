@@ -8,6 +8,7 @@
 #include "Module_SunSensor.h"
 #include "Module_ReactionWheel.h"
 #include "Module_Estimator.h"
+#include "System_TTC.h"  // TEAM NasaPakSoi F7: sendTelemetry for the search events
 
 enum ADCSMode { ADCS_MANUAL, ADCS_AUTO };
 enum ADCSReference { ADCS_SUN, ADCS_MAG };
@@ -43,6 +44,18 @@ static ADCSState _a = {
 
 static unsigned long _aLast = 0;
 static float _aI = 0;  // TEAM NasaPakSoi F4: integral term of the controller (PWM %)
+// TEAM NasaPakSoi F7: sun search state
+static bool _aSunSeen = true;        // last reading: usable light and inside the field of view
+static float _aLastSeenAngle = 0;    // ADCS angle when the lamp was last seen
+static bool _aEverSeen = false;
+static bool _aSearch = false;
+static float _aS = 0;                // search rate loop output (PWM %, same domain as u)
+static unsigned long _aLostSince = 0, _aSeenSince = 0;
+// TEAM NasaPakSoi F5: hold at the target
+static bool _aHold = false;
+static unsigned long _aInSince = 0;  // last time |error| was outside adcs.lock
+inline bool adcsTeamHold() { return _aHold; }
+inline bool adcsTeamSearching() { return _aSearch; }
 
 inline float adcsWrap180(float x){ while(x>180)x-=360; while(x<=-180)x+=360; return x; }
 inline const char* adcsModeText(){return _a.mode==ADCS_AUTO?"AUTO":"MANUAL";}
@@ -93,6 +106,10 @@ inline bool adcsRead(){
     return false;
   }
 
+  // TEAM NasaPakSoi F7: is the lamp really seen? (team flags: S >= sun.minS, not clipped, |D| <= sun.dmax)
+  _aSunSeen = s.light && !s.edge;
+  if (_aSunSeen) { _aLastSeenAngle = s.angleDeg; _aEverSeen = true; }
+
   _a.sunError = _a.target - s.angleDeg;
   _a.magError = adcsWrap180(_a.target - p.heading);
   _a.rate = p.bodyRate;
@@ -125,6 +142,8 @@ inline bool adcsAuto(){
   _a.mode=ADCS_AUTO;
   _aLast=0;
   _aI=0;  // TEAM NasaPakSoi
+  _aSearch=false;_aS=0;_aLostSince=_aSeenSince=millis();  // TEAM NasaPakSoi F7
+  _aHold=false;_aInSince=millis();  // TEAM NasaPakSoi F5
   return true;
 }
 
@@ -149,11 +168,41 @@ inline void adcsUpdate(){
 
   // TEAM NasaPakSoi: deadband / output limit / control sign are team parameters (TEAM_SET adcs.db,
   // adcs.max, adcs.sign) instead of compile-time constants; defaults are the organizer's values.
+  // TEAM NasaPakSoi F7: lamp not seen for 0.3 s -> turn at adcs.srate toward where it was last seen (gyro rate loop),
+  // seen again for 0.2 s -> back to the normal law, the integrator taking over the wheel command (no jump).
+  const float dtS=ADCS_CONTROL_PERIOD_MS/1000.0f;
+  if(TP.adcsSrate>0&&_a.ref==ADCS_SUN){
+    if(_aSunSeen)_aLostSince=n; else _aSeenSince=n;  // lost since = last time seen, and the other way round
+    if(!_aSearch&&!_aSunSeen&&n-_aLostSince>=300){
+      _aSearch=true;_aS=_a.u;
+      sendTelemetry("EVT,TEAM_SUN_SEARCH,START,DIR,"+String(!_aEverSeen||_a.target-_aLastSeenAngle>=0?1:-1));
+    }else if(_aSearch&&_aSunSeen&&n-_aSeenSince>=200){
+      _aSearch=false;
+      if(TP.adcsKi>0)_aI=constrain(_aS-(_a.kp*_a.error-_a.kd*_a.rate),-TP.adcsMax,TP.adcsMax);
+      sendTelemetry("EVT,TEAM_SUN_SEARCH,FOUND,ANGLE,"+String(_aLastSeenAngle,2));
+    }
+  }else _aSearch=false;
+
+  // TEAM NasaPakSoi F5: HOLD after adcs.lockMs inside adcs.lock, released only beyond adcs.unlock (never while searching)
+  const float ae=fabsf(_a.error);
+  if(TP.adcsLock>0&&!_aSearch){
+    const float unl=TP.adcsUnlock>TP.adcsLock?TP.adcsUnlock:2.0f*TP.adcsLock;
+    if(!_aHold){
+      if(ae>TP.adcsLock)_aInSince=n;
+      else if(n-_aInSince>=(unsigned long)TP.adcsLockMs){_aHold=true;sendTelemetry("EVT,TEAM_HOLD,ON,ERR,"+String(_a.error,2));}
+    }else if(ae>unl){_aHold=false;_aInSince=n;sendTelemetry("EVT,TEAM_HOLD,OFF,ERR,"+String(_a.error,2));}
+  }else{_aHold=false;_aInSince=n;}
+  const float hg=_aHold?TP.adcsHgain:1.0f;
+
   float u=0;
-  if(fabsf(_a.error)>=TP.adcsDb){
+  if(_aSearch){
+    const float dir=(!_aEverSeen||_a.target-_aLastSeenAngle>=0)?1.0f:-1.0f;  // d(angle)/dt = +BODY_RATE (W3 check)
+    _aS=constrain(_aS+TP.adcsSk*(dir*TP.adcsSrate-_a.rate)*dtS,-TP.adcsMax,TP.adcsMax);
+    u=_aS;
+  }else if(fabsf(_a.error)>=(_aHold&&TP.adcsLock>TP.adcsDb?TP.adcsLock:TP.adcsDb)){  // F5: in HOLD the deadband is adcs.lock
     // TEAM NasaPakSoi F4: integral term (adcs.ki); clamped to +-adcs.max so it cannot wind up
-    if(TP.adcsKi>0)_aI=constrain(_aI+TP.adcsKi*_a.error*(ADCS_CONTROL_PERIOD_MS/1000.0f),-TP.adcsMax,TP.adcsMax);
-    u=_a.kp*_a.error-_a.kd*_a.rate+_aI;
+    if(TP.adcsKi>0)_aI=constrain(_aI+hg*TP.adcsKi*_a.error*dtS,-TP.adcsMax,TP.adcsMax);
+    u=hg*(_a.kp*_a.error-_a.kd*_a.rate)+_aI;  // hg: F5 hold gain
   }else if(TP.adcsKi>0){
     // inside the deadband hold the integrator: the wheel keeps its speed (u=0 would let it coast down,
     // and that momentum would turn the body out of the deadband again)

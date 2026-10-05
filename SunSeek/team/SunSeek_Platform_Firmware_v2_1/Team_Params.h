@@ -49,6 +49,19 @@ struct TeamParams {
   // wheel command slew limit in %/s (0 = organizer behaviour: jump at once). A jump +100 -> -100 puts ~2x the
   // supply across the spinning motor: a current spike, a body kick that threw the balance ring off (5 Oct), a brown-out risk.
   float rwSlew = 0;
+  // F6: 1 = measure the gyro Z bias at boot when the satellite is still (RAM only; TEAM_GYRO_ZERO + TEAM_SAVE keeps one)
+  int imuAutoZ = 0;
+  // F7: sun search in AUTO when the lamp is not seen (no usable light or at the edge of the field of view):
+  // turn at adcs.srate deg/s (0 = off, organizer behaviour) toward where the light was last seen; adcs.sk = rate loop gain
+  float adcsSrate = 0;
+  float adcsSk = 1;
+  // F5: hold at the target. Inside adcs.lock deg for adcs.lockMs -> HOLD: the deadband widens to adcs.lock (the wheel
+  // keeps its speed instead of twitching) and Kp/Kd/Ki x adcs.hgain; out again only past adcs.unlock deg (hysteresis).
+  // adcs.lock 0 = off (organizer law)
+  float adcsLock = 0;
+  float adcsUnlock = 2;
+  float adcsLockMs = 500;
+  float adcsHgain = 0.5;
   // team telemetry over USB, 0 = off
   int tmHz = 0;
 };
@@ -98,6 +111,13 @@ static TeamParamDef _tpDefs[] = {
   {"adcs.dzc",    TPT_INT,    &TP.adcsDzc,       0, 0, 1},
   {"adcs.ki",     TPT_FLOAT,  &TP.adcsKi,        0, 0, 10},
   {"rw.slew",     TPT_FLOAT,  &TP.rwSlew,        0, 0, 5000},
+  {"imu.autoz",   TPT_INT,    &TP.imuAutoZ,      0, 0, 1},
+  {"adcs.srate",  TPT_FLOAT,  &TP.adcsSrate,     0, 0, 60},
+  {"adcs.sk",     TPT_FLOAT,  &TP.adcsSk,        0, 0, 20},
+  {"adcs.lock",   TPT_FLOAT,  &TP.adcsLock,      0, 0, 10},
+  {"adcs.unlock", TPT_FLOAT,  &TP.adcsUnlock,    0, 0, 30},
+  {"adcs.lockMs", TPT_FLOAT,  &TP.adcsLockMs,    0, 0, 10000},
+  {"adcs.hgain",  TPT_FLOAT,  &TP.adcsHgain,     0, 0.05, 1},
   {"team.tm",     TPT_INT,    &TP.tmHz,          0, 0, 20},
 };
 static const int TEAM_PARAM_COUNT = sizeof(_tpDefs) / sizeof(_tpDefs[0]);
