@@ -17,6 +17,9 @@
     m1: { runs: [], cur: null, hold: null },
     pins: null, pinBase: null, paused: false, replay: null, portInfo: null, lastHandshake: 0,
     jobs: new Set(), th0ok: false, telCount: 0, telHz: 0, conErr: 0,
+    // proto: 'nasasat' = our firmware (@id CMD -> OK / ERR) · 'sunseek' = the organizer's firmware (CMD,arg -> ACK / ERR / TM / EVT)
+    proto: 'nasasat',
+    ss: { state: new NS.ss.State(), client: null, hinted: false, tmCount: 0, tmPrev: 0, tmHz: 0, errAt: {}, showT: null, timer: null },
   });
 
   const now = () => (performance.now() - S.t0) / 1000;
@@ -28,12 +31,13 @@
     const ts = Date.now();
     S.log.push([ts, dir, text]);
     if (S.log.length > 300000) S.log.splice(0, 50000);
-    const isT = dir === 'rx' && (text.startsWith('T,') || text.startsWith('IMG C') || text.includes('"type":"pins"'));
+    const ss = S.proto === 'sunseek'; // the organizer's lines: ACK ok, ERR error, EVT event, TM muted (and hideable like our T, lines)
+    const isT = dir === 'rx' && (ss ? text.startsWith('TM,') : (text.startsWith('T,') || text.startsWith('IMG C') || text.includes('"type":"pins"')));
     let cls = dir === 'tx' ? 'tx' : dir === 'sys' ? 'sys' : '';
     if (dir === 'rx') {
       if (/^(@\d+ )?ERR/.test(text) || text.startsWith('E FAULT')) cls = 'err';
-      else if (/^(@\d+ )?OK/.test(text)) cls = 'ok';
-      else if (text.startsWith('E ')) cls = 'ev';
+      else if (/^(@\d+ )?OK/.test(text) || (ss && text.startsWith('ACK,'))) cls = 'ok';
+      else if (text.startsWith('E ') || (ss && text.startsWith('EVT,'))) cls = 'ev';
       else if (isT) cls = 't';
     }
     if (!isT) { const cl = $('#conLast'); cl.textContent = `${dir === 'tx' ? '>' : dir === 'sys' ? '*' : '<'} ${text.slice(0, 160)}`; cl.style.color = cls === 'err' ? 'var(--bad)' : ''; }
@@ -64,7 +68,7 @@
       S.connected = true;
       if (S.tr.kind === 'serial' && info && info.usbVendorId) S.portInfo = info;
       const sim = S.tr.kind === 'sim';
-      setPill('#connPill', sim ? 'ตัวจำลอง — ไม่ใช่บอร์ดจริง' : 'บอร์ดจริง', sim ? 'sim' : 'on'); channel(S.tr.kind); sys('connected ' + JSON.stringify(info || {})); showConnInfo(info);
+      setPill('#connPill', sim ? 'ตัวจำลอง — ไม่ใช่บอร์ดจริง' : S.proto === 'sunseek' ? 'บอร์ดจริง · SunSeek' : 'บอร์ดจริง', sim ? 'sim' : 'on'); channel(S.tr.kind); sys('connected ' + JSON.stringify(info || {})); showConnInfo(info);
     } else if (st === 'closed') { S.connected = false; clearLive(); if (!re.on) { setPill('#connPill', 'ยังไม่เชื่อมต่อ', 'off'); channel(''); } sys('closed'); }
     else if (st === 'lost' || st === 'error') {
       if (!S.connected && re.on) return; // the lost port reporting again while we look for it
@@ -134,11 +138,13 @@
     if (kind === 'serial' && !NS.SerialTransport.supported()) { NS.toast('เบราว์เซอร์นี้ไม่มี Web Serial ให้เปิดด้วย Chrome หรือ Edge', 'bad', 6000); return; }
     stopReconnect();
     if (S.tr) await disconnect();
+    if (kind === 'sim' && S.proto !== 'nasasat') setProto('nasasat', false); // the simulator only speaks our protocol
     const tr = kind === 'sim' ? new NS.Sim() : new NS.SerialTransport();
     tr.onLine = onLine;
     tr.onStatus = onStatus;
     S.tr = tr;
     S.cols = null;
+    S.ss.state.clear(); S.ss.hinted = false; // a new connection starts without the old board's values
     NS.store.set('baud', $('#selBaud').value);
     NS.store.set('dtr', $('#selDtr').value);
     NS.store.set('kind', kind);
@@ -154,12 +160,14 @@
   }
   async function handshake() {
     S.lastHandshake = Date.now();
+    if (S.proto === 'sunseek') { await ssHandshake(); return; }
     try {
       await send('HELLO');
       await send('CFG LIST', { timeout: 6000 });
       await send('STREAM ON');
       await send('CAL GET');
     } catch (e) {
+      if (S.proto !== 'nasasat') return; // switched to SunSeek meanwhile: these answers will never come
       NS.toast('บอร์ดไม่ตอบคำสั่งมาตรฐาน (' + e.message + ') ถ้าเป็น firmware อื่นยังใช้ Console ด้านล่างได้', 'warn', 7000);
     }
   }
@@ -176,6 +184,8 @@
 
   function send(cmd, { timeout = 4000 } = {}) {
     if (!S.tr || !S.connected) { NS.toast('ยังไม่ได้เชื่อมต่อ', 'warn'); return Promise.reject(new Error('not connected')); }
+    // our "@id CMD" lines mean nothing to the organizer's firmware: refuse instead of sending them (SunSeek commands go through ssSend)
+    if (S.proto === 'sunseek') return Promise.reject(new Error('โหมด SunSeek: คำสั่งนี้ใช้กับเฟิร์มแวร์ NasaSat (ของเรา) เท่านั้น'));
     const id = S.nextId++;
     const line = `@${id} ${cmd}`;
     S.tr.write(line);
@@ -228,6 +238,7 @@
   }
   function handleLine(raw) {
     addLog('rx', raw);
+    if (S.proto === 'sunseek') { handleSunSeekLine(raw); return; }
     const m = NS.parseLine(raw);
     switch (m.kind) {
       case 'ok': case 'err': {
@@ -246,7 +257,7 @@
       case 'e': onEvent(m.evt, m.args); break;
       case 'img': S.imgAsm.handle(m.parts); break;
       case 'bad': S.badLines++; break;
-      default: break;
+      default: if (!S.ss.hinted && NS.ss.looksLikeSunSeek(raw)) suggestSunSeek(); break;
     }
   }
 
@@ -352,6 +363,123 @@
     $('#hdrHk').textContent = [NS.isNum(h.vbat_mv) ? `แบต ${(h.vbat_mv / 1000).toFixed(2)} V` : '', NS.isNum(h.temp_c) ? `ชิป ${h.temp_c.toFixed(0)}°C` : ''].filter(Boolean).join(' · ');
   }
 
+  // ------------------------------------------------------------------ SunSeek mode (the organizer's firmware)
+  // Plain lines "CMD,arg" answered with PONG / ACK,CMD / ERR,CODE / TM,KEY,VALUE / EVT,NAME (02b_sunseek.js). Everything above and
+  // below that speaks our "@id CMD" protocol stays as it is; in this mode send() refuses those commands, and the console, the quick
+  // buttons and STOP talk SunSeek instead.
+  S.ss.client = new NS.ss.Client({
+    write: (line) => { if (!S.tr) return Promise.reject(new Error('ยังไม่เชื่อมต่อ')); addLog('tx', line); return S.tr.write(line); },
+  }, { state: S.ss.state });
+  const SS_ERR_TH = { empty: 'คำสั่งว่าง', 'too long': 'คำสั่งยาวเกิน 240 ตัวอักษร', newline: 'คำสั่งต้องอยู่บรรทัดเดียว' };
+  const SS_SENSORS = { SENSOR_ACCEL: 'ตัววัดความเร่ง (accel)', SENSOR_MAG: 'เข็มทิศ (mag)', SENSOR_GYRO: 'ไจโร (gyro)', SENSOR_BARO: 'ความกดอากาศ (baro)', SENSOR_SUN: 'ตัวรับแสงอาทิตย์ (sun)' };
+
+  function handleSunSeekLine(raw) {
+    const p = S.ss.client.feed(raw); // parses, keeps the State, completes the command that waits for this line
+    if (p.kind === 'tm') S.ss.tmCount++;
+    if (p.kind === 'err') {
+      const text = ['ERR', p.err.code, ...p.err.args].join(' ');
+      const t = Date.now();
+      if (t - (S.ss.errAt[text] || 0) > 3000) { S.ss.errAt[text] = t; NS.toast(text, 'bad', 6000); } // an ERR repeated by a stream must not pile up toasts
+    }
+    scheduleSs();
+  }
+  async function ssSend(cmd) { // a command typed in the console or a quick button
+    if (!S.tr || !S.connected) { NS.toast('ยังไม่ได้เชื่อมต่อ', 'warn'); return { ok: false }; }
+    const r = await S.ss.client.send(cmd);
+    if (r.timeout) NS.toast(`ไม่มีคำตอบจากบอร์ด: ${cmd}`, 'bad'); // an ERR line already made its own toast
+    else if (r.error && !r.aborted) NS.toast(`ส่งไม่ได้: ${SS_ERR_TH[r.error] || r.error}`, 'bad');
+    return r;
+  }
+  async function ssHandshake() { // our HELLO / CFG LIST do not exist there; PING and STATUS only read (their lines fill the status card)
+    await S.ss.client.send('PING');
+    await S.ss.client.send('STATUS');
+  }
+  function suggestSunSeek() { // NasaSat mode received lines of the organizer's firmware: say so, never switch by itself
+    S.ss.hinted = true;
+    NS.toast('บอร์ดนี้ดูเหมือนใช้เฟิร์มแวร์ SunSeek (ผู้จัด) ไม่ใช่ NasaSat: ที่หน้า "เชื่อมต่อ" เลือก "SunSeek (ผู้จัด)" ได้เลย ไม่ต้องต่อใหม่', 'warn', 10000);
+    sys('lines look like the SunSeek protocol (ACK / TM / EVT ...): choose SunSeek on the connect page');
+  }
+  function scheduleSs() { // at most 4 repaints a second, and only while the connect page is open
+    if (S.ss.timer) return;
+    S.ss.timer = setTimeout(() => { S.ss.timer = null; if ($('#tab-connect').classList.contains('active')) renderConn(); }, 250);
+  }
+  function renderSs() { // the status card: what the board said last (STATUS prints all of it, a stream refreshes parts)
+    const s = S.ss.state;
+    const has = (k) => s.get(k) !== undefined;
+    const val = (k) => (has(k) ? s.get(k) : '—');
+    const info = (label, k) => vrow(has(k) ? 'ok' : 'muted', label, val(k), k);
+    const hhmmss = (ms) => NS.clock(ms).slice(0, 8);
+    const mode = s.get('ADCS_MODE');
+    const id = s.get('SAT_ID') || s.spacecraftId;
+    const rows = [
+      vrow(id ? 'ok' : 'muted', 'รหัสดาวเทียม', id || '—', 'SAT_ID'),
+      info('บลูทูธ (BLE)', 'BLE'),
+      vrow(mode === 'AUTO' ? 'warn' : mode ? 'ok' : 'muted', 'โหมด ADCS', val('ADCS_MODE'), mode === 'AUTO' ? 'ADCS_MODE · AUTO: ล้อถูกคุมอัตโนมัติ สั่ง RW เองไม่ได้ (STOP = กลับ MANUAL)' : 'ADCS_MODE'),
+      info('กลยุทธ์ ADCS', 'ADCS_STRATEGY'),
+      info('คำสั่งล้อ', 'RW_CMD'),
+      info('bias ของล้อ', 'RW_BIAS'),
+      info('สถานะล้อ', 'RW_STATE'),
+    ];
+    const order = (k) => { const i = Object.keys(SS_SENSORS).indexOf(k); return i < 0 ? 99 : i; };
+    const sensors = s.keys('SENSOR_').sort((a, b) => order(a) - order(b) || a.localeCompare(b));
+    for (const k of sensors) {
+      const v = s.get(k);
+      const lvl = v === 'READY' || v === 'DETECTED' ? 'ok' : v === 'NOT_DETECTED' && k !== 'SENSOR_BARO' ? 'bad' : 'warn';
+      rows.push(vrow(lvl, SS_SENSORS[k] || k, v, v === 'NOT_DETECTED' ? `${k} · ไม่พบ: เช็กสายเซนเซอร์` : k));
+    }
+    if (!sensors.length) rows.push(vrow('muted', 'เซนเซอร์ (SENSOR_*)', '—', 'ยังไม่มีข้อมูล: กด "ดูสถานะทั้งหมด"'));
+    const a = s.lastAck; const e = s.lastErr;
+    rows.push(vrow(a ? 'ok' : 'muted', 'ACK ล่าสุด', a ? [a.cmd, ...a.args].join(',') : '—', a ? hhmmss(a.t) : ''));
+    rows.push(vrow(e ? 'bad' : 'muted', 'ERR ล่าสุด', e ? [e.code, ...e.args].join(',') : '—', e ? `${hhmmss(e.t)} ${NS.ss.errHelp(e.raw)}`.trim() : ''));
+    $('#ssRows').replaceChildren(...rows);
+    $('#ssNote').textContent = s.lastAt ? `ค่าเป็นของตอนที่บอร์ดส่งล่าสุด (${hhmmss(s.lastAt)}) · กด STATUS เพื่ออ่านใหม่` : 'ยังไม่ได้รับข้อมูลจากบอร์ด: กด "ดูสถานะทั้งหมด"';
+  }
+  // The protocol choice. `remember` keeps it for the next visit (NS.store 'proto'); the simulator and the URL shortcut do not touch it.
+  // A connection that is already open switches at once (no new port dialog): the board only has to be read the other way.
+  function setProto(p, remember = true) {
+    p = p === 'sunseek' ? 'sunseek' : 'nasasat';
+    const was = S.proto;
+    S.proto = p;
+    if (remember) NS.store.set('proto', p);
+    for (const r of $$('input[name=proto]')) r.checked = r.value === p;
+    applyProtoUI();
+    if (was !== p && S.connected && S.tr && !S.replay) setTimeout(handshake, 0);
+  }
+  function applyProtoUI() { // everything on the page that depends on the protocol
+    const ss = S.proto === 'sunseek';
+    const sim = $('input[name=trKind]:checked').value === 'sim';
+    document.body.dataset.proto = S.proto;
+    for (const e of $$('.ss-only')) e.hidden = !ss;
+    for (const e of $$('.ns-only')) e.hidden = ss;
+    $('#helloInfo').hidden = ss;
+    $('#protoNote').textContent = sim ? 'ตัวจำลองพูดได้เฉพาะโปรโตคอล NasaSat' : ss
+      ? 'เฟิร์มแวร์ของผู้จัด: ส่งคำสั่งแบบ CMD,arg (ไม่มี @id) บอร์ดตอบ PONG / ACK / ERR / TM / EVT · ใช้ Console และคำสั่งด่วน · ปุ่ม STOP ส่ง STOP'
+      : 'คุยด้วยคำสั่ง @id (ตอบ OK / ERR) ใช้ได้ครบทุกหน้า ทั้งคาลิเบรต ภารกิจ และจูนค่า';
+    const ph = ss ? 'พิมพ์คำสั่ง เช่น STATUS หรือ RW,30 แล้วกด Enter (↑/↓ = ประวัติ)' : 'พิมพ์คำสั่ง เช่น SET ctl.k 0.8 แล้วกด Enter (↑/↓ = ประวัติ)';
+    if ($('#conInput').placeholder !== ph) $('#conInput').placeholder = ph;
+    // TM lines are the data here, so the console shows them (untick "แสดง telemetry" to hide a stream); our own choice comes back afterwards
+    if (ss && S.ss.showT === null) { S.ss.showT = $('#conShowT').checked; $('#conShowT').checked = true; }
+    else if (!ss && S.ss.showT !== null) { $('#conShowT').checked = S.ss.showT; S.ss.showT = null; }
+    for (const t of ['hw', 'cal', 'm1', 'm2', 'live', 'tune']) { // pages that only make sense with our firmware
+      const sec = $('#tab-' + t);
+      let n = sec.querySelector('.ss-note');
+      if (ss && !n) {
+        n = el('div', { class: 'ss-note' }, el('span', { class: 'pill warn', text: 'โหมด SunSeek' }), 'หน้านี้ใช้กับเฟิร์มแวร์ NasaSat (ของเรา) · ในโหมด SunSeek ใช้ Console และคำสั่งด่วนที่หน้า "เชื่อมต่อ"');
+        sec.querySelector('.pagehead').after(n);
+      }
+      if (n) n.hidden = !ss;
+    }
+    const rf = $('#aiRefresh'); // "refresh" reads the board first: DIAG is ours, STATUS is theirs
+    const lbl = ss ? 'STATUS + สร้างใหม่' : 'DIAG + สร้างใหม่';
+    if (rf.firstChild.nodeValue !== lbl) { rf.firstChild.nodeValue = lbl; rf.querySelector('small').textContent = ss ? 'STATUS' : 'DIAG'; }
+    updateNav();
+  }
+  function syncProtoForKind(sim) { // the simulator cannot speak SunSeek; the saved choice comes back with a real board
+    $('input[name=proto][value=sunseek]').disabled = sim;
+    if (S.connected) applyProtoUI(); // an open connection keeps its protocol
+    else setProto(sim ? 'nasasat' : NS.store.get('proto', 'nasasat'), false);
+  }
+
   // ------------------------------------------------------------------ telemetry + live
   const charts = {};
   function makeCharts() {
@@ -443,7 +571,7 @@
     box.replaceChildren(...(v ? [el('div', { class: 'vt', text: v.title }), ...v.items.map((i) => vrow(i.level, i.label, i.value, i.rule))] : []));
   }
   function updateNav() { // a status glyph per day-of page, computed from state (cheap)
-    const g = { connect: S.connected && S.hello ? 'done' : '', hw: S.hwid ? 'done' : '', cal: S.th0ok ? 'done' : $('#calSteps .done') ? 'part' : '', m1: S.m1.runs.some((r) => r.pass) ? 'done' : '', m2: S.images.some((i) => i.ok) ? 'done' : '' };
+    const g = { connect: S.connected && (S.proto === 'sunseek' ? S.ss.state.lines > 0 : S.hello) ? 'done' : '', hw: S.hwid ? 'done' : '', cal: S.th0ok ? 'done' : $('#calSteps .done') ? 'part' : '', m1: S.m1.runs.some((r) => r.pass) ? 'done' : '', m2: S.images.some((i) => i.ok) ? 'done' : '' };
     for (const [k, v] of Object.entries(g)) { // the square says it, the title says it in words
       const e = $(`#tabs button[data-tab="${k}"] .ng`);
       if (e.dataset.s === v) continue;
@@ -453,6 +581,17 @@
   }
   function renderConn() { // the connect page result list
     const pi = S.portInfo; const hz = S.telHz; const sim = S.tr && S.tr.kind === 'sim'; const c = S.connected;
+    if (S.proto === 'sunseek') { // the checks of our firmware (HELLO, settings, telemetry) mean nothing here
+      const s = S.ss.state; const live = c && s.lines > 0;
+      $('#connList').replaceChildren(
+        vrow(c ? 'ok' : 'muted', 'พอร์ต', c ? (pi && pi.usbVendorId ? `USB ${pi.usbVendorId.toString(16)}:${(pi.usbProductId || 0).toString(16)}` : 'Web Serial') : 'ยังไม่เชื่อมต่อ', c ? '' : 'กด "เชื่อมต่อ"'),
+        vrow(s.lastPong ? 'ok' : c ? 'warn' : 'muted', 'บอร์ดตอบ PING', s.lastPong ? 'PONG' : live ? 'ยังไม่ตอบ' : '—', s.lastPong || !c ? '' : 'กด "ตรวจการเชื่อมต่อ" ในคำสั่งด่วน'),
+        vrow(s.banner ? 'ok' : 'muted', 'เฟิร์มแวร์', s.banner ? s.banner.replace(/\s+—.*$/, '') : '—', s.banner ? '' : 'เห็นตอนบอร์ดเพิ่งบูต'),
+        vrow(S.ss.tmHz > 0 ? 'ok' : 'muted', 'สตรีม TM', S.ss.tmHz > 0 ? `${S.ss.tmHz} บรรทัด/วินาที` : '—', S.ss.tmHz > 0 || !c ? '' : 'ยังไม่เปิดสตรีม'),
+      );
+      renderSs();
+      return;
+    }
     $('#connList').replaceChildren(
       vrow(c ? 'ok' : 'muted', 'พอร์ต', c ? (sim ? 'ตัวจำลอง' : pi && pi.usbVendorId ? `USB ${pi.usbVendorId.toString(16)}:${(pi.usbProductId || 0).toString(16)}` : 'Web Serial') : 'ยังไม่เชื่อมต่อ', c ? '' : 'กด "เชื่อมต่อ"'),
       vrow(S.hello ? 'ok' : c ? 'warn' : 'muted', 'บอร์ดตอบ HELLO', S.hello ? `${S.hello.fw} ${S.hello.ver}` : '—', S.hello ? `บอร์ด ${S.hello.board}` : c ? 'บอร์ดยังไม่ตอบ: กด HELLO ในคำสั่งด่วน' : ''),
@@ -461,6 +600,7 @@
     );
   }
   function clearLive() { // a disconnected instrument shows no numbers
+    S.ss.client.abort('การเชื่อมต่อปิด'); // SunSeek commands that still wait end now
     S.jobs.clear(); renderJobs();
     for (const id of ['#hdrTheta', '#hdrErr', '#hdrAng']) setNum(id, '—');
     setPill('#hdrValid', '—', 'off');
@@ -547,7 +687,7 @@
     c.textContent = `ปัญหา ${n}`; c.classList.toggle('bad', n > 0);
     if ($('#probTray').hidden) return;
     $('#probList').replaceChildren(...(problems.length ? [...problems].reverse().map((p) => {
-      const help = NS.rules.errHelp(p.msg);
+      const help = NS.rules.errHelp(p.msg) || NS.ss.errHelp(p.msg); // ours first; the organizer's ERR codes are different words
       return el('div', { class: 'prob' + (p.ack ? ' ack' : '') },
         el('div', { class: 'pt' }, NS.clock(p.t).slice(0, 8), p.n > 1 ? `×${p.n}` : null, el('span', { class: 'spacer' }), p.ack ? el('span', { text: 'รับทราบแล้ว' }) : el('button', { class: 'quiet small', text: 'รับทราบ', onclick: () => { p.ack = true; renderProblems(); } })),
         el('div', { class: 'pm', text: p.msg }),
@@ -1116,7 +1256,31 @@
     if (!v.length) return null;
     return `${key}: ${NS.mean(v).toFixed(3)} ± ${NS.std(v).toFixed(3)} [${Math.min(...v).toFixed(3)} … ${Math.max(...v).toFixed(3)}]`;
   }
+  function buildSsPack() { // the same idea for the organizer's firmware: what the board said last, what we sent, what it refused
+    const s = S.ss.state; const L = [];
+    const sym = $('#aiSymptom').value.trim();
+    if (sym) L.push('## อาการที่ทีมเห็น (ทีมเขียนเอง)', sym, '');
+    L.push('# SunSeek context (สร้างอัตโนมัติจาก NasaSat Lab)');
+    L.push(`- เวลา: ${new Date().toLocaleString('th-TH')} · tool ${NS.VERSION} · โหมด: SunSeek (เฟิร์มแวร์ของผู้จัด) · ช่องทาง: ${S.tr ? S.tr.kind : 'ไม่ได้เชื่อมต่อ'}`);
+    L.push('- protocol: ส่ง "CMD,arg" (ไม่มี @id) บอร์ดตอบ PONG / "ACK,CMD,..." / "ERR,CODE" (ERR ไม่บอกว่าปฏิเสธคำสั่งไหน) / "TM,KEY,VALUE,..." / "EVT,NAME" / "PAYLOAD,..."');
+    if (s.banner) L.push(`- ${s.banner}`);
+    if (s.spacecraftId) L.push(`- Spacecraft ID: ${s.spacecraftId}`);
+    L.push('## ค่าล่าสุดของ TM ทุกตัว (KEY=VALUE)');
+    const o = s.toObject();
+    L.push(Object.keys(o).length ? Object.entries(o).map(([k, v]) => `${k}=${v}`).join(' ') : '(ยังไม่มี: กด STATUS)');
+    if (s.lastAck) L.push(`ACK ล่าสุด: ${s.lastAck.raw}`);
+    if (s.lastErr) L.push(`ERR ล่าสุด: ${s.lastErr.raw}`);
+    if (s.events.length) { L.push('## EVT ล่าสุด'); for (const ev of s.events.slice(-10)) L.push(`${NS.clock(ev.t)} ${ev.raw}`); }
+    const errs = S.log.filter((r) => r[1] === 'rx' && (r[2].startsWith('ERR,') || r[2].startsWith('EVT,'))).slice(-15);
+    if (errs.length) { L.push('## ERR / EVT ที่บอร์ดส่งมาล่าสุด'); for (const r of errs) L.push(`${NS.clock(r[0])} ${r[2]}`); }
+    const sent = S.log.filter((r) => r[1] === 'tx').slice(-20);
+    if (sent.length) { L.push('## คำสั่งที่ส่งล่าสุด (20)'); for (const r of sent) L.push(`${NS.clock(r[0])} ${r[2]}`); }
+    L.push('## คำถามถึง AI');
+    L.push('(พิมพ์ปัญหาหรือสิ่งที่อยากให้ช่วยต่อตรงนี้)');
+    return L.join('\n');
+  }
   function buildAiPack() {
+    if (S.proto === 'sunseek') return buildSsPack();
     const L = [];
     const sym = $('#aiSymptom').value.trim();
     if (sym) L.push('## อาการที่ทีมเห็น (ทีมเขียนเอง)', sym, '');
@@ -1209,8 +1373,14 @@
     const kind = NS.store.get('kind', 'serial');
     const r = $(`input[name=trKind][value=${kind}]`);
     if (r) r.checked = true;
-    const syncKind = () => { const sim = $('input[name=trKind]:checked').value === 'sim'; for (const e of $$('.serial-only')) e.hidden = sim; };
+    const syncKind = () => { const sim = $('input[name=trKind]:checked').value === 'sim'; for (const e of $$('.serial-only')) e.hidden = sim; syncProtoForKind(sim); };
     $$('input[name=trKind]').forEach((e) => e.addEventListener('change', syncKind));
+    // protocol: NasaSat (ours) or SunSeek (the organizer's); remembered, applies at once
+    $$('input[name=proto]').forEach((e) => e.addEventListener('change', () => {
+      if (e.value === 'sunseek' && S.connected && S.tr && S.tr.kind === 'sim') { NS.toast('ตัวจำลองพูดได้เฉพาะโปรโตคอล NasaSat', 'warn'); setProto('nasasat', false); return; }
+      setProto(e.value);
+    }));
+    $$('[data-ss]').forEach((b) => b.addEventListener('click', () => { ssSend(b.dataset.ss); }));
     syncKind();
 
     // tabs
@@ -1244,7 +1414,12 @@
     const stop = () => {
       if (S.scan) S.scan.stop = true;
       rejectImageWaits('หยุดแล้ว (STOP)');
-      if (S.tr && S.connected) { const id = S.nextId++; S.tr.write(`@${id} STOP`); addLog('tx', `@${id} STOP`); NS.toast('ส่ง STOP แล้ว', 'warn', 1500); }
+      if (S.tr && S.connected) {
+        if (S.proto === 'sunseek') { // the organizer's safe stop (MANUAL + wheel stop): straight out, never behind a command that waits for its reply
+          S.ss.client.sendNow('STOP').then((r) => { if (!r.ok) NS.toast('ส่ง STOP ไม่สำเร็จ: ' + r.error, 'bad', 6000); });
+          NS.toast('ส่ง STOP แล้ว', 'warn', 1500);
+        } else { const id = S.nextId++; S.tr.write(`@${id} STOP`); addLog('tx', `@${id} STOP`); NS.toast('ส่ง STOP แล้ว', 'warn', 1500); }
+      }
     };
     $('#btnStop').addEventListener('click', stop);
     const typing = (t) => {
@@ -1523,7 +1698,7 @@
     const copyAi = async () => { refreshAi(); const ok = await NS.copyText($('#aiText').value); NS.toast(ok ? 'คัดลอกแล้ว วางในแชท AI ได้เลย' : 'คัดลอกไม่ได้ ให้เลือกข้อความเอง', ok ? 'good' : 'warn'); };
     $('#aiCopy').addEventListener('click', copyAi);
     $('#aiTop').addEventListener('click', copyAi);
-    $('#aiRefresh').addEventListener('click', async () => { try { const w = waitJson('diag', 5000); await send('DIAG'); await w; } catch (_) { /* ignore */ } refreshAi(); });
+    $('#aiRefresh').addEventListener('click', async () => { if (S.proto === 'sunseek') { if (S.connected) await ssSend('STATUS'); refreshAi(); return; } try { const w = waitJson('diag', 5000); await send('DIAG'); await w; } catch (_) { /* ignore */ } refreshAi(); });
     $('#dlLog').addEventListener('click', () => NS.download(`session_${NS.fileStamp()}.txt`, S.log.map(([t, d, x]) => `${new Date(t).toISOString()} ${d.toUpperCase()} ${x}`).join('\n')));
     $('#dlTel').addEventListener('click', () => {
       if (!S.telCols) { NS.toast('ยังไม่มี telemetry', 'warn'); return; }
@@ -1544,6 +1719,7 @@
       hist.push(v); if (hist.length > 100) hist.shift(); NS.store.set('hist', hist); hi = hist.length;
       $('#conInput').value = '';
       if (!S.tr || !S.connected) { NS.toast('ยังไม่ได้เชื่อมต่อ', 'warn'); return; }
+      if (S.proto === 'sunseek') { ssSend(v); return; } // raw command, no "@id"
       if (v.startsWith('@')) { S.tr.write(v); addLog('tx', v); } else send(v, { timeout: 15000 }).catch((e) => NS.toast(e.message, 'bad'));
     };
     $('#conSend').addEventListener('click', conSend);
@@ -1568,6 +1744,7 @@
   setInterval(() => { // once a second: stuck image assemblies, telemetry rate, nav glyphs
     S.imgAsm.poll(); // ends images whose last line never arrived
     S.telHz = S.telCount - (S.telPrev || 0); S.telPrev = S.telCount;
+    S.ss.tmHz = S.ss.tmCount - S.ss.tmPrev; S.ss.tmPrev = S.ss.tmCount;
     updateNav();
   }, 1000);
   showNextManual();
@@ -1582,6 +1759,7 @@
   (async () => {
     const hp = new URLSearchParams(location.hash.slice(1));
     if (hp.has('theme') && document.documentElement.dataset.theme !== hp.get('theme')) $('#themeBtn').click();
+    if (hp.has('proto') && !hp.has('sim')) setProto(hp.get('proto'), false); // &proto=sunseek (for practice and screenshots; not remembered)
     if (hp.has('tab')) { const b = $(`#tabs button[data-tab="${CSS.escape(hp.get('tab'))}"]`); if (b) b.click(); }
     if (hp.has('step')) { const b = $(`#calSteps button[data-step="${CSS.escape(hp.get('step'))}"]`); if (b) b.click(); }
     if (!hp.has('sim')) return;

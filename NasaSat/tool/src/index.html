@@ -67,6 +67,12 @@
               <label class="radio"><input type="radio" name="trKind" value="serial" checked> บอร์ดจริง (USB / Web Serial)</label>
               <label class="radio"><input type="radio" name="trKind" value="sim"> ตัวจำลอง (ไม่ต้องมีบอร์ด)</label>
             </div>
+            <div class="row mid" id="protoRow">
+              <span class="note">เฟิร์มแวร์บนบอร์ด</span>
+              <label class="radio"><input type="radio" name="proto" value="nasasat" checked> NasaSat (ของเรา)</label>
+              <label class="radio"><input type="radio" name="proto" value="sunseek"> SunSeek (ผู้จัด)</label>
+            </div>
+            <p class="note" id="protoNote"></p>
             <div class="row serial-only">
               <label>Baud
                 <select id="selBaud"><option>115200</option><option>230400</option><option>460800</option><option>921600</option></select>
@@ -93,7 +99,7 @@
           </div>
         </div>
         <div>
-          <div class="sec">
+          <div class="sec ns-only">
             <h2>คำสั่งด่วน</h2>
             <div class="row">
               <button class="chipb" data-cmd="HELLO">HELLO</button>
@@ -106,7 +112,25 @@
               <button class="chipb" data-cmd="HELP">HELP</button>
             </div>
           </div>
-          <div class="sec">
+          <div class="sec ss-only" hidden>
+            <h2>คำสั่งด่วน (SunSeek)</h2>
+            <div class="row">
+              <button data-ss="PING" title="เช็กว่าบอร์ดตอบ: ต้องได้ PONG">ตรวจการเชื่อมต่อ<small>PING</small></button>
+              <button data-ss="STATUS" title="อ่านสถานะทั้งหมดของบอร์ด">ดูสถานะทั้งหมด<small>STATUS</small></button>
+              <button data-ss="HELP" title="รายการคำสั่งของ firmware ผู้จัด">รายการคำสั่ง<small>HELP</small></button>
+            </div>
+            <div class="row">
+              <button data-ss="TM_STREAM,ALL,ON" title="ให้บอร์ดส่งค่าเซนเซอร์ต่อเนื่อง">เปิดสตรีมข้อมูล<small>TM_STREAM,ALL,ON</small></button>
+              <button data-ss="TM_STREAM,QUIET" title="หยุดส่งค่าต่อเนื่องทั้งหมด">ปิดสตรีม (เงียบ)<small>TM_STREAM,QUIET</small></button>
+            </div>
+            <p class="note">คำสั่งอื่นพิมพ์ที่ Console ด้านล่าง เช่น <span class="cmd">RW,30</span> · ปุ่ม STOP ส่ง <span class="cmd">STOP</span> (กลับโหมด MANUAL และหยุดล้อ)</p>
+          </div>
+          <div class="sec ss-only" id="ssCard" hidden>
+            <h2>สถานะบอร์ด SunSeek</h2>
+            <p class="note" id="ssNote"></p>
+            <div id="ssRows"></div>
+          </div>
+          <div class="sec ns-only">
             <h2>สุขภาพระบบ</h2>
             <p class="note">บอร์ดส่งเองทุก com.hk วินาที</p>
             <div id="hkInfo" class="kv muted">ยังไม่มีข้อมูล</div>
@@ -115,7 +139,7 @@
             <summary>ขั้นสูง</summary>
             <div class="row">
               <button id="btnResetUart" class="quiet serial-only" title="กระตุก RTS เพื่อรีเซ็ตบอร์ดที่มีวงจร auto-reset">Reset บอร์ด (RTS)</button>
-              <button id="btnReboot" class="danger" title="ให้ firmware รีสตาร์ตตัวเอง (กดสองครั้งเพื่อยืนยัน)">รีสตาร์ตบอร์ด<small>REBOOT</small></button>
+              <button id="btnReboot" class="danger ns-only" title="ให้ firmware รีสตาร์ตตัวเอง (กดสองครั้งเพื่อยืนยัน)">รีสตาร์ตบอร์ด<small>REBOOT</small></button>
             </div>
           </details>
         </div>

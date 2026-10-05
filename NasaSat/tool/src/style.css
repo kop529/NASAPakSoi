@@ -192,8 +192,10 @@ details.sec > :not(summary), details.plain > :not(summary) { margin-left: 0; pad
 .vrow .g.ok { color: var(--ok); } .vrow .g.warn { color: var(--warn); } .vrow .g.bad { color: var(--bad); } .vrow .g.muted { color: var(--faint); }
 .vrow .vv { font-family: var(--num); font-weight: 500; font-variant-numeric: tabular-nums; }
 .vrow .vr { color: var(--muted); }
-#connList { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 2px 14px; }
-#connList .vrow:first-child { border-top: 0; }
+#connList, #ssRows { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 2px 14px; }
+#connList .vrow:first-child, #ssRows .vrow:first-child { border-top: 0; }
+#ssRows .vrow { grid-template-columns: 16px minmax(110px, 170px) minmax(0, 1.1fr) minmax(0, 1fr); } /* long ERR codes wrap instead of widening the page */
+#ssRows .vv, #ssRows .vr { overflow-wrap: anywhere; }
 .holdbar { height: 6px; max-width: 440px; margin-top: 4px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
 .holdbar > i { display: block; height: 100%; width: 0; background: var(--ok-fill); }
 .holdbar > i.warn { background: var(--warn-fill); }
@@ -322,6 +324,10 @@ details.cfg-group > .cfg-row { padding-left: 10px; }
 #toasts { position: fixed; top: 64px; right: 12px; display: flex; flex-direction: column; gap: 8px; z-index: 30; pointer-events: none; }
 .toast { max-width: 400px; padding: 9px 14px; background: var(--surface); border: 1px solid var(--line-strong); border-left: 3px solid var(--ink-2); border-radius: 3px; font-size: 13px; box-shadow: 0 8px 24px rgb(0 0 0 / .18); }
 .toast.bad { border-left-color: var(--bad-fill); } .toast.good { border-left-color: var(--ok-fill); } .toast.warn { border-left-color: var(--warn-fill); }
+
+/* ---------------------------------------------------------------- SunSeek mode (the organizer's firmware): note on the pages that need ours */
+.ss-note { display: flex; align-items: center; gap: 12px; margin: -6px 0 18px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; font-size: 13px; color: var(--ink-2); }
+label.radio:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
 
 /* ---------------------------------------------------------------- narrow screens drop secondary readouts first; θ and STOP stay */
 @media (max-width: 1600px) { .hide-1600 { display: none; } }

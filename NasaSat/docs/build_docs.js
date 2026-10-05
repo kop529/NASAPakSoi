@@ -1,5 +1,9 @@
 // Turns the Thai Markdown documents into single-file HTML pages (figures inlined, print-ready A4, works offline).
-// usage: node docs/build_docs.js      -> docs/THEORY_TH.html, docs/PLAYBOOK_TH.html, docs/CHEATSHEET_TH.html
+// usage: node docs/build_docs.js                       -> every document below
+//        node docs/build_docs.js SUNSEEK_CHEATSHEET_TH   -> only the document(s) whose .md name contains the argument
+// -> docs/THEORY_TH.html, PLAYBOOK_TH.html, CHEATSHEET_TH.html, SUNSEEK_CHEATSHEET_TH.html
+// PDF (A4, no header/footer): chrome --headless=new --no-pdf-header-footer --print-to-pdf=<out.pdf> file:///C:/TYSC/NasaSat/docs/<name>.html
+//   (a file URL with spaces needs %20)
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -11,6 +15,7 @@ function inline(text) {
   const codes = [];
   let s = text.replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return `\u0000${codes.length - 1}\u0000`; });
   s = esc(s).replace(/\\\|/g, '|');
+  s = s.replace(/\s*¶\s*/g, '<br>'); // "¶" = line break inside a table cell
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?=[^*\w]|$)/g, '$1<em>$2</em>');
   s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, u) => `<a href="${u}">${t}</a>`);
@@ -92,7 +97,8 @@ function convert(md) {
       flush();
       const buf = [];
       while (i < lines.length && /^>\s?/.test(lines[i])) buf.push(lines[i++].replace(/^>\s?/, ''));
-      out.push(`<blockquote>${buf.map(inline).join('<br>')}</blockquote>`);
+      const warn = /^\*\*ระวัง/.test(buf[0]);
+      out.push(`<blockquote${warn ? ' class="warn"' : ''}>${buf.map(inline).join('<br>')}</blockquote>`);
       continue;
     }
     const li = line.match(/^(\s*)([-*]|\d+\.)\s+(.*)$/);
@@ -192,9 +198,42 @@ li.task { list-style: none; margin-left: -1.2em; }
   html.cheat th, html.cheat td { padding: 1.5px 4px; }
   html.cheat .meta { display: none; }
 }
+blockquote.warn { background: #fdecea; border-left-color: #c62828; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) blockquote.warn { background: #34201f; border-left-color: #ef6a62; } }
+:root[data-theme="dark"] blockquote.warn { background: #34201f; border-left-color: #ef6a62; }
+.sop .cols > * { break-inside: auto; }
+.sop .cols > figure, .sop .cols > pre, .sop .cols > blockquote, .sop .cols > h2, .sop .cols > h3, .sop .cols > h4 { break-inside: avoid; }
+.sop h2, .sop h3, .sop h4 { break-after: avoid; }
+.sop h3 { font-size: 1rem; margin: 0.9em 0 0.25em; }
+.sop h4 { font-size: 0.95rem; margin: 0.6em 0 0.2em; }
+.sop pre { white-space: pre-wrap; word-break: break-all; font-size: 0.8rem; margin: 0.35em 0; padding: 5px 8px; }
+.sop code { overflow-wrap: anywhere; }
+.sop table { font-size: 0.8rem; }
+.sop td:empty { height: 2.1em; }
+.sop blockquote { padding: 4px 8px; margin: 0.5em 0; }
+.sop ol, .sop ul { margin: 0.25em 0; padding-left: 1.3em; }
+.sop figure { margin: 0.5em 0; }
+@media print {
+  html.sop, html.sop body { font-size: 8pt; line-height: 1.32; }
+  html.sop * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html.sop h1 { font-size: 12.5pt; }
+  html.sop h2 { font-size: 9.6pt; margin: 0.7em 0 0.2em; border-top: 1.5px solid #444; }
+  html.sop h3 { font-size: 8.8pt; margin: 0.6em 0 0.15em; }
+  html.sop h4 { font-size: 8.3pt; margin: 0.4em 0 0.1em; }
+  html.sop pre { font-size: 6.9pt; padding: 2px 5px; margin: 0.25em 0; }
+  html.sop table { font-size: 7.4pt; }
+  html.sop th, html.sop td { padding: 1.5px 3px; }
+  html.sop td:empty { height: 6.4mm; }
+  html.sop blockquote { padding: 2px 6px; margin: 0.3em 0; }
+  html.sop ol, html.sop ul { margin: 0.15em 0; }
+  html.sop li { margin: 0.05em 0; }
+  html.sop figure { margin: 0.3em 0; }
+  html.sop figcaption { font-size: 7pt; }
+}
 `;
 
-function page(file, title, { cheat = false } = {}) {
+function page(file, title, { cheat = false, sop = false } = {}) {
+  const cls = cheat ? (sop ? 'cheat sop' : 'cheat') : '';
   const md = fs.readFileSync(path.join(here, file), 'utf8');
   const { html, toc } = convert(md);
   let body = html;
@@ -209,20 +248,23 @@ function page(file, title, { cheat = false } = {}) {
   }
   const stamp = new Date().toISOString().slice(0, 10);
   return `<!doctype html>
-<html lang="th"${cheat ? ' class="cheat"' : ''}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="th"${cls ? ` class="${cls}"` : ''}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${title}</title><style>${CSS}</style></head>
-<body class="${cheat ? 'cheat' : ''}"><main>
+<body class="${cls}"><main>
 ${body}
 <p class="meta">สร้างจาก ${file} เมื่อ ${stamp} · พิมพ์: Ctrl+P (A4)</p>
 </main></body></html>
 `;
 }
 
+const only = process.argv.slice(2);
 for (const [src, dst, title, opt] of [
   ['THEORY_TH.md', 'THEORY_TH.html', 'ทฤษฎี NasaSat', {}],
   ['PLAYBOOK_TH.md', 'PLAYBOOK_TH.html', 'คู่มือหน้างาน NasaSat', {}],
   ['CHEATSHEET_TH.md', 'CHEATSHEET_TH.html', 'NasaSat cheat sheet', { cheat: true }],
+  ['SUNSEEK_CHEATSHEET_TH.md', 'SUNSEEK_CHEATSHEET_TH.html', 'SunSeek โพยหน้างาน', { cheat: true, sop: true }],
 ]) {
+  if (only.length && !only.some((a) => src.includes(a))) continue;
   const html = page(src, title, opt);
   fs.writeFileSync(path.join(here, dst), html);
   console.log(`wrote docs/${dst} (${(html.length / 1024).toFixed(0)} KB)`);

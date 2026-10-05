@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 268" font-family="'Leelawadee UI','Sarabun','Noto Sans Thai',Tahoma,sans-serif">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#333333"/>
+    </marker>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#b71c1c"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="440" height="268" fill="#ffffff"/>
+  <!-- MANUAL + REACTION -->
+  <rect x="6" y="8" width="170" height="88" rx="8" fill="#eaf1f8" stroke="#2f5d8a" stroke-width="2"/>
+  <text x="91" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#14304d">MANUAL + REACTION</text>
+  <text x="91" y="47" text-anchor="middle" font-size="12.5" fill="#14304d">บูต / รีเซ็ต อยู่ที่นี่ ล้อ = 0</text>
+  <text x="91" y="68" text-anchor="middle" font-size="14" font-weight="700" fill="#14304d">RW,n   (-100..100)</text>
+  <text x="91" y="86" text-anchor="middle" font-size="12.5" fill="#14304d">ตอบ ACK,RW,n.0 + TM,RW_CMD,…</text>
+  <!-- MANUAL + MOMENTUM -->
+  <rect x="264" y="8" width="170" height="88" rx="8" fill="#eef7ee" stroke="#2f7a3f" stroke-width="2"/>
+  <text x="349" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#14401f">MANUAL + MOMENTUM</text>
+  <text x="349" y="47" text-anchor="middle" font-size="12.5" fill="#14401f">bias เริ่ม 0 ล้อ = 0</text>
+  <text x="349" y="68" text-anchor="middle" font-size="14" font-weight="700" fill="#14401f">RW_BIAS,n   (0..100)</text>
+  <text x="349" y="86" text-anchor="middle" font-size="12.5" fill="#14401f">RW_CMD,… ไม่มีใน v2.1</text>
+  <!-- strategy arrows -->
+  <path d="M176 36 H264" stroke="#333333" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+  <path d="M264 70 H176" stroke="#333333" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+  <text x="220" y="28" text-anchor="middle" font-size="10.5" fill="#222">ADCS_STRATEGY,</text>
+  <text x="220" y="52" text-anchor="middle" font-size="10.5" fill="#222">MOMENTUM</text>
+  <text x="220" y="84" text-anchor="middle" font-size="10.5" fill="#222">…,REACTION</text>
+  <!-- AUTO -->
+  <rect x="70" y="170" width="300" height="88" rx="8" fill="#fff3e0" stroke="#e08a00" stroke-width="2"/>
+  <text x="220" y="192" text-anchor="middle" font-size="15" font-weight="700" fill="#5a3600">AUTO</text>
+  <text x="220" y="212" text-anchor="middle" font-size="13" fill="#5a3600">ADCS คุมล้อเอง (PD, deadband 2°, สูงสุด 80)</text>
+  <text x="220" y="232" text-anchor="middle" font-size="13" font-weight="700" fill="#b71c1c">RW / RW_BIAS ถูกปฏิเสธ</text>
+  <text x="220" y="249" text-anchor="middle" font-size="12" fill="#5a3600">ต้องอ่าน IMU + Sun ได้ ไม่งั้น ERR,ADCS_SENSOR_NOT_READY</text>
+  <!-- to AUTO -->
+  <path d="M60 96 V170" stroke="#333333" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+  <path d="M380 96 V170" stroke="#333333" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+  <text x="66" y="130" font-size="11" fill="#222">ADCS_MODE,</text>
+  <text x="66" y="144" font-size="11" fill="#222">AUTO</text>
+  <text x="374" y="130" text-anchor="end" font-size="11" fill="#222">ADCS_MODE,</text>
+  <text x="374" y="144" text-anchor="end" font-size="11" fill="#222">AUTO</text>
+  <!-- STOP back -->
+  <path d="M130 170 V96" stroke="#b71c1c" stroke-width="2.5" fill="none" marker-end="url(#arr)"/>
+  <path d="M310 170 V96" stroke="#b71c1c" stroke-width="2.5" fill="none" marker-end="url(#arr)"/>
+  <text x="136" y="134" font-size="13" font-weight="700" fill="#b71c1c">STOP</text>
+  <text x="304" y="134" text-anchor="end" font-size="13" font-weight="700" fill="#b71c1c">STOP</text>
+  <text x="220" y="154" text-anchor="middle" font-size="11" fill="#b71c1c">กลับ MANUAL · ล้อ = 0 · EVT,SAFE</text>
+</svg>

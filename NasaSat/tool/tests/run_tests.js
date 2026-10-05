@@ -2,7 +2,7 @@
 'use strict';
 const path = require('path');
 const js = path.join(__dirname, '..', 'src', 'js');
-for (const f of ['01_util.js', '02_protocol.js', '03_serial.js', '04_estimator.js', '05_cam.js', '05_fit.js', '06_cfgdefs.js', '06b_rules.js', '07_sim.js']) require(path.join(js, f));
+for (const f of ['01_util.js', '02_protocol.js', '02b_sunseek.js', '03_serial.js', '04_estimator.js', '05_cam.js', '05_fit.js', '06_cfgdefs.js', '06b_rules.js', '07_sim.js']) require(path.join(js, f));
 const NS = globalThis.NS;
 
 let fails = 0;
@@ -557,6 +557,243 @@ console.log('simulator end-to-end (virtual firmware + physics)');
     check('fitVerdict: MAE >= 0.6 -> bad, title starts with ✕', R.fitVerdict({ ...ok, maeLut: 0.8 }).title.startsWith('✕ ไม่ผ่าน') && R.fitVerdict({ ...ok, maeLut: NaN }).level === 'bad');
     check('valVerdict: ok / bias warns / few points warns / big MAE bad', [R.valVerdict({ mae: 0.2, mean: 0.05, n: 6 }).level, R.valVerdict({ mae: 0.2, mean: -0.3, n: 6 }).level, R.valVerdict({ mae: 0.2, mean: 0, n: 3 }).level, R.valVerdict({ mae: 0.7, mean: 0, n: 6 }).level].join() === 'ok,warn,warn,bad');
     check('m1Chip: HOLD green "ล็อกแล้ว", LOST red, IDLE muted, SEARCH/FINE info, unknown safe', R.m1Chip(3).level === 'ok' && R.m1Chip(3).text === 'ล็อกแล้ว' && R.m1Chip(4).level === 'bad' && R.m1Chip(0).level === 'muted' && R.m1Chip(1).level === 'info' && R.m1Chip(2).level === 'info' && R.m1Chip(undefined).level === 'muted');
+  }
+  // ---- SunSeek protocol (02b_sunseek.js): the organizer firmware's lines, copied from its source ----
+  console.log('sunseek protocol (organizer firmware v2.1)');
+  {
+    const P = NS.ss.parse;
+    const status = [ // what STATUS prints (System_CommandRouter.h ttcStatus + System_Telemetry.h) with the default config values
+      'ACK,STATUS',
+      'TM,SAT_ID,SUNSEEK-Team_DekMUT,BLE,DISCONNECTED,ADCS_MODE,MANUAL,ADCS_STRATEGY,REACTION',
+      'TM,ADCS_MODE,MANUAL,ADCS_REFERENCE,SUN,TARGET,0.00,KP,2.000,KD,0.500,MOMENTUM_BIAS,40,DEADBAND,2.00,MAX_RW_COMMAND,80,CONTROL_SIGN,1.0',
+      'TM,RW_CMD,0,RW_BIAS,0,RW_STATE,STOPPED',
+      'TM,SENSOR_ACCEL,READY',
+      'TM,SENSOR_MAG,READY',
+      'TM,SENSOR_GYRO,READY',
+      'TM,SENSOR_BARO,NOT_DETECTED',
+      'TM,SENSOR_SUN,READY',
+      'TM,ESTIMATOR,STANDARD,EST_FILTER,ON,EST_FILTER_TYPE,MOVING_AVERAGE,EST_MA_WINDOW,500,EST_FILTER_STRENGTH,0.50,EST_FUSION,OFF,EST_GYRO_WEIGHT,0.50',
+      'TM,SUN_L,1834,SUN_R,1790,SUN_NDV,0.0121,SUN_ANGLE,-1.23,SUN_ERROR,1.23,MAG_X,12.50,MAG_Y,-3.20,MAG_Z,40.10,MAG_HEADING,274.30,GYRO_Z,0.021,RW_CMD,0',
+      'TM,ADCS_MODE,MANUAL,ADCS_REFERENCE,SUN,TARGET,0.00,POINTING_ERROR,-4.20,SUN_ERROR,-4.20,MAG_ERROR,31.50,GYRO_Z,2.130,RW_CMD,0',
+      'TM,EST_RAW,-4.20,EST_FILTERED,-4.18,EST_ANGLE,-4.18,EST_FILTER,ON,EST_FILTER_TYPE,MOVING_AVERAGE,EST_MA_WINDOW,500,EST_FILTER_STRENGTH,0.50',
+      'TM,EST_FUSION,OFF,EST_GYRO_WEIGHT,0.50,EST_VALID,1',
+    ];
+    const a1 = P('ACK,RW,30.0');
+    check('parse ACK,RW,30.0 -> cmd RW, args [30.0]', a1.kind === 'ack' && a1.ack.cmd === 'RW' && a1.ack.args.join() === '30.0' && a1.raw === 'ACK,RW,30.0');
+    check('parse ACK,STATUS / ACK,TM_STREAM,SUN,ON / ACK,ADCS_TUNE,2.000,0.500,40', P('ACK,STATUS').ack.cmd === 'STATUS' && P('ACK,STATUS').ack.args.length === 0 && P('ACK,TM_STREAM,SUN,ON').ack.args.join() === 'SUN,ON' && P('ACK,ADCS_TUNE,2.000,0.500,40').ack.args.join() === '2.000,0.500,40');
+    check('parse PONG', P('PONG').kind === 'pong' && P('PONG\r').kind === 'pong');
+    const e1 = P('ERR,RW_REQUIRES_REACTION_STRATEGY');
+    const e2 = P('ERR,GYRO_OFFSET,GYRO_NOT_READY');
+    check('parse ERR with and without args (ERR does not name the command)', e1.kind === 'err' && e1.err.code === 'RW_REQUIRES_REACTION_STRATEGY' && e1.err.args.length === 0 && e2.err.code === 'GYRO_OFFSET' && e2.err.args.join() === 'GYRO_NOT_READY' && P('ERR,ADCS_PREPARE,GYRO_NOT_READY').err.args[0] === 'GYRO_NOT_READY');
+    const t1 = P('TM,SUN_L,1834,SUN_R,1790,SUN_NDV,0.0121,SUN_ANGLE,-1.23');
+    check('parse even TM = KEY,VALUE pairs (numbers in .num)', t1.kind === 'tm' && t1.tm.group === null && t1.tm.kv.SUN_L === '1834' && t1.tm.num.SUN_NDV === 0.0121 && t1.tm.num.SUN_ANGLE === -1.23 && Object.keys(t1.tm.kv).length === 4);
+    const t2 = P('TM,SENSOR_GYRO,READY');
+    check('parse TM,SENSOR_GYRO,READY -> text value, no number', t2.tm.group === null && t2.tm.kv.SENSOR_GYRO === 'READY' && !('SENSOR_GYRO' in t2.tm.num));
+    const t3 = P('TM,CAL_GYRO_OFFSET,X,0.1234,Y,-0.0456,Z,0.0078,SAMPLES,300');
+    check('parse odd TM = GROUP then pairs (CAL_GYRO_OFFSET)', t3.tm.group === 'CAL_GYRO_OFFSET' && t3.tm.kv.X === '0.1234' && t3.tm.num.Y === -0.0456 && t3.tm.num.SAMPLES === 300 && Object.keys(t3.tm.kv).join() === 'X,Y,Z,SAMPLES');
+    const t4 = P('TM,TM_STREAM,SUN,ON,MAG,OFF,GYRO,ON,ADCS,OFF,RATE_HZ,10');
+    const t5 = P('TM,ADCS_PREPARE,STRATEGY,MOMENTUM,BIAS,40,QUALIFICATION,BASELINE');
+    check('parse odd TM: TM_STREAM and ADCS_PREPARE groups', t4.tm.group === 'TM_STREAM' && t4.tm.kv.SUN === 'ON' && t4.tm.num.RATE_HZ === 10 && t5.tm.group === 'ADCS_PREPARE' && t5.tm.kv.STRATEGY === 'MOMENTUM' && t5.tm.num.BIAS === 40);
+    const t6 = P(status[11]);
+    check('parse a long even TM (ADCS snapshot: 8 pairs, negative numbers)', t6.tm.group === null && Object.keys(t6.tm.kv).length === 8 && t6.tm.kv.ADCS_MODE === 'MANUAL' && t6.tm.num.POINTING_ERROR === -4.2 && t6.tm.num.GYRO_Z === 2.13);
+    const th = P('TM,HELP,ADCS_REFERENCE,SUN|MAG|SET_TARGET,<deg>');
+    check('parse TM,HELP,<text> -> help text with its commas, not data', th.kind === 'help' && th.help === 'ADCS_REFERENCE,SUN|MAG|SET_TARGET,<deg>' && !th.tm);
+    const v1 = P('EVT,RW_MANEUVER_COMPLETE,60');
+    const v2 = P('EVT,CAL,GYRO_OFFSET,COMPLETE');
+    check('parse EVT with and without args', v1.kind === 'evt' && v1.evt.name === 'RW_MANEUVER_COMPLETE' && v1.evt.args.join() === '60' && P('EVT,SAFE').evt.name === 'SAFE' && P('EVT,MISSION_READY').evt.args.length === 0 && v2.evt.name === 'CAL' && v2.evt.args.join() === 'GYRO_OFFSET,COMPLETE');
+    const pl = P('PAYLOAD,STATUS,READY,CAMERA,OK,SD,OK,WIFI,READY,IP,192.168.4.1,IMAGE_COUNT,12,LAST_IMAGE,/IMG_0012.JPG');
+    check('parse PAYLOAD lines of the camera board (a forwarded PAYLOAD,ERR is not an ERR of the board)', pl.kind === 'payload' && pl.payload.sub === 'STATUS' && pl.payload.text.startsWith('STATUS,READY') && P('PAYLOAD,IMAGE_READY,/IMG_0013.JPG,245731').payload.args.join() === '/IMG_0013.JPG,245731' && P('PAYLOAD,ERR,CAMERA_FAIL').kind === 'payload');
+    check('plain text: boot banner, spacecraft id, BLE and payload UART lines', ['SUNSEEK PLATFORM v2.1 — Training Firmware', 'Spacecraft ID: SUNSEEK-Team_DekMUT', 'BLE client connected', 'Payload UART: TX=GPIO41 RX=GPIO42 @115200'].every((l) => P(l).kind === 'text' && P(l).raw === l));
+    const junk = ['', '   ', 'ACK', 'ACK,', 'ERR,', 'EVT,', 'TM', 'TM,', 'TM,,', ',,,', ',', 'ack,RW', 'Pong', 'PONGO', '\u0000\u0001garbage', 'ERR RANGE ctl.k', '@1 OK', null, undefined, 42, {}, [], { toString() { throw new Error('boom'); } }];
+    let threw = false;
+    let kinds = '';
+    for (const b of junk) { try { kinds += P(b).kind === 'text' ? 't' : '?'; } catch (_) { threw = true; } }
+    check('malformed input never throws and stays plain text (case-sensitive like the board)', !threw && kinds === 't'.repeat(junk.length), kinds);
+    check('odd TM with a dangling token and a 20 kB line parse without error', P('TM,A,1,B').tm.group === 'A' && P('TM,' + 'K,1,'.repeat(5000) + 'X').kind === 'tm');
+    check('whitespace around tokens is trimmed (the board trims too)', P('  ACK , RW , 30.0 \r').ack.cmd === 'RW' && P('TM, SUN_L , 1834 ').tm.num.SUN_L === 1834);
+
+    const L = NS.ss.looksLikeSunSeek;
+    check('looksLikeSunSeek: PONG / ACK, / ERR, / TM, / EVT, / PAYLOAD, / boot banner', ['PONG', 'ACK,STATUS', 'ERR,UNKNOWN_COMMAND', 'TM,SENSOR_SUN,READY', 'EVT,SAFE', 'PAYLOAD,EVENT,CAPTURE_STARTED', 'SUNSEEK PLATFORM v2.1 — Training Firmware', 'Spacecraft ID: SUNSEEK-Team_DekMUT'].every(L));
+    check('looksLikeSunSeek: NasaSat lines and noise are not SunSeek', ['@1 OK', '@3 ERR RANGE ctl.k 0.1..1.5', 'ERR RANGE x', 'T,1,2,3', 'TH,a,b', 'J {"type":"hello"}', 'E M1 HOLD t=1', '# ready', 'IMG B 1 2 3 4', 'BLE client connected', 'Payload UART: TX=GPIO41', '', null, undefined, 'PONGO', 'ets Jun  8 2016 00:22:57'].every((l) => !L(l)));
+    {
+      const sx = new NS.Sim();
+      const ox = [];
+      sx.onLine = (l) => ox.push(l);
+      sx.boot();
+      for (const c of ['@1 HELLO', '@2 CFG LIST', '@3 STREAM ON', '@4 CAL GET', '@5 DIAG', '@6 HWID', '@7 RAW 300', '@8 HELP', '@9 M1 START 0', '@10 BOGUS', '@11 SET ctl.k 9', '@12 STOP']) sx.handle(c);
+      for (let t = 0; t < 3000; t += 2) sx.step(0.002);
+      check('no line of the NasaSat simulator is mistaken for SunSeek (no false "switch" hint)', ox.length > 50 && !ox.some((l) => L(l)), `${ox.length} lines, first hit: ${ox.find((l) => L(l))}`);
+    }
+
+    const st = new NS.ss.State();
+    status.forEach((l, i) => st.apply(P(l), 1000 + i));
+    check('State keeps the latest value of every TM key with its time (STATUS dump)', st.get('SAT_ID') === 'SUNSEEK-Team_DekMUT' && st.get('BLE') === 'DISCONNECTED' && st.get('RW_STATE') === 'STOPPED' && st.get('SENSOR_BARO') === 'NOT_DETECTED' && st.get('SENSOR_GYRO') === 'READY' && st.num('RW_BIAS') === 0 && st.num('KP') === 2 && st.at('SENSOR_SUN') === 1008 && st.age('SENSOR_SUN', 1500) === 492);
+    check('State: unknown key -> undefined / NaN / never / infinite age; text is not a number', st.get('NOPE') === undefined && Number.isNaN(st.num('NOPE')) && st.at('NOPE') === 0 && st.age('NOPE') === Infinity && Number.isNaN(st.num('SAT_ID')));
+    check('State: a newer value replaces the older one (ADCS_MODE and SUN_ERROR arrive twice)', st.at('ADCS_MODE') === 1011 && st.num('SUN_ERROR') === -4.2 && st.at('SUN_ERROR') === 1011 && st.lines === status.length);
+    check('State.keys(prefix) lists the keys that start with it (the status card reads SENSOR_*)', st.keys('SENSOR_').sort().join() === 'SENSOR_ACCEL,SENSOR_BARO,SENSOR_GYRO,SENSOR_MAG,SENSOR_SUN' && st.keys().length > 20 && st.keys('NOPE_').length === 0);
+    st.apply(P(t3.raw), 2000);
+    st.apply(P(t4.raw), 2001);
+    check('State stores group keys as GROUP.KEY', st.num('CAL_GYRO_OFFSET.X') === 0.1234 && st.num('CAL_GYRO_OFFSET.SAMPLES') === 300 && st.get('TM_STREAM.SUN') === 'ON' && st.get('X') === undefined);
+    const ack0 = st.lastAck;
+    st.apply(P('ERR,RW_INVALID_OR_RANGE'), 3000);
+    st.apply(P('ACK,RW,30.0'), 3001);
+    check('State keeps the last ACK and the last ERR', ack0.cmd === 'STATUS' && st.lastErr.code === 'RW_INVALID_OR_RANGE' && st.lastErr.t === 3000 && st.lastAck.cmd === 'RW' && st.lastAck.args[0] === '30.0');
+    const se = new NS.ss.State({ maxEvents: 5 });
+    for (let i = 0; i < 12; i++) se.apply(P(`EVT,E${i},${i}`), i);
+    check('State keeps a bounded list of events, newest last', se.events.length === 5 && se.events[0].name === 'E7' && se.events[4].name === 'E11' && se.events[4].args[0] === '11');
+    const sb = new NS.ss.State();
+    [P('SUNSEEK PLATFORM v2.1 — Training Firmware'), P('Spacecraft ID: SUNSEEK-Team_DekMUT'), P('PONG'), P('TM,HELP,a,b'), P('PAYLOAD,EVENT,CAPTURE_STARTED')].forEach((p, i) => sb.apply(p, 10 + i));
+    check('State notes the banner, spacecraft id, last PONG, help text and payload line', sb.banner.startsWith('SUNSEEK PLATFORM v2.1') && sb.spacecraftId === 'SUNSEEK-Team_DekMUT' && sb.lastPong === 12 && sb.help[0] === 'a,b' && sb.lastPayload.sub === 'EVENT');
+    {
+      const sg = new NS.ss.State({ maxKeys: 3 });
+      let ok = true;
+      try { sg.apply(null); sg.apply({}); sg.apply({ kind: 'tm' }); sg.apply({ kind: 'ack' }); sg.apply(P('TM,A,1,B,2,C,3,D,4'), 1); } catch (_) { ok = false; }
+      check('State.apply never throws on junk and caps the number of keys', ok && sg.nKeys === 3 && sg.get('D') === undefined && sg.get('A') === '1');
+      sg.clear();
+      check('State.clear forgets everything', sg.lines === 0 && sg.get('A') === undefined && sg.lastAck === null && sg.events.length === 0);
+    }
+    check('errHelp: Thai fix for an ERR code (also behind "ERR code detail"); nothing for NasaSat or unknown text', NS.ss.errHelp('ERR RW_REQUIRES_REACTION_STRATEGY').includes('ADCS_STRATEGY,REACTION') && NS.ss.errHelp('ERR ADCS_PREPARE GYRO_NOT_READY').includes('ไจโร') && NS.ss.errHelp('ERR,UNKNOWN_COMMAND').includes('HELP') && NS.ss.errHelp('@3 ERR RANGE ctl.k 0.1..1.5') === '' && NS.ss.errHelp('constructor __proto__ toString') === '' && NS.ss.errHelp('') === '' && NS.ss.errHelp(null) === '');
+
+    // ---- Client with a fake board that answers like the firmware (same strings as System_CommandRouter.h) ----
+    const board = (o = {}) => {
+      const b = { sent: [], mode: 'MANUAL', strategy: 'REACTION', failWith: null, client: null };
+      const answer = (c) => {
+        if (c === 'PING') return ['PONG'];
+        if (c === 'STATUS') return status;
+        if (c === 'HELP') return ['TM,HELP,PAYLOAD_STATUS|PAYLOAD_PING|CAPTURE', 'TM,HELP,ADCS_MODE,MANUAL|AUTO', 'TM,HELP,ADCS_REFERENCE,SUN|MAG|SET_TARGET,<deg>', 'TM,HELP,ADCS_STRATEGY,REACTION|MOMENTUM|ADCS_TUNE,<Kp>,<Kd>,<Bias>', 'TM,HELP,RW,<cmd>|RW_BIAS,<bias>|STATUS|STOP|SENSOR_STATUS', 'TM,HELP,ESTIMATOR_STATUS'];
+        if (c === 'GYRO_RAW') return ['TM,RAW_GX,12,RAW_GY,-3,RAW_GZ,7', 'TM,GYRO_Z,0.123'];
+        if (c === 'STOP') { b.mode = 'MANUAL'; return ['ACK,STOP', 'EVT,SAFE']; }
+        if (c === 'ADCS_MODE,AUTO') { b.mode = 'AUTO'; return ['ACK,ADCS_MODE,AUTO', status[2]]; }
+        if (c === 'ADCS_MODE,MANUAL') { b.mode = 'MANUAL'; return ['ACK,ADCS_MODE,MANUAL', status[2]]; }
+        if (c === 'ADCS_STRATEGY,MOMENTUM' || c === 'ADCS_STRATEGY,REACTION') { b.strategy = c.slice(14); return ['ACK,' + c, 'TM,RW_CMD,0,RW_BIAS,0,RW_STATE,STOPPED']; }
+        if (c === 'TM_STREAM,ALL,ON' || c === 'TM_STREAM,QUIET') return ['ACK,' + c];
+        if (c === 'ADCS_TUNE,2,0.5,40') return ['ACK,ADCS_TUNE,2.000,0.500,40', status[2]];
+        if (c.split(',')[0] === 'RW') {
+          if (b.mode === 'AUTO') return ['ERR,MANUAL_RW_COMMAND_REQUIRES_MANUAL_MODE'];
+          if (b.strategy !== 'REACTION') return ['ERR,RW_REQUIRES_REACTION_STRATEGY'];
+          const v = +c.slice(3);
+          if (!(v >= -100 && v <= 100)) return ['ERR,RW_INVALID_OR_RANGE'];
+          return ['ACK,RW,' + v.toFixed(1), 'TM,RW_CMD,' + Math.round(v) + ',RW_BIAS,0,RW_STATE,REACTION_DRIVE'];
+        }
+        if (c === 'NOREPLY') return [];
+        return ['ERR,UNKNOWN_COMMAND'];
+      };
+      b.write = (line) => {
+        b.sent.push(line);
+        if (b.failWith === 'throw') throw new Error('port closed');
+        if (b.failWith === 'reject') return Promise.reject(new Error('port closed'));
+        const go = () => { for (const l of answer(NS.ss.norm(line))) b.client.feed(l); };
+        if (o.sync) go(); else setTimeout(go, 1);
+        return undefined;
+      };
+      b.client = new NS.ss.Client(b, o.client || {});
+      return b;
+    };
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    {
+      const b = board();
+      check('Client: default timeout 1500 ms, own State; the options override it', b.client.timeout === 1500 && b.client.state instanceof NS.ss.State && new NS.ss.Client(b, { timeout: 77 }).timeout === 77);
+      const ps = [b.client.send('PING'), b.client.send('STATUS'), b.client.send('HELP')];
+      check('Client: one command in flight, the others wait (only PING written so far)', b.sent.join() === 'PING' && b.client.waiting === 3);
+      const rs = await Promise.all(ps);
+      check('Client queue: commands go out in order, each one only after the previous completed', b.sent.join() === 'PING,STATUS,HELP' && rs.every((r) => r.ok), JSON.stringify(rs.map((r) => r.ok)));
+      check('Client: PING -> PONG, STATUS -> its ACK, HELP -> the first TM,HELP line', rs[0].reply.kind === 'pong' && rs[1].reply.raw === 'ACK,STATUS' && rs[2].reply.kind === 'help');
+      await wait(15);
+      check('Client: every line reaches the State, also the lines after the one that completed the command', b.client.state.get('RW_STATE') === 'STOPPED' && b.client.state.get('SENSOR_GYRO') === 'READY' && b.client.state.help.length === 6 && b.client.state.lastPong > 0, `help lines ${b.client.state.help.length}`);
+    }
+    {
+      const b = board();
+      let r = await b.client.send('ADCS_STRATEGY,MOMENTUM');
+      r = await b.client.send('RW,30');
+      check('Client: ERR while in flight -> not ok, reply is the ERR (RW in MOMENTUM strategy), no timeout flag', r.ok === false && !r.timeout && r.reply.err.code === 'RW_REQUIRES_REACTION_STRATEGY', JSON.stringify(r.reply && r.reply.err));
+      r = await b.client.send('ADCS_STRATEGY,REACTION');
+      check('Client: ACK,ADCS_STRATEGY,REACTION answers ADCS_STRATEGY,REACTION', r.ok && r.reply.ack.cmd === 'ADCS_STRATEGY');
+      r = await b.client.send('RW,30');
+      check('Client: ACK,RW,30.0 answers RW,30 (and the TM after it updates the State)', r.ok && r.reply.raw === 'ACK,RW,30.0' && b.client.state.get('RW_STATE') === 'REACTION_DRIVE' && b.client.state.num('RW_CMD') === 30);
+      r = await b.client.send('RW,  250');
+      check('Client: RW out of range -> ERR,RW_INVALID_OR_RANGE (spaces around commas are the board\'s business)', !r.ok && r.reply.err.code === 'RW_INVALID_OR_RANGE');
+      r = await b.client.send('ADCS_MODE,AUTO');
+      const rAuto = await b.client.send('RW,10');
+      check('Client: AUTO mode refuses the wheel with ERR,MANUAL_RW_COMMAND_REQUIRES_MANUAL_MODE', r.ok && !rAuto.ok && rAuto.reply.err.code === 'MANUAL_RW_COMMAND_REQUIRES_MANUAL_MODE');
+      r = await b.client.send('STOP');
+      check('Client: STOP -> ACK,STOP (the EVT,SAFE after it goes to the State)', r.ok && r.reply.ack.cmd === 'STOP' && b.mode === 'MANUAL' && b.client.state.events.length === 1 && b.client.state.events[0].name === 'SAFE');
+      r = await b.client.send('TM_STREAM,ALL,ON');
+      const rQuiet = await b.client.send('TM_STREAM,QUIET');
+      const rTune = await b.client.send('ADCS_TUNE, 2 ,0.5, 40');
+      check('Client: TM_STREAM,ALL,ON / TM_STREAM,QUIET / ADCS_TUNE complete on their ACK (cmd = first token)', r.ok && rQuiet.ok && rTune.ok && rTune.reply.ack.args.join() === '2.000,0.500,40');
+      r = await b.client.send('BOGUS');
+      check('Client: unknown command -> ERR,UNKNOWN_COMMAND -> not ok', !r.ok && r.reply.err.code === 'UNKNOWN_COMMAND');
+    }
+    {
+      // other lines in between (a late ACK of another command, PONG, TM, EVT) must not complete a command
+      const b = board();
+      b.write = ((orig) => (line) => {
+        if (line === 'RW,10') { b.sent.push(line); setTimeout(() => { for (const l of ['ACK,STOP', 'PONG', 'TM,SUN_L,1,SUN_R,2', 'EVT,SAFE', 'ACK,RW,10.0']) b.client.feed(l); }, 1); return undefined; }
+        if (line === 'STATUS') { b.sent.push(line); setTimeout(() => { for (const l of ['PONG', 'ACK,PING', 'ACK,STATUS']) b.client.feed(l); }, 1); return undefined; }
+        return orig(line);
+      })(b.write);
+      const r = await b.client.send('RW,10');
+      check('Client: stray ACK,STOP / PONG / TM / EVT before the right ACK are ignored; it completes on ACK,RW,10.0', r.ok && r.reply.raw === 'ACK,RW,10.0' && b.client.state.lastAck.cmd === 'RW');
+      const r2 = await b.client.send('STATUS');
+      check('Client: PONG and ACK,PING do not complete STATUS', r2.ok && r2.reply.raw === 'ACK,STATUS');
+    }
+    {
+      const b = board();
+      const r = await b.client.send('GYRO_RAW');
+      check('Client: GYRO_RAW has no ACK, so the first TM line completes it', r.ok && r.reply.kind === 'tm' && r.reply.tm.num.RAW_GX === 12, JSON.stringify(r.reply));
+      await wait(10);
+      check('Client: the second TM line of that reply still reached the State', b.client.state.num('GYRO_Z') === 0.123);
+      check('Client: the readers without ACK are HELP, GYRO_RAW, MAG_RAW, SUN_RAW, TM_STREAM_STATUS, MISSION_STATUS', ['HELP', 'GYRO_RAW', 'MAG_RAW', 'SUN_RAW', 'TM_STREAM_STATUS', 'MISSION_STATUS'].every((c) => NS.ss.NO_ACK.has(c)) && NS.ss.NO_ACK.size === 6 && !NS.ss.NO_ACK.has('STATUS') && !NS.ss.NO_ACK.has('PING'));
+    }
+    {
+      const b = board();
+      const t0 = Date.now();
+      const r = await b.client.send('NOREPLY', { timeout: 40 });
+      check('Client: no reply -> { ok: false, timeout: true } after the timeout', r.ok === false && r.timeout === true && r.reply === null && Date.now() - t0 >= 35 && Date.now() - t0 < 400, `${Date.now() - t0} ms`);
+      const r2 = await b.client.send('PING');
+      check('Client: the queue goes on after a timeout', r2.ok && b.client.waiting === 0);
+      const b3 = board({ client: { timeout: 30 } });
+      const rs = await Promise.all([b3.client.send('NOREPLY'), b3.client.send('NOREPLY'), b3.client.send('PING')]);
+      check('Client: the constructor timeout applies to each command; a timeout does not block the next one', rs[0].timeout && rs[1].timeout && rs[2].ok && b3.sent.join() === 'NOREPLY,NOREPLY,PING');
+    }
+    {
+      const b = board({ sync: true }); // the board answers inside write()
+      const first = b.client.send('NOREPLY', { timeout: 20 });
+      const rest = [b.client.send('PING'), b.client.send('STATUS'), b.client.send('RW,5'), b.client.send('PING')];
+      const rs = await Promise.all([first, ...rest]);
+      check('Client: a transport that answers inside write() still completes the queue in order', b.sent.join() === 'NOREPLY,PING,STATUS,RW,5,PING' && rs.map((r) => r.ok).join() === 'false,true,true,true,true', rs.map((r) => r.ok).join());
+    }
+    {
+      const b = board();
+      b.failWith = 'throw';
+      const r1 = await b.client.send('PING');
+      b.failWith = 'reject';
+      const r2 = await b.client.send('PING');
+      b.failWith = null;
+      const r3 = await b.client.send('PING');
+      check('Client: a write that throws or rejects -> { ok: false, error }, no hang, the next command works', !r1.ok && r1.error === 'port closed' && !r2.ok && r2.error === 'port closed' && r3.ok);
+      const before = b.sent.length;
+      const bad = await Promise.all([b.client.send(''), b.client.send('   '), b.client.send(null), b.client.send('A'.repeat(241)), b.client.send('PING\nSTOP')]);
+      check('Client: empty / longer than 240 / multi-line commands are refused without writing', bad.every((x) => !x.ok && x.error) && b.sent.length === before, bad.map((x) => x.error).join());
+      const edge = await b.client.send('X'.repeat(240));
+      check('Client: a command of exactly 240 characters is written', b.sent.length === before + 1 && !edge.ok && edge.reply.err.code === 'UNKNOWN_COMMAND');
+    }
+    {
+      const b = board();
+      const p1 = b.client.send('NOREPLY', { timeout: 5000 });
+      const p2 = b.client.send('PING');
+      const sn = await b.client.sendNow('STOP');
+      check('Client.sendNow goes straight to the board, past the command in flight (for STOP)', sn.ok && b.sent.join() === 'NOREPLY,STOP' && b.client.waiting === 2);
+      await wait(10);
+      b.client.abort('การเชื่อมต่อปิด');
+      const [a1, a2] = await Promise.all([p1, p2]);
+      check('Client.abort ends the command in flight and everything queued (not ok, aborted); nothing is left', !a1.ok && a1.aborted && !a2.ok && a2.aborted && a2.error === 'การเชื่อมต่อปิด' && b.client.waiting === 0);
+      await wait(20);
+      const r = await b.client.send('PING');
+      check('Client works again after abort', r.ok);
+      b.failWith = 'throw';
+      check('Client.sendNow reports a failed write instead of throwing', (await b.client.sendNow('STOP')).ok === false);
+    }
   }
   console.log(`\n${passes} passed, ${fails} failed`);
   process.exit(fails ? 1 : 0);

@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="th" class="cheat sop"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SunSeek โพยหน้างาน</title><style>
+:root { --bg: #ffffff; --fg: #1d1f23; --muted: #5b616b; --line: #d9dde3; --soft: #f3f5f8; --accent: #1f6fb2; --quote: #eef6ee; --quoteLine: #2f8f5b; --code: #f1f3f6; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #16181c; --fg: #e8eaed; --muted: #a3a9b3; --line: #353a42; --soft: #1f2329; --accent: #7db7ea; --quote: #1c2a22; --quoteLine: #5cc28b; --code: #23272e; } }
+:root[data-theme="dark"] { --bg: #16181c; --fg: #e8eaed; --muted: #a3a9b3; --line: #353a42; --soft: #1f2329; --accent: #7db7ea; --quote: #1c2a22; --quoteLine: #5cc28b; --code: #23272e; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', Tahoma, sans-serif; line-height: 1.65; font-size: 16px; }
+main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 1.7rem; line-height: 1.3; margin: 0.2em 0 0.6em; }
+h2 { font-size: 1.3rem; margin: 2em 0 0.6em; padding-top: 0.4em; border-top: 2px solid var(--line); }
+h3 { font-size: 1.08rem; margin: 1.5em 0 0.4em; }
+h4 { font-size: 1rem; margin: 1.2em 0 0.3em; }
+p { margin: 0.5em 0; }
+a { color: var(--accent); }
+code { font-family: Consolas, 'Cascadia Mono', monospace; background: var(--code); padding: 0 4px; border-radius: 4px; font-size: 0.92em; }
+pre { background: var(--code); padding: 10px 12px; border-radius: 8px; overflow-x: auto; font-size: 0.9rem; line-height: 1.5; }
+pre code { background: none; padding: 0; font-family: Consolas, 'Cascadia Mono', 'Leelawadee UI', monospace; }
+.tw { overflow-x: auto; margin: 0.7em 0; }
+table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+th { background: var(--soft); }
+blockquote { margin: 1em 0; padding: 10px 14px; background: var(--quote); border-left: 4px solid var(--quoteLine); border-radius: 6px; }
+figure { margin: 1em 0; }
+figure svg, figure img { width: 100%; height: auto; display: block; background: #ffffff; border-radius: 6px; }
+figcaption { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 1.5em 0; }
+ul, ol { padding-left: 1.4em; }
+li { margin: 0.15em 0; }
+li.task { list-style: none; margin-left: -1.2em; }
+.box { display: inline-block; width: 1.1em; }
+.toc { background: var(--soft); border-radius: 8px; padding: 10px 16px; margin: 1em 0 1.5em; }
+.toc ul { margin: 0.3em 0; padding-left: 0; list-style: none; columns: 2; column-gap: 28px; }
+.meta { color: var(--muted); font-size: 0.85rem; }
+@media (max-width: 640px) { .toc ul { columns: 1; } body { font-size: 15px; } }
+@media print {
+  @page { size: A4; margin: 14mm 13mm; }
+  body { font-size: 10.5pt; background: #fff; color: #000; }
+  main { max-width: none; padding: 0; }
+  h2 { break-before: page; border-top: 0; }
+  h2:first-of-type { break-before: auto; }
+  figure, table, pre, blockquote { break-inside: avoid; }
+  tr { break-inside: avoid; }
+  a { color: #000; text-decoration: none; }
+  .toc { break-after: page; }
+}
+.cheat main { max-width: 1100px; }
+.cheat h2 { break-before: auto; border-top: 1px solid var(--line); font-size: 1.02rem; margin: 0.8em 0 0.3em; }
+.cheat .cols { columns: 2; column-gap: 22px; }
+.cheat .cols > * { break-inside: avoid; }
+.cheat table { font-size: 0.86rem; }
+.cheat th, .cheat td { padding: 3px 6px; }
+@media (max-width: 800px) { .cheat .cols { columns: 1; } }
+@media print {
+  html.cheat { font-size: 8.2pt; }
+  html.cheat body { font-size: 8.2pt; line-height: 1.35; }
+  html.cheat h1 { font-size: 12pt; margin: 0 0 3px; }
+  html.cheat h2 { font-size: 9pt; margin: 0.5em 0 0.2em; }
+  html.cheat p { margin: 0.25em 0; }
+  html.cheat .tw { margin: 0.3em 0; }
+  html.cheat th, html.cheat td { padding: 1.5px 4px; }
+  html.cheat .meta { display: none; }
+}
+blockquote.warn { background: #fdecea; border-left-color: #c62828; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) blockquote.warn { background: #34201f; border-left-color: #ef6a62; } }
+:root[data-theme="dark"] blockquote.warn { background: #34201f; border-left-color: #ef6a62; }
+.sop .cols > * { break-inside: auto; }
+.sop .cols > figure, .sop .cols > pre, .sop .cols > blockquote, .sop .cols > h2, .sop .cols > h3, .sop .cols > h4 { break-inside: avoid; }
+.sop h2, .sop h3, .sop h4 { break-after: avoid; }
+.sop h3 { font-size: 1rem; margin: 0.9em 0 0.25em; }
+.sop h4 { font-size: 0.95rem; margin: 0.6em 0 0.2em; }
+.sop pre { white-space: pre-wrap; word-break: break-all; font-size: 0.8rem; margin: 0.35em 0; padding: 5px 8px; }
+.sop code { overflow-wrap: anywhere; }
+.sop table { font-size: 0.8rem; }
+.sop td:empty { height: 2.1em; }
+.sop blockquote { padding: 4px 8px; margin: 0.5em 0; }
+.sop ol, .sop ul { margin: 0.25em 0; padding-left: 1.3em; }
+.sop figure { margin: 0.5em 0; }
+@media print {
+  html.sop, html.sop body { font-size: 8pt; line-height: 1.32; }
+  html.sop * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html.sop h1 { font-size: 12.5pt; }
+  html.sop h2 { font-size: 9.6pt; margin: 0.7em 0 0.2em; border-top: 1.5px solid #444; }
+  html.sop h3 { font-size: 8.8pt; margin: 0.6em 0 0.15em; }
+  html.sop h4 { font-size: 8.3pt; margin: 0.4em 0 0.1em; }
+  html.sop pre { font-size: 6.9pt; padding: 2px 5px; margin: 0.25em 0; }
+  html.sop table { font-size: 7.4pt; }
+  html.sop th, html.sop td { padding: 1.5px 3px; }
+  html.sop td:empty { height: 6.4mm; }
+  html.sop blockquote { padding: 2px 6px; margin: 0.3em 0; }
+  html.sop ol, html.sop ul { margin: 0.15em 0; }
+  html.sop li { margin: 0.05em 0; }
+  html.sop figure { margin: 0.3em 0; }
+  html.sop figcaption { font-size: 7pt; }
+}
+</style></head>
+<body class="cheat sop"><main>
+<h1 id="s1">SunSeek โพยหน้างาน — Workshop T01 + T02 (บอร์ด SunSeek v1.3 · เฟิร์มแวร์ผู้จัด v2.1)</h1><div class="cols">
+<p><strong>ทีมนาซ่าหน้าปากซอย</strong> · เฟิร์มแวร์: <code>C:\TYSC\SunSeek\workshop\SunSeek_Platform_Firmware_v2_1\</code> = ของผู้จัดไม่แก้อะไร ยกเว้น <code>#define TEAM_NAME "NasaPakSoi"</code> ใน <code>Config_System.h</code> → ชื่อ BLE <code>SUNSEEK-NasaPakSoi</code> · ข้อความตอบกลับทุกบรรทัดในโพยนี้อ่านจากโค้ด <code>System_CommandRouter.h</code> / <code>System_Telemetry.h</code> / <code>Module_ReactionWheel.h</code> <strong>ยังไม่เคยลองกับบอร์ดจริง</strong> ถ้าบอร์ดตอบต่างจากนี้ ให้เชื่อบอร์ดแล้วจดไว้</p>
+<h2 id="s2">1. กฎเหล็ก + คำศัพท์</h2>
+<ol>
+<li><strong>มือพร้อม STOP เสมอ</strong> — พิมพ์ <code>STOP</code> ก่อนแตะล้อ ก่อนเปลี่ยนสาย ก่อนอัปโหลด และก่อนทดสอบหลุดลิงก์ (BLE หลุด ล้อ <strong>ไม่หยุดเอง</strong>)</li>
+<li><strong>ไม่มีอะไรขวางล้อ</strong> — ล้อหมุนอิสระ ยึดแน่นกับแกน ไม่มีสาย มือ ผม เสื้อ ใกล้ล้อ แล้วค่อยจ่ายไฟ</li>
+<li><strong>เริ่มเบา</strong> — เริ่มที่ <code>RW,20</code> ไม่เกิน 40 จนกว่าจะรู้ว่าล้อไม่สั่น ห้ามกระโดดไป <code>RW,100</code></li>
+<li><strong>รอ ACK ทุกคำสั่ง</strong> — <code>ACK,...</code> = รับแล้ว · <code>ERR,...</code> = ปฏิเสธ (ERR ไม่บอกว่าปฏิเสธคำสั่งไหน) · เงียบ = เช็กสาย / Newline / พอร์ต</li>
+<li><strong>พิมพ์ให้เป๊ะ</strong> — ตัวพิมพ์ใหญ่ตรงตัว ไม่เกิน 240 ตัวอักษร ช่องว่างรอบ <code>,</code> บอร์ดตัดให้เอง</li>
+<li><strong>พอร์ตใช้ได้ทีละโปรแกรม</strong> — ปิด Serial Monitor ก่อนอัปโหลด หรือก่อนเปิด NasaSat Lab</li>
+<li><strong>จดทุกค่า ไม่เดา</strong> — PWM % <strong>ไม่ใช่</strong> % ความเร็วล้อ (ไม่ได้วัด RPM) · I_w ไม่ได้วัดให้เขียน <code>TBD</code></li>
+</ol>
+<div class="tw"><table><thead><tr><th>คำ</th><th>ความหมาย</th></tr></thead><tbody><tr><td>TC</td><td>คำสั่งจากเราไปบอร์ด เช่น <code>PING</code> <code>RW,30</code></td></tr><tr><td>TM</td><td>ข้อมูลที่บอร์ดรายงาน <code>TM,ชื่อ,ค่า,ชื่อ,ค่า,...</code></td></tr><tr><td>ACK / ERR</td><td><code>ACK,คำสั่ง,...</code> รับแล้ว · <code>ERR,รหัส</code> ปฏิเสธ · <code>PING</code> ตอบ <code>PONG</code></td></tr><tr><td>EVT</td><td>เหตุการณ์ที่บอร์ดแจ้งเอง เช่น <code>EVT,SAFE</code> (หลัง STOP)</td></tr><tr><td>PWM</td><td>แรงขับมอเตอร์ 0–255 · <code>RW,n</code> = PWM n% คือ n×255/100 เช่น <code>RW,20</code> = 51 จาก 255 · ไม่ใช่ % ของรอบหมุน</td></tr><tr><td>BIAS</td><td>จุดทำงานของล้อแบบ MOMENTUM (PWM 0–100) ตั้งด้วย <code>RW_BIAS,n</code> ล้อหมุนทันที</td></tr><tr><td>DELTA</td><td>ค่าบวกเพิ่มจาก BIAS: TARGET = BIAS + DELTA ต้องได้ 0–100</td></tr><tr><td>ASSIST</td><td>คำสั่งมอเตอร์ชั่วคราว −100..100 ช่วยให้เปลี่ยนความเร็วเร็วขึ้น</td></tr><tr><td>DURATION</td><td>เวลาที่ ASSIST ทำงาน (ms) หมดแล้วกลับไป TARGET ได้ <code>EVT,RW_MANEUVER_COMPLETE,&lt;bias&gt;</code></td></tr><tr><td>MANUAL / AUTO</td><td>MANUAL = เราสั่งล้อเอง (ค่าตอนบูต) · AUTO = ADCS คุมล้อ สั่ง <code>RW</code> ไม่ได้ · <code>STOP</code> กลับ MANUAL</td></tr><tr><td>REACTION / MOMENTUM</td><td>REACTION ใช้ <code>RW,n</code> −100..100 (ค่าตอนบูต) · MOMENTUM ใช้ <code>RW_BIAS,n</code> 0..100 · สลับแล้วล้อหยุด bias=0</td></tr></tbody></table></div>
+<figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 268" font-family="'Leelawadee UI','Sarabun','Noto Sans Thai',Tahoma,sans-serif">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#333333"/>
+    </marker>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#b71c1c"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="440" height="268" fill="#ffffff"/>
+  <!-- MANUAL + REACTION -->
+  <rect x="6" y="8" width="170" height="88" rx="8" fill="#eaf1f8" stroke="#2f5d8a" stroke-width="2"/>
+  <text x="91" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#14304d">MANUAL + REACTION</text>
+  <text x="91" y="47" text-anchor="middle" font-size="12.5" fill="#14304d">บูต / รีเซ็ต อยู่ที่นี่ ล้อ = 0</text>
+  <text x="91" y="68" text-anchor="middle" font-size="14" font-weight="700" fill="#14304d">RW,n   (-100..100)</text>
+  <text x="91" y="86" text-anchor="middle" font-size="12.5" fill="#14304d">ตอบ ACK,RW,n.0 + TM,RW_CMD,…</text>
+  <!-- MANUAL + MOMENTUM -->
+  <rect x="264" y="8" width="170" height="88" rx="8" fill="#eef7ee" stroke="#2f7a3f" stroke-width="2"/>
+  <text x="349" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#14401f">MANUAL + MOMENTUM</text>
+  <text x="349" y="47" text-anchor="middle" font-size="12.5" fill="#14401f">bias เริ่ม 0 ล้อ = 0</text>
+  <text x="349" y="68" text-anchor="middle" font-size="14" font-weight="700" fill="#14401f">RW_BIAS,n   (0..100)</text>
+  <text x="349" y="86" text-anchor="middle" font-size="12.5" fill="#14401f">RW_CMD,… ไม่มีใน v2.1</text>
+  <!-- strategy arrows -->
+  <path d="M176 36 H264" stroke="#333333" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+  <path d="M264 70 H176" stroke="#333333" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+  <text x="220" y="28" text-anchor="middle" font-size="10.5" fill="#222">ADCS_STRATEGY,</text>
+  <text x="220" y="52" text-anchor="middle" font-size="10.5" fill="#222">MOMENTUM</text>
+  <text x="220" y="84" text-anchor="middle" font-size="10.5" fill="#222">…,REACTION</text>
+  <!-- AUTO -->
+  <rect x="70" y="170" width="300" height="88" rx="8" fill="#fff3e0" stroke="#e08a00" stroke-width="2"/>
+  <text x="220" y="192" text-anchor="middle" font-size="15" font-weight="700" fill="#5a3600">AUTO</text>
+  <text x="220" y="212" text-anchor="middle" font-size="13" fill="#5a3600">ADCS คุมล้อเอง (PD, deadband 2°, สูงสุด 80)</text>
+  <text x="220" y="232" text-anchor="middle" font-size="13" font-weight="700" fill="#b71c1c">RW / RW_BIAS ถูกปฏิเสธ</text>
+  <text x="220" y="249" text-anchor="middle" font-size="12" fill="#5a3600">ต้องอ่าน IMU + Sun ได้ ไม่งั้น ERR,ADCS_SENSOR_NOT_READY</text>
+  <!-- to AUTO -->
+  <path d="M60 96 V170" stroke="#333333" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+  <path d="M380 96 V170" stroke="#333333" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+  <text x="66" y="130" font-size="11" fill="#222">ADCS_MODE,</text>
+  <text x="66" y="144" font-size="11" fill="#222">AUTO</text>
+  <text x="374" y="130" text-anchor="end" font-size="11" fill="#222">ADCS_MODE,</text>
+  <text x="374" y="144" text-anchor="end" font-size="11" fill="#222">AUTO</text>
+  <!-- STOP back -->
+  <path d="M130 170 V96" stroke="#b71c1c" stroke-width="2.5" fill="none" marker-end="url(#arr)"/>
+  <path d="M310 170 V96" stroke="#b71c1c" stroke-width="2.5" fill="none" marker-end="url(#arr)"/>
+  <text x="136" y="134" font-size="13" font-weight="700" fill="#b71c1c">STOP</text>
+  <text x="304" y="134" text-anchor="end" font-size="13" font-weight="700" fill="#b71c1c">STOP</text>
+  <text x="220" y="154" text-anchor="middle" font-size="11" fill="#b71c1c">กลับ MANUAL · ล้อ = 0 · EVT,SAFE</text>
+</svg>
+<figcaption>โหมดของบอร์ด: มี 3 โหมดและสลับกันด้วยคำสั่งเหล่านี้ (STOP ใช้ได้ทุกโหมด)</figcaption></figure>
+<h2 id="s3">2. ต่อสาย + เช็กก่อนจ่ายไฟ</h2>
+<h3 id="s4">2.1 ต่อสายไดรเวอร์ TB6612FNG (ทำตอนปิดสวิตช์ ถอด USB)</h3>
+<p><strong>ของบนโต๊ะ</strong>: SunSeek v1.3 · โมดูล TB6612FNG · มอเตอร์ RF-300 + ล้อ · สายจั๊มพ์ · สาย USB (ต้องเป็นสายข้อมูล)</p>
+<figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 262" font-family="'Leelawadee UI','Sarabun','Noto Sans Thai',Tahoma,sans-serif">
+  <rect x="0" y="0" width="440" height="262" fill="#ffffff"/>
+  <!-- SunSeek board -->
+  <rect x="6" y="8" width="118" height="246" rx="8" fill="#eaf1f8" stroke="#2f5d8a" stroke-width="2"/>
+  <text x="65" y="30" text-anchor="middle" font-size="16" font-weight="700" fill="#14304d">SunSeek v1.3</text>
+  <text x="65" y="47" text-anchor="middle" font-size="13" fill="#14304d">ESP32-S3</text>
+  <text x="112" y="76" text-anchor="end" font-size="15" font-weight="700" fill="#14304d">5V</text>
+  <text x="112" y="108" text-anchor="end" font-size="15" font-weight="700" fill="#14304d">3.3V</text>
+  <text x="112" y="140" text-anchor="end" font-size="15" font-weight="700" fill="#14304d">GND</text>
+  <text x="112" y="172" text-anchor="end" font-size="15" font-weight="700" fill="#14304d">GPIO1</text>
+  <text x="112" y="204" text-anchor="end" font-size="15" font-weight="700" fill="#14304d">GPIO38</text>
+  <text x="112" y="236" text-anchor="end" font-size="15" font-weight="700" fill="#14304d">GPIO39</text>
+  <!-- TB6612FNG -->
+  <rect x="196" y="8" width="102" height="246" rx="8" fill="#fdeeee" stroke="#a33a3a" stroke-width="2"/>
+  <text x="247" y="30" text-anchor="middle" font-size="16" font-weight="700" fill="#5a1414">TB6612FNG</text>
+  <text x="247" y="47" text-anchor="middle" font-size="13" fill="#5a1414">ไดรเวอร์ช่อง A</text>
+  <text x="206" y="76" font-size="15" font-weight="700" fill="#5a1414">VM</text>
+  <text x="206" y="97" font-size="15" font-weight="700" fill="#5a1414">VCC</text>
+  <text x="206" y="118" font-size="15" font-weight="700" fill="#5a1414">STBY</text>
+  <text x="206" y="140" font-size="15" font-weight="700" fill="#5a1414">GND</text>
+  <text x="206" y="172" font-size="15" font-weight="700" fill="#5a1414">PWMA</text>
+  <text x="206" y="204" font-size="15" font-weight="700" fill="#5a1414">AIN1</text>
+  <text x="206" y="236" font-size="15" font-weight="700" fill="#5a1414">AIN2</text>
+  <text x="288" y="104" text-anchor="end" font-size="15" font-weight="700" fill="#5a1414">AO1</text>
+  <text x="288" y="154" text-anchor="end" font-size="15" font-weight="700" fill="#5a1414">AO2</text>
+  <!-- motor -->
+  <rect x="356" y="62" width="78" height="112" rx="8" fill="#eef7ee" stroke="#2f7a3f" stroke-width="2"/>
+  <text x="395" y="88" text-anchor="middle" font-size="14" font-weight="700" fill="#14401f">มอเตอร์</text>
+  <text x="395" y="106" text-anchor="middle" font-size="13" fill="#14401f">RF-300</text>
+  <text x="395" y="124" text-anchor="middle" font-size="13" fill="#14401f">+ ล้อ</text>
+  <text x="395" y="150" text-anchor="middle" font-size="12" fill="#14401f">ต้องหมุน</text>
+  <text x="395" y="165" text-anchor="middle" font-size="12" fill="#14401f">อิสระ</text>
+  <!-- wires -->
+  <g fill="none" stroke-width="3" stroke-linecap="round">
+    <path d="M124 72 H196" stroke="#d32f2f"/>
+    <path d="M124 104 H156 M156 93 V114 M156 93 H196 M156 114 H196" stroke="#ef8a00"/>
+    <path d="M124 136 H196" stroke="#222222"/>
+    <path d="M124 168 H196" stroke="#f2c200"/>
+    <path d="M124 200 H196" stroke="#2e9a4a"/>
+    <path d="M124 232 H196" stroke="#1565c0"/>
+    <path d="M298 100 H356" stroke="#d32f2f"/>
+    <path d="M298 150 H356" stroke="#222222"/>
+  </g>
+  <text x="160" y="66" text-anchor="middle" font-size="12" fill="#444">5 V</text>
+  <text x="147" y="90" text-anchor="middle" font-size="12" fill="#444">3.3 V</text>
+  <text x="160" y="130" text-anchor="middle" font-size="12" fill="#444">กราวด์ร่วม</text>
+  <text x="160" y="162" text-anchor="middle" font-size="12" fill="#444">PWM</text>
+  <text x="160" y="194" text-anchor="middle" font-size="12" fill="#444">ทิศ</text>
+  <text x="160" y="226" text-anchor="middle" font-size="12" fill="#444">ทิศ</text>
+</svg>
+<figcaption>ผังสาย SunSeek → TB6612FNG → มอเตอร์ RF-300</figcaption></figure>
+<div class="tw"><table><thead><tr><th>SunSeek</th><th>TB6612FNG</th><th>ทำหน้าที่</th></tr></thead><tbody><tr><td>5V</td><td>VM</td><td>ไฟมอเตอร์</td></tr><tr><td>3.3V</td><td>VCC</td><td>ไฟลอจิก</td></tr><tr><td>GND</td><td>GND</td><td>กราวด์ร่วม</td></tr><tr><td>3.3V</td><td>STBY</td><td>เปิดไดรเวอร์</td></tr><tr><td>GPIO1</td><td>PWMA</td><td>ความแรง (PWM)</td></tr><tr><td>GPIO38</td><td>AIN1</td><td>ทิศ</td></tr><tr><td>GPIO39</td><td>AIN2</td><td>ทิศ</td></tr><tr><td>(มอเตอร์)</td><td>AO1 / AO2</td><td>สลับสาย 2 เส้น = กลับทิศหมุน</td></tr></tbody></table></div>
+<blockquote class="warn"><strong>ระวัง</strong> STBY ไม่ได้ต่อ 3.3 V (ลอย) = ไดรเวอร์ไม่ทำงาน ล้อไม่หมุนทั้งที่บอร์ดตอบ <code>ACK</code> · บอร์ดมี <strong>สวิตช์ OFF/ON แยก</strong> เสียบ USB อย่างเดียวพอร์ต COM ไม่ขึ้น (ชิป USB เป็น CP210x)</blockquote>
+<p><strong>ขาอื่นของบอร์ด</strong> (ไม่ใช้ใน T01): LDR ในเฟิร์มแวร์ ซ้าย = io17, ขวา = io16 · IMU GY-89 SDA = io8, SCL = io9 · กล้อง UART: TX io41 → CAM RX0, RX io42 ← CAM TX0</p>
+<h3 id="s5">2.2 เช็กลิสต์ 9 ข้อก่อนจ่ายไฟ (ติ๊กทีละข้อ ให้ผู้สอนหรือเพื่อนในทีมตรวจก่อน)</h3>
+<ul>
+<li class="task"><span class="box">☐</span> VM ← 5 V และ VCC ← 3.3 V ถูก rail</li>
+<li class="task"><span class="box">☐</span> GND ของ SunSeek กับ TB6612FNG ต่อร่วมกัน</li>
+<li class="task"><span class="box">☐</span> PWMA = GPIO1, AIN1 = GPIO38, AIN2 = GPIO39 ถูกขา</li>
+<li class="task"><span class="box">☐</span> STBY ← 3.3 V (เปิดไดรเวอร์)</li>
+<li class="task"><span class="box">☐</span> มอเตอร์ต่อ AO1 / AO2</li>
+<li class="task"><span class="box">☐</span> ล้อหมุนอิสระ (ใช้นิ้วหมุนเบา ๆ ตอนยังไม่มีไฟ)</li>
+<li class="task"><span class="box">☐</span> ไม่มีสายหรือโครงสร้างขวางล้อ</li>
+<li class="task"><span class="box">☐</span> ล้อยึดกับแกนมอเตอร์แน่น</li>
+<li class="task"><span class="box">☐</span> ผู้สอน/คนในทีมตรวจสายแล้ว ชื่อ ______ เวลา ______</li>
+</ul>
+<h3 id="s6">2.3 ตรวจ LDR ซ้าย/ขวา (ป้าย L/R บนบอร์ดเคยสลับกับของจริง อย่าเชื่อป้าย)</h3>
+<ol>
+<li>ส่ง <code>TM_STREAM,SUN,ON</code> → ได้ <code>ACK,TM_STREAM,SUN,ON</code> แล้วมี <code>TM,SUN_L,&lt;n&gt;,SUN_R,&lt;n&gt;,SUN_NDV,&lt;x&gt;,SUN_ANGLE,&lt;x&gt;</code> ประมาณ 5 บรรทัดต่อวินาที</li>
+<li>เอานิ้วบังหน้า LDR ทีละตัว ดูว่าเลขตัวไหนเปลี่ยนมาก (<code>SUN_L</code> หรือ <code>SUN_R</code>) จดว่าตัวทางซ้ายของบอร์ดคือตัวไหน</li>
+<li>ส่ง <code>TM_STREAM,QUIET</code> → <code>ACK,TM_STREAM,QUIET</code> (หยุดสตรีม)</li>
+</ol>
+<h2 id="s7">3. อัปโหลดเฟิร์มแวร์</h2>
+<p><strong>ของบนโต๊ะ</strong>: โน้ตบุ๊ก + Arduino IDE · บอร์ดต่อ USB และสวิตช์ ON · โฟลเดอร์ <code>C:\TYSC\SunSeek\workshop\SunSeek_Platform_Firmware_v2_1\</code></p>
+<ol>
+<li>ปิด Serial Monitor และกด "ตัดการเชื่อมต่อ" ใน NasaSat Lab (พอร์ตใช้ได้ทีละโปรแกรม)</li>
+<li>เปิด <code>SunSeek_Platform_Firmware_v2_1.ino</code> (ไฟล์อื่นในโฟลเดอร์ต้องอยู่ข้างกัน ห้ามแยก)</li>
+<li>ตรวจ <code>Config_System.h</code> ต้องเป็น <code>#define TEAM_NAME "NasaPakSoi"</code></li>
+<li>Tools → Board → <strong>ESP32S3 Dev Module</strong> · Tools → <strong>USB CDC On Boot → Disabled</strong> · Tools → Port → พอร์ต COM ของบอร์ด</li>
+<li>กด Upload รอ "Done uploading"</li>
+<li>เปิด Serial Monitor: <strong>115200 baud</strong> และท้ายหน้าต่างเลือก <strong>Newline</strong> (ถ้าเลือก No line ending คำสั่งจะไม่ทำงาน)</li>
+<li>กดปุ่ม RESET บนบอร์ดหนึ่งครั้ง ต้องเห็น (รอประมาณ 1 วินาที):</li>
+</ol>
+<pre><code>SUNSEEK PLATFORM v2.1 — Training Firmware
+Spacecraft ID: SUNSEEK-NasaPakSoi
+Payload UART: TX=GPIO41 RX=GPIO42 @115200
+TM,SENSOR_ACCEL,READY
+TM,SENSOR_MAG,READY
+TM,SENSOR_GYRO,READY
+TM,SENSOR_BARO,DETECTED
+TM,SENSOR_SUN,READY
+TM,ADCS_MODE,MANUAL,ADCS_REFERENCE,SUN,TARGET,0.00,KP,2.000,KD,0.500,MOMENTUM_BIAS,40,DEADBAND,2.00,MAX_RW_COMMAND,80,CONTROL_SIGN,1.0</code></pre>
+<ol>
+<li>พิมพ์ <code>PING</code> Enter → ต้องได้ <code>PONG</code></li>
+</ol>
+<blockquote class="warn"><strong>ระวัง</strong> เซนเซอร์ที่ไม่ได้ต่อจะขึ้น <code>NOT_DETECTED</code> (ไม่เป็นไรสำหรับ T01 เพราะ T01 ใช้แค่ล้อ) · ไม่มีอะไรขึ้นเลย: เช็กสวิตช์ ON, พอร์ต COM, baud 115200, ถ้าเห็นขยะให้เช็ก baud · เปิด Serial Monitor ค้างไว้แล้วอัปโหลดไม่ผ่าน: ปิดก่อน</blockquote>
+<p><strong>จด</strong>: Spacecraft ID ที่เห็น <code>SUNSEEK-________</code> · พอร์ต COM ______</p>
+<h2 id="s8">4. Workshop T01 — Reaction Wheel (ใช้ USB เท่านั้น ยังไม่ใช้ BLE)</h2>
+<blockquote class="warn"><strong>ระวัง</strong> PDF T01 พูดถึงเฟิร์มแวร์ 3 ไฟล์ "T01 v1.0" ที่ <strong>ไม่ได้แจก</strong> — เราใช้ v2.1 ตัวเดียวทั้ง T01/T02 และ v2.1 รับคำสั่ง T01 ได้ครบ: <code>RW,&lt;ค่า&gt;</code> <code>STOP</code> <code>STATUS</code> (คำสั่ง <code>BIAS,&lt;ค่า&gt;</code> ใน PDF <strong>ไม่มี</strong>ใน v2.1 จะได้ <code>ERR,UNKNOWN_COMMAND</code> ใช้ <code>RW_BIAS</code> ตอน T02)</blockquote>
+<p>ตอนบูต v2.1 อยู่ <strong>MANUAL + REACTION</strong> อยู่แล้ว (โค้ด: <code>_a.mode = ADCS_MANUAL</code> ใน <code>Module_ADCS.h</code>, <code>_rwMode = RW_MODE_REACTION</code> ใน <code>Module_ReactionWheel.h</code>) จึงสั่ง <code>RW,n</code> ได้เลย ไม่ต้องสั่ง <code>ADCS_STRATEGY,REACTION</code> ก่อน</p>
+<div class="tw"><table><thead><tr><th>คำสั่ง</th><th>ที่ v2.1 ตอบจริง (บอร์ด → เรา)</th></tr></thead><tbody><tr><td><code>RW,20</code></td><td><code>ACK,RW,20.0</code><br><code>TM,RW_CMD,20,RW_BIAS,0,RW_STATE,REACTION_DRIVE</code></td></tr><tr><td><code>RW,-20</code></td><td><code>ACK,RW,-20.0</code><br><code>TM,RW_CMD,-20,RW_BIAS,0,RW_STATE,REACTION_DRIVE</code></td></tr><tr><td><code>RW,0</code></td><td><code>ACK,RW,0.0</code><br><code>TM,RW_CMD,0,RW_BIAS,0,RW_STATE,STOPPED</code></td></tr><tr><td><code>RW,150</code> หรือ <code>RW,abc</code></td><td><code>ERR,RW_INVALID_OR_RANGE</code> (ล้อไม่เปลี่ยน)</td></tr><tr><td><code>STOP</code></td><td><code>ACK,STOP</code><br><code>EVT,SAFE</code> (ล้อหยุด, ไม่มีบรรทัด TM ตามมา)</td></tr><tr><td><code>STATUS</code></td><td><code>ACK,STATUS</code> แล้ว TM 12 บรรทัด ที่ต้องดู 2 บรรทัด: <code>TM,SAT_ID,SUNSEEK-NasaPakSoi,BLE,DISCONNECTED,ADCS_MODE,MANUAL,ADCS_STRATEGY,REACTION</code> และ <code>TM,RW_CMD,0,RW_BIAS,0,RW_STATE,STOPPED</code></td></tr></tbody></table></div>
+<h3 id="s9">4.0 เริ่ม T01 ทุกครั้ง (30 วินาที)</h3>
+<ol>
+<li>ผ่านเช็กลิสต์ 9 ข้อ (ข้อ 2.2) และ Serial Monitor เป็น 115200 + Newline</li>
+<li>ส่ง <code>STOP</code> → ต้องได้ <code>ACK,STOP</code> และ <code>EVT,SAFE</code></li>
+<li>ส่ง <code>STATUS</code> → บรรทัด <code>TM,SAT_ID,...</code> ต้องมี <code>ADCS_MODE,MANUAL,ADCS_STRATEGY,REACTION</code> และ <code>TM,RW_CMD,0,RW_BIAS,0,RW_STATE,STOPPED</code> ถ้าไม่ใช่ ส่ง <code>ADCS_MODE,MANUAL</code> แล้ว <code>ADCS_STRATEGY,REACTION</code> (ได้ <code>ACK,...</code> ทั้งคู่)</li>
+</ol>
+<h3 id="s10">4.1 การทดลองที่ 1 — ทดสอบหมุน + ทิศทาง</h3>
+<p><strong>ของบนโต๊ะ</strong>: บอร์ดต่อสายผ่านเช็กลิสต์ · Serial Monitor · ปากกา · นาฬิกา/มือถือจับเวลา</p>
+<ol>
+<li>ส่งทีละคำสั่งตามลำดับนี้ <strong>รอล้อนิ่ง/หมุนคงที่ ประมาณ 3 วินาที</strong> ก่อนส่งคำสั่งถัดไป และจดผลในตาราง: <code>RW,20</code> → <code>RW,40</code> → <code>RW,60</code> → <code>RW,40</code> → <code>RW,20</code> → <code>STOP</code> → <code>RW,-20</code> → <code>RW,-40</code> → <code>STOP</code></li>
+<li>ทุกคำสั่ง <code>RW,n</code> ต้องได้ <code>ACK,RW,n.0</code> + <code>TM,RW_CMD,n,RW_BIAS,0,RW_STATE,REACTION_DRIVE</code> · <code>STOP</code> ต้องได้ <code>ACK,STOP</code> + <code>EVT,SAFE</code> และล้อต้องหยุด</li>
+<li>ดูว่าล้อเริ่มหมุนหรือไม่ ทิศไหน (มองจากด้านบนล้อ ทวนหรือตามเข็มนาฬิกา) เสียง/สั่น</li>
+<li>ถ้าติดบนแท่นที่หมุนได้: ตัวแท่นหมุนทิศตรงข้ามกับล้อหรือไม่</li>
+</ol>
+<blockquote class="warn"><strong>ระวัง</strong> ล้อเร็วขึ้นไม่เท่ากับเลขเพิ่ม (PWM ≠ RPM) · เห็น <code>ACK</code> แต่ล้อไม่หมุน = สาย STBY/VM/AO1-AO2 ไม่ใช่โค้ด · ถ้าสั่นผิดปกติ หรือมีเสียงครูด ส่ง <code>STOP</code> ทันที</blockquote>
+<div class="tw"><table><thead><tr><th>#</th><th>คำสั่ง</th><th>เริ่ม/หยุดตามสั่ง?</th><th>ทิศ</th><th>สังเกต</th></tr></thead><tbody><tr><td>1</td><td><code>RW,20</code></td><td></td><td></td><td></td></tr><tr><td>2</td><td><code>RW,40</code></td><td></td><td></td><td></td></tr><tr><td>3</td><td><code>RW,60</code></td><td></td><td></td><td></td></tr><tr><td>4</td><td><code>RW,40</code></td><td></td><td></td><td></td></tr><tr><td>5</td><td><code>RW,20</code></td><td></td><td></td><td></td></tr><tr><td>6</td><td><code>STOP</code></td><td></td><td></td><td></td></tr><tr><td>7</td><td><code>RW,-20</code></td><td></td><td></td><td></td></tr><tr><td>8</td><td><code>RW,-40</code></td><td></td><td></td><td></td></tr><tr><td>9</td><td><code>STOP</code></td><td></td><td></td><td></td></tr></tbody></table></div>
+<p><strong>จด</strong>: ทิศของทีม — คำสั่ง <strong>+</strong> = ล้อหมุน ________ · คำสั่ง <strong>−</strong> = ล้อหมุน ________ (โค้ด: + = AIN1 สูง/AIN2 ต่ำ, − = กลับกัน) · แท่น: ________</p>
+<h3 id="s11">4.2 การทดลองที่ 2 — PWM ต่ำสุดที่ใช้ได้ (Minimum Start / Minimum Stable)</h3>
+<p><strong>ของบนโต๊ะ</strong>: เหมือน 4.1 · ตารางด้านล่าง<br><strong>ส่วน A — Start from rest (ค่าบวก)</strong> ทำทีละค่า 5, 10, 15, 20, 25, 30:</p>
+<ol>
+<li><code>STOP</code> แล้วรอล้อหยุดสนิท · 2. ส่ง <code>RW,5</code> (ค่าถัดไป <code>RW,10</code> <code>RW,15</code> <code>RW,20</code> <code>RW,25</code> <code>RW,30</code>) · 3. ดู 3 วินาที: ล้อเริ่มหมุนเองไหม · 4. จดว่า เริ่ม/ไม่เริ่ม, หมุนนิ่งไหม, สั่น/เสียง</li>
+<li><strong>Minimum Start PWM</strong> = ค่าน้อยสุดที่ล้อเริ่มหมุนได้ <strong>สม่ำเสมอ</strong> (ลอง 2 รอบให้ผลเหมือนกัน)</li>
+</ol>
+<p><strong>ส่วน B — Stable (ลดลง)</strong>: 1. <code>RW,30</code> รอจนหมุนนิ่ง · 2. ลดเป็น <code>RW,25</code> → <code>RW,20</code> → <code>RW,15</code> → <code>RW,10</code> → <code>RW,5</code> ทีละขั้น รอ 3 วินาทีทุกขั้น · 3. <strong>Minimum Stable PWM</strong> = ค่าน้อยสุดที่ล้อยังหมุนต่อเนื่อง ไม่ค้าง/สะดุด · 4. <code>STOP</code></p>
+<p><strong>ส่วน C — ทำซ้ำค่าลบ</strong> <code>RW,-5</code> <code>RW,-10</code> <code>RW,-15</code> <code>RW,-20</code> <code>RW,-25</code> <code>RW,-30</code> แบบเดียวกับ A และ B</p>
+<blockquote class="warn"><strong>ระวัง</strong> ต้อง <code>STOP</code> แล้วรอจนล้อหยุดก่อนทุกค่าใน A ไม่งั้นคือ "ลดความเร็ว" ไม่ใช่ "เริ่มจากหยุด" · ค่า Start มักสูงกว่า Stable (แรงเสียดทานสถิต) ถ้าเท่ากันก็จดว่าเท่ากัน</blockquote>
+<div class="tw"><table><thead><tr><th>PWM %</th><th>เริ่มจากหยุด?</th><th>นิ่ง?</th><th>สั่น/เสียง</th><th>หมายเหตุ</th></tr></thead><tbody><tr><td>5</td><td></td><td></td><td></td><td></td></tr><tr><td>10</td><td></td><td></td><td></td><td></td></tr><tr><td>15</td><td></td><td></td><td></td><td></td></tr><tr><td>20</td><td></td><td></td><td></td><td></td></tr><tr><td>25</td><td></td><td></td><td></td><td></td></tr><tr><td>30</td><td></td><td></td><td></td><td></td></tr><tr><td>−5</td><td></td><td></td><td></td><td></td></tr><tr><td>−10</td><td></td><td></td><td></td><td></td></tr><tr><td>−15</td><td></td><td></td><td></td><td></td></tr><tr><td>−20</td><td></td><td></td><td></td><td></td></tr><tr><td>−25</td><td></td><td></td><td></td><td></td></tr><tr><td>−30</td><td></td><td></td><td></td><td></td></tr></tbody></table></div>
+<p><strong>จด</strong>: Minimum Start PWM + ______ % / − ______ % · Minimum Stable PWM + ______ % / − ______ % · สองค่านี้เหมือนกันไหม ☐ ใช่ ☐ ไม่ (เพราะ ________)</p>
+<h3 id="s12">4.3 การทดลองที่ 3 — กลับทิศ (Direction Reversal)</h3>
+<p><strong>ของบนโต๊ะ</strong>: เหมือน 4.1 · มือถือถ่ายวิดีโอใกล้ ๆ (ถ้ามี)</p>
+<ul>
+<li class="task"><span class="box">☐</span> เริ่มจากค่าต่ำ · [ ] ล้อ/โครงยึดแน่น · [ ] พร้อมพิมพ์ <code>STOP</code> ถ้าสั่นหรือชน</li>
+<li><code>STOP</code> แล้ว <code>RW,30</code> → <code>ACK,RW,30.0</code> รอจนล้อหมุนนิ่งสม่ำเสมอ (ประมาณ 5 วินาที)</li>
+<li>ส่ง <code>RW,-30</code> → <code>ACK,RW,-30.0</code> ทันที (บอร์ดสลับทิศและ PWM ทันที ไม่มีการค่อย ๆ เปลี่ยน) ดูและฟังล้อตั้งแต่วินาทีที่ส่ง</li>
+<li>รอจนหมุนนิ่งทิศใหม่ แล้ว <code>STOP</code></li>
+</ul>
+<blockquote class="warn"><strong>ระวัง</strong> อย่าลองที่ค่าสูง ถ้ามีสั่นหรือชนให้ <code>STOP</code> ก่อนค่อยคิด</blockquote>
+<p><strong>จด</strong>: ก่อนเปลี่ยนทิศ ________ · ระหว่างกลับทิศ ________ · หลังกลับทิศ ________ · เสียง/สั่น ________ · คำสั่งเปลี่ยนเครื่องหมายทันที แต่ล้อกลับทิศทันทีไหม? เพราะอะไร (ร่างคำตอบอยู่ข้อ 8)</p>
+<h3 id="s13">4.4 การทดลองที่ 4 — ช่วงใช้งาน + บันทึก + ใส่ค่า</h3>
+<ol>
+<li>จากผล 4.1–4.3 เลือกช่วง "ใช้งานได้ดี" ไม่ต้องกว้างสุด: min ______ % · max ______ % · ช่วงที่ควรเลี่ยง (สั่น) ______ · ค่าทดสอบที่ชอบ ______ %</li>
+<li>ลองยืนยัน: <code>STOP</code> → <code>RW,&lt;min&gt;</code> ต้องเริ่มหมุนเอง → <code>RW,&lt;max&gt;</code> → <code>STOP</code></li>
+<li>กรอกตาราง Carry Forward ส่งต่อ T02 และ <strong>เขียนลงกระดาษ Engineering Record</strong> (ของจริง) ก่อนเสมอ</li>
+</ol>
+<div class="tw"><table><thead><tr><th>ค่าส่งต่อ T02</th><th>ค่าของทีม</th></tr></thead><tbody><tr><td>RW_MIN_START</td><td>______ %</td></tr><tr><td>RW_MIN_STABLE</td><td>______ %</td></tr><tr><td>RW_OPERATING_RANGE</td><td>______ ถึง ______ %</td></tr><tr><td>RW_POSITIVE_DIRECTION</td><td></td></tr><tr><td>RW_VIBRATION_RANGE</td><td></td></tr><tr><td>I_w</td><td>______ / TBD (ห้ามเดา)</td></tr></tbody></table></div>
+<p><strong>ใส่ค่าในโค้ดที่ไหน (ถ้าผู้สอนให้ใส่)</strong>: ไฟล์ <code>Config_Actuator.h</code> ใน <code>C:\TYSC\SunSeek\workshop\SunSeek_Platform_Firmware_v2_1\</code> แก้แล้วต้อง Upload ใหม่</p>
+<ul>
+<li><code>#define RW_MIN_START_PERCENT 5</code> ← Minimum Start ที่วัดได้ (โค้ด v2.1 ไม่มีส่วนไหนอ่านค่านี้ ใช้เป็นบันทึกของทีม)</li>
+<li><code>#define RW_DEFAULT_BIAS_PERCENT 40</code> ← bias ที่ทีมเลือก <strong>ค่านี้มีผลจริง</strong>: เป็นค่า bias เริ่มต้นของ ADCS (โผล่เป็น <code>MOMENTUM_BIAS</code> ในบรรทัด TM) ห้ามใส่ถ้ายังไม่ได้วัด</li>
+<li><code>#define RW_DEFAULT_ASSIST_PERCENT 80</code> ← assist ที่ทีมเลือก (จดไว้ ไม่มีโค้ดอ่านใน v2.1)</li>
+<li>ขา <code>RW_PIN_PWMA 1</code>, <code>RW_PIN_AIN1 38</code>, <code>RW_PIN_AIN2 39</code> แก้เมื่อเปลี่ยนสายเท่านั้น</li>
+</ul>
+<blockquote class="warn"><strong>ระวัง</strong> <code>STATUS</code> ไม่ได้ให้ความเร็วล้อจริง ต้องไม่รายงานว่า "PWM 40% = ล้อหมุน 40%" — ตัวเลขทุกตัวเป็น PWM ไม่ใช่ RPM</blockquote>
+<h3 id="s14">4.5 เช็กลิสต์ผ่าน T01 (ติ๊กกับผู้สอน — 9 ข้อตามเอกสาร หัวข้อ 8)</h3>
+<div class="tw"><table><thead><tr><th>✓</th><th>เกณฑ์ผ่าน</th><th>โชว์ผู้สอนอย่างไร (พิมพ์แล้วชี้บรรทัดตอบ)</th><th>ผู้สอน</th></tr></thead><tbody><tr><td>☐</td><td>1. wiring และ power ผ่านการตรวจ</td><td>เช็กลิสต์ 9 ข้อข้อ 2.2 ติ๊กครบ มีชื่อผู้ตรวจ</td><td></td></tr><tr><td>☐</td><td>2. RW หมุนได้ทั้ง + และ −</td><td><code>RW,20</code> → <code>ACK,RW,20.0</code> ล้อหมุน · <code>RW,-20</code> → <code>ACK,RW,-20.0</code> ล้อหมุนกลับทิศ</td><td></td></tr><tr><td>☐</td><td>3. STOP ทำงาน</td><td>ขณะหมุนส่ง <code>STOP</code> → <code>ACK,STOP</code> + <code>EVT,SAFE</code> ล้อหยุด</td><td></td></tr><tr><td>☐</td><td>4. รู้ Minimum Start PWM</td><td>ตาราง 4.2 ส่วน A ครบ ค่า ______ %</td><td></td></tr><tr><td>☐</td><td>5. รู้ Minimum Stable PWM</td><td>ตาราง 4.2 ส่วน B ครบ ค่า ______ %</td><td></td></tr><tr><td>☐</td><td>6. กำหนด direction convention</td><td>ตอบได้ว่า + และ − หมุนทิศไหน (ข้อ 4.1)</td><td></td></tr><tr><td>☐</td><td>7. ระบุ usable operating range</td><td>ข้อ 4.4: min ______ ถึง max ______ %</td><td></td></tr><tr><td>☐</td><td>8. ไม่มี mechanical issue ที่ทำให้ workshop ถัดไปไม่ปลอดภัย</td><td>ล้อไม่สั่น ไม่ครูด ยึดแน่น (ตอบ/ชี้ได้)</td><td></td></tr><tr><td>☐</td><td>9. บันทึกผลลง RW_Config / Engineering Record</td><td>กระดาษบันทึก + ตาราง Carry Forward กรอกครบ</td><td></td></tr></tbody></table></div>
+<p><strong>สถานะ T01</strong>: ☐ PASS / Carry Forward ☐ PASS WITH ACTION ☐ RE-TEST REQUIRED · ประเด็นค้าง: ______________ · ผู้บันทึก: ________ · ผู้สอนตรวจ: ________</p>
+<h2 id="s15">5. Workshop T02 — BLE TT&amp;C + Reaction/Momentum ผ่าน Ground Station</h2>
+<p><strong>กฎ T02</strong>: ถ้า T01 ยังไม่ผ่าน (wiring/ทิศยังไม่ล็อก) กลับไป T01 ก่อน อย่าใช้ BLE หรือ Momentum กลบปัญหาล้อ · USB Serial เปิดไว้ได้ตลอด ทุกบรรทัดที่ส่งทาง BLE บอร์ดพิมพ์ซ้ำที่ Serial Monitor ด้วย (ใช้เทียบ)</p>
+<h3 id="s16">5.1 เชื่อม Ground Station v1.9 ผ่าน BLE</h3>
+<p><strong>ของบนโต๊ะ</strong>: โน้ตบุ๊ก (บลูทูธเปิด) · โฟลเดอร์ <code>MUT_Education_Satellite_Ground_Station_v1.9</code> · บอร์ดอัปโหลด v2.1 แล้ว สวิตช์ ON · Serial Monitor 115200 Newline (ไว้เทียบ)</p>
+<ol>
+<li>แยกไฟล์ (unzip) โฟลเดอร์ GS จะมี <code>_internal</code> และ <code>MUT_Education_Satellite_Ground_Station_v1_9.exe</code> สร้าง shortcut ไว้บน Desktop แล้วเปิด</li>
+<li>เลือก workspace <strong>Engineering Development</strong> (แท็บบนสุด)</li>
+<li>กด <strong>SCAN</strong> ที่ข้าง <strong>TTC CONNECT</strong> (ฝั่งซ้าย อย่ากดฝั่ง DATA LINK CONNECT)</li>
+<li>ในรายการเลือก <code>SUNSEEK-NasaPakSoi</code> (ชื่อรูปแบบ <code>SUNSEEK-&lt;TEAM_NAME&gt;</code> ในห้องจะมีของทีมอื่นด้วย · บอร์ดที่ยังเป็นเฟิร์มแวร์เดิมของผู้จัดชื่อ <code>SUNSEEK-Team_DekMUT</code>)</li>
+<li>กด <strong>TTC CONNECT</strong> → ต้องขึ้น <strong>TTC ● CONNECTED</strong> สีเขียว (และ ACTUATOR เป็น ON สีเขียว)</li>
+<li>Serial Monitor ต้องเห็น <code>BLE client connected</code></li>
+<li>Terminal ของ GS: ปุ่ม PING · STATUS · MISSION STATUS · RW STOP · PAYLOAD STATUS และช่อง "Raw TC" + SEND (พิมพ์คำสั่งเอง เช่น <code>RW,30</code>) · บรรทัด <code>TX &gt;</code> = ที่เราส่ง, <code>RX &lt;</code> = ที่บอร์ดตอบ</li>
+</ol>
+<blockquote class="warn"><strong>ระวัง</strong> ปุ่ม RW STOP ดูบรรทัด <code>TX &gt;</code> ว่าส่งอะไรก่อนพึ่ง ถ้าไม่แน่ใจพิมพ์ <code>STOP</code> ในช่อง Raw TC แล้ว SEND · SCAN ไม่เจอ: เช็กสวิตช์ ON, <code>Spacecraft ID:</code> ใน Serial Monitor ว่าเป็นชื่อทีม, ไม่มีเครื่องอื่นต่อบอร์ดอยู่ · BLE หลุดกลางการทดลอง: reconnect แล้วส่ง <code>PING</code> ก่อนสั่งล้อทุกครั้ง</blockquote>
+<p><strong>จด</strong>: Spacecraft ID ที่คาด <code>SUNSEEK-NasaPakSoi</code> · ชื่อ BLE ที่เจอ ________ · เชื่อมต่อได้? ☐ ใช่ ☐ ไม่ · ใช้เวลา ______ s · ปัญหา ________</p>
+<h3 id="s17">5.2 การทดลองที่ 1 — ลิงก์ BLE: PING / STATUS (ล้อยังไม่ขยับ)</h3>
+<ol>
+<li>ส่ง <code>PING</code> → <code>PONG</code></li>
+<li>ส่ง <code>STATUS</code> → ต้องได้ <code>ACK,STATUS</code> แล้ว TM 12 บรรทัด ต้องมีบรรทัดนี้ (ตอนนี้ BLE เป็น CONNECTED):</li>
+</ol>
+<pre><code>TM,SAT_ID,SUNSEEK-NasaPakSoi,BLE,CONNECTED,ADCS_MODE,MANUAL,ADCS_STRATEGY,REACTION
+TM,RW_CMD,0,RW_BIAS,0,RW_STATE,STOPPED</code></pre>
+<ol>
+<li>ส่ง <code>STATUS</code> อีกครั้ง → รูปแบบเดิมครบเหมือนรอบแรก (ลิงก์ยัง active)</li>
+<li>เทียบกับ Serial Monitor: บรรทัดเดียวกันต้องโผล่ด้วย ☐ ใช่ ☐ ไม่</li>
+</ol>
+<div class="tw"><table><thead><tr><th>TC</th><th>บอร์ดตอบ</th><th>ได้รับ?</th><th>สังเกต</th></tr></thead><tbody><tr><td><code>PING</code></td><td><code>PONG</code></td><td></td><td></td></tr><tr><td><code>STATUS</code></td><td><code>ACK,STATUS</code> + TM 12 บรรทัด</td><td></td><td></td></tr><tr><td><code>STATUS</code> (รอบ 2)</td><td>รูปแบบเดิม</td><td></td><td></td></tr></tbody></table></div>
+<blockquote class="warn"><strong>ระวัง</strong> PDF เขียนว่า STATUS ตอบ <code>TM,RW,&lt;COMMAND&gt;,&lt;BIAS&gt;,&lt;STATE&gt;</code> แต่โค้ดพิมพ์ <code>TM,RW_CMD,&lt;cmd&gt;,RW_BIAS,&lt;bias&gt;,RW_STATE,&lt;state&gt;</code> (<code>ttcSendRWTelemetry()</code> ใน <code>System_CommandRouter.h</code>) — ยึดตามที่บอร์ดพิมพ์</blockquote>
+<h3 id="s18">5.3 การทดลองที่ 2 — Reaction Mode ผ่าน BLE (ต้องได้ผลเหมือน T01)</h3>
+<p><strong>ของบนโต๊ะ</strong>: GS ต่ออยู่ (PING ผ่านแล้ว) · ตาราง Carry Forward จาก T01 · ล้อพร้อม (เช็กลิสต์ 2.2)</p>
+<ol>
+<li><code>ADCS_MODE,MANUAL</code> → <code>ACK,ADCS_MODE,MANUAL</code> + <code>TM,ADCS_MODE,MANUAL,ADCS_REFERENCE,SUN,TARGET,0.00,KP,2.000,KD,0.500,MOMENTUM_BIAS,40,DEADBAND,2.00,MAX_RW_COMMAND,80,CONTROL_SIGN,1.0</code></li>
+<li><code>ADCS_STRATEGY,REACTION</code> → <code>ACK,ADCS_STRATEGY,REACTION</code> + <code>TM,RW_CMD,0,RW_BIAS,0,RW_STATE,STOPPED</code> (สลับกลยุทธ์ทำให้ล้อหยุดเสมอ)</li>
+<li>ส่งทีละคำสั่ง รอ 3 วินาที: <code>RW,+20</code> → <code>RW,+40</code> → <code>RW,+20</code> → <code>STOP</code> → <code>RW,-40</code> → <code>STOP</code></li>
+<li>ทุก <code>RW,n</code> ต้องได้ <code>ACK,RW,n.0</code> (เช่น <code>RW,+20</code> → <code>ACK,RW,20.0</code>) + <code>TM,RW_CMD,n,RW_BIAS,0,RW_STATE,REACTION_DRIVE</code> · <code>STOP</code> → <code>ACK,STOP</code> + <code>EVT,SAFE</code></li>
+<li>เทียบกับ T01: ทิศ + / − เหมือนเดิมไหม, PWM ต่ำสุดที่เริ่มหมุนใกล้เคียงไหม</li>
+</ol>
+<blockquote class="warn"><strong>ระวัง</strong> ถ้าทิศหรือ PWM ต่ำสุดต่างจาก T01 มาก อย่าแก้ด้วย Momentum — ตรวจไฟ สาย โหลดกล และ config ก่อน · <code>RW,...</code> ได้ <code>ERR,RW_REQUIRES_REACTION_STRATEGY</code> = ยังอยู่ MOMENTUM ส่ง <code>ADCS_STRATEGY,REACTION</code> · ได้ <code>ERR,MANUAL_RW_COMMAND_REQUIRES_MANUAL_MODE</code> = อยู่ AUTO ส่ง <code>STOP</code></blockquote>
+<div class="tw"><table><thead><tr><th>#</th><th>TC</th><th>ACK?</th><th>ล้อตอบสนอง</th><th>เหมือน T01?</th></tr></thead><tbody><tr><td>1</td><td><code>RW,+20</code></td><td></td><td></td><td></td></tr><tr><td>2</td><td><code>RW,+40</code></td><td></td><td></td><td></td></tr><tr><td>3</td><td><code>RW,+20</code></td><td></td><td></td><td></td></tr><tr><td>4</td><td><code>STOP</code></td><td></td><td></td><td></td></tr><tr><td>5</td><td><code>RW,-40</code></td><td></td><td></td><td></td></tr><tr><td>6</td><td><code>STOP</code></td><td></td><td></td><td></td></tr></tbody></table></div>
+<h3 id="s19">5.4 การทดลองที่ 3 — Bias / Delta (ไม่ใช้ Assist)</h3>
+<p><strong>ของบนโต๊ะ</strong>: เหมือน 5.3 · ล้อพร้อม · พร้อมพิมพ์ <code>STOP</code></p>
+<ol>
+<li><code>STOP</code> → <code>ACK,STOP</code> + <code>EVT,SAFE</code></li>
+<li><code>ADCS_STRATEGY,MOMENTUM</code> → <code>ACK,ADCS_STRATEGY,MOMENTUM</code> + <code>TM,RW_CMD,0,RW_BIAS,0,RW_STATE,STOPPED</code></li>
+<li><code>RW_BIAS,40</code> → <code>ACK,RW_BIAS,40.0</code> — <strong>ล้อเริ่มหมุนที่ PWM 40% ทันที</strong> (บรรทัด TM ไม่ตามมา ส่ง <code>STATUS</code> เพื่อเห็น <code>TM,RW_CMD,40,RW_BIAS,40,RW_STATE,MOMENTUM_TARGET</code>)</li>
+<li>ตามเอกสาร ขั้น A–D ใช้ <code>RW_CMD,+10,0,0</code> (50) → <code>RW_CMD,+10,0,0</code> (60) → <code>RW_CMD,-10,0,0</code> (50) → <code>RW_CMD,-10,0,0</code> (40) และเอกสารคาดว่าได้ <code>ACK</code> + <code>TM,RW,50,50,MOMENTUM_TARGET</code> แต่ <strong>โค้ด v2.1 ไม่มีคำสั่ง <code>RW_CMD,</code> เลย</strong>: <code>System_CommandRouter.h</code> บรรทัด 103 แค่ดักไม่ให้ใช้ตอน AUTO และบรรทัด 110 ตอบ <code>ERR,UNKNOWN_COMMAND</code> (ฟังก์ชัน <code>rwMomentumCommand</code> มีใน <code>Module_ReactionWheel.h</code> แต่ไม่มีใครเรียก) ผลที่ควรเจอจริง: <code>RW_CMD,+10,0,0</code> → <code>ERR,UNKNOWN_COMMAND</code> — <strong>ส่ง 1 ครั้งเพื่อยืนยัน จดผล และถามผู้สอน</strong></li>
+<li><strong>ทางที่ทำได้จริงด้วยคำสั่งที่มี</strong> (ให้พฤติกรรมมอเตอร์เท่ากับ DELTA ที่ ASSIST = 0): <code>RW_BIAS,50</code> → <code>STATUS</code> ได้ <code>TM,RW_CMD,50,RW_BIAS,50,RW_STATE,MOMENTUM_TARGET</code> · <code>RW_BIAS,60</code> → <code>STATUS</code> ได้ <code>...60,RW_BIAS,60...</code> · <code>RW_BIAS,50</code> · <code>RW_BIAS,40</code> (แต่ละขั้นรอ 3 วินาที ดูล้อ)</li>
+<li>จบ: <code>STOP</code></li>
+</ol>
+<blockquote class="warn"><strong>ระวัง</strong> <code>RW_BIAS,n</code> ทำให้ล้อหมุน n% ทันทีไม่ค่อย ๆ เพิ่ม · <code>ERR,RW_BIAS_REQUIRES_MOMENTUM_STRATEGY</code> = ยังอยู่ REACTION · ค่านอก 0..100 → <code>ERR,RW_BIAS_INVALID_OR_RANGE</code></blockquote>
+<div class="tw"><table><thead><tr><th>ขั้น</th><th>คำสั่งที่ใช้จริง</th><th>bias คาด</th><th>บรรทัดหลักฐานจาก STATUS</th><th>สังเกต transient</th></tr></thead><tbody><tr><td>A</td><td><code>RW_BIAS,50</code></td><td>40 → 50</td><td><code>TM,RW_CMD,50,RW_BIAS,50,RW_STATE,MOMENTUM_TARGET</code></td><td></td></tr><tr><td>B</td><td><code>RW_BIAS,60</code></td><td>50 → 60</td><td><code>TM,RW_CMD,60,RW_BIAS,60,...</code></td><td></td></tr><tr><td>C</td><td><code>RW_BIAS,50</code></td><td>60 → 50</td><td><code>TM,RW_CMD,50,RW_BIAS,50,...</code></td><td></td></tr><tr><td>D</td><td><code>RW_BIAS,40</code></td><td>50 → 40</td><td><code>TM,RW_CMD,40,RW_BIAS,40,...</code></td><td></td></tr></tbody></table></div>
+<p>คำถามให้ตอบ: เพิ่มกับลด operating point ให้ transient เหมือนกันไหม ________ (ร่างข้อ 8)</p>
+<h3 id="s20">5.5 การทดลองที่ 4 — Assist + เหตุการณ์ (EVT)</h3>
+<p><strong>ของบนโต๊ะ</strong>: เหมือน 5.4 · เริ่มจาก reset ให้เงื่อนไขชัดทุกรอบ</p>
+<ol>
+<li>ลำดับตั้งต้นทุกรอบ: <code>STOP</code> → <code>ADCS_STRATEGY,MOMENTUM</code> → <code>RW_BIAS,40</code> (ได้ <code>ACK,RW_BIAS,40.0</code>)</li>
+<li>คำสั่ง assist ตามเอกสาร: <code>RW_CMD,+20,+80,300</code> (DELTA +20, ASSIST +80, DURATION 300 ms) คาดว่า: มอเตอร์ +80 ประมาณ 300 ms → เข้า TARGET 60 → บอร์ดส่ง `<code>EVT,RW_MANEUVER_COMPLETE,60</code><code> ตามด้วย </code>TM,RW_CMD,60,RW_BIAS,60,RW_STATE,MOMENTUM_TARGET<code> (บรรทัด EVT/TM นี้มาจาก </code>loop()<code> ใน </code>.ino` ของเรา จะออกก็ต่อเมื่อมีคำสั่ง assist ที่ทำงานได้)</li>
+<li>ใน v2.1 ที่เรามี <code>RW_CMD,...</code> ตอบ <code>ERR,UNKNOWN_COMMAND</code> (ข้อ 5.4) → <strong>ไม่มี assist และไม่มี <code>EVT,RW_MANEUVER_COMPLETE</code> ให้เห็น</strong> ส่ง 1 ครั้งเพื่อยืนยัน จดผลลงช่อง EVT ว่า "ERR,UNKNOWN_COMMAND" แล้วแจ้งผู้สอน ขอเฟิร์มแวร์/คำสั่งที่ถูกต้อง</li>
+<li>ถ้าผู้สอนให้เฟิร์มแวร์ที่ <code>RW_CMD</code> ใช้ได้: ทำ 4 แถว (bias 40, delta +20) แถว 1 assist 0/0 ms · 2: +60/200 ms · 3: +80/200 ms · 4: +80/300 ms ดูว่ามี EVT ทุกแถวที่ assist ไม่ใช่ 0 ไหม แล้วเลือก Assist ______ % Duration ______ ms (เหตุผล ______)</li>
+</ol>
+<blockquote class="warn"><strong>ระวัง</strong> ห้ามลองหน่วง/เบรก (<code>RW_BIAS,60</code> แล้ว <code>RW_CMD,-20,+20,200</code>) โดยไม่มีผู้สอน — เป็นแรงบิดกลับทิศ ไม่ใช่เกณฑ์ผ่าน</blockquote>
+<div class="tw"><table><thead><tr><th>#</th><th>bias</th><th>delta</th><th>assist</th><th>duration</th><th>EVT ที่ได้</th></tr></thead><tbody><tr><td>1</td><td>40</td><td>+20</td><td>0</td><td>0</td><td></td></tr><tr><td>2</td><td>40</td><td>+20</td><td>+60</td><td>200</td><td></td></tr><tr><td>3</td><td>40</td><td>+20</td><td>+80</td><td>200</td><td></td></tr><tr><td>4</td><td>40</td><td>+20</td><td>+80</td><td>300</td><td></td></tr></tbody></table></div>
+<h3 id="s21">5.6 ทดสอบลิงก์หลุดแล้วต่อใหม่ (เสริม)</h3>
+<p><strong>ของบนโต๊ะ</strong>: GS ต่ออยู่ · ล้อหยุดสนิท</p>
+<ol>
+<li><code>STOP</code> → <code>ACK,STOP</code> + <code>EVT,SAFE</code> และดูว่าล้อหยุดจริง (<strong>ต้องทำก่อน</strong> เพราะ BLE หลุดล้อ <strong>ไม่หยุดเอง</strong>)</li>
+<li>ตัดการเชื่อมต่อ BLE ใน GS → Serial Monitor เห็น <code>BLE client disconnected</code></li>
+<li>รอบอร์ดกลับสู่โหมด advertising (โค้ดสั่งเริ่ม advertising ใหม่เองหลังหลุดประมาณ 0.2 วินาที) แล้ว SCAN → เลือก <code>SUNSEEK-NasaPakSoi</code> → TTC CONNECT</li>
+<li><code>PING</code> → <code>PONG</code> · <code>STATUS</code> → <code>ACK,STATUS</code> + TM ครบ เช็ก <code>BLE,CONNECTED</code></li>
+</ol>
+<blockquote class="warn"><strong>ระวัง</strong> ห้ามทดสอบตอนล้อกำลังหมุน/อยู่ใน transient ที่เสี่ยง · เฟิร์มแวร์ไม่หยุดล้อให้เมื่อ BLE หลุด (เป็นข้อสังเกตด้านความปลอดภัยที่ควรจดไว้)</blockquote>
+<h3 id="s22">5.7 บันทึกผล T02 + เช็กลิสต์ผ่าน (ติ๊กกับผู้สอน)</h3>
+<ul>
+<li class="task"><span class="box">☐</span> 1. Spacecraft มี TEAM_NAME / ชื่อ BLE ไม่ซ้ำ — <code>SUNSEEK-NasaPakSoi</code></li>
+<li class="task"><span class="box">☐</span> 2. Ground Station เชื่อม BLE ได้ (TTC ● CONNECTED)</li>
+<li class="task"><span class="box">☐</span> 3. PING และ STATUS ใช้ได้ (<code>PONG</code>, <code>ACK,STATUS</code> + TM)</li>
+<li class="task"><span class="box">☐</span> 4. Reaction ผ่าน BLE ได้ผลสอดคล้อง T01</li>
+<li class="task"><span class="box">☐</span> 5. เข้า MOMENTUM และตั้ง BIAS ได้ (<code>ACK,ADCS_STRATEGY,MOMENTUM</code>, <code>ACK,RW_BIAS,40.0</code>)</li>
+<li class="task"><span class="box">☐</span> 6. DELTA ปรับ TARGET ตาม CURRENT_BIAS ได้ (ถ้า <code>RW_CMD</code> ใช้ไม่ได้ ให้แสดง <code>RW_BIAS</code> ตามข้อ 5.4 ข้อ 5 และจดผลว่าคำสั่ง <code>RW_CMD</code> ตอบ <code>ERR,UNKNOWN_COMMAND</code>)</li>
+<li class="task"><span class="box">☐</span> 7. Assist ทำงานชั่วคราวแล้วกลับ TARGET (ขึ้นกับ <code>RW_CMD</code> ตามข้อ 5.5)</li>
+<li class="task"><span class="box">☐</span> 8. ได้ EVT เมื่อ assist จบ (<code>EVT,RW_MANEUVER_COMPLETE,60</code>) (ขึ้นกับ <code>RW_CMD</code>)</li>
+<li class="task"><span class="box">☐</span> 9. บันทึกพารามิเตอร์ Momentum เบื้องต้น: Bias ______ % · Assist ______ % · Duration ______ ms</li>
+</ul>
+<p><strong>สถานะ T02</strong>: ☐ PASS / ใช้ต่อ ☐ PASS WITH ACTION ☐ ต้องทดสอบซ้ำ · ประเด็นค้าง ________ · ผู้บันทึก ________ · ผู้สอนตรวจ ________</p></div>
+<p class="meta">สร้างจาก SUNSEEK_CHEATSHEET_TH.md เมื่อ 2026-10-05 · พิมพ์: Ctrl+P (A4)</p>
+</main></body></html>
