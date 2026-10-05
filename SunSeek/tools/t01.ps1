@@ -75,7 +75,7 @@ try {
     $sg = if ($s -gt 0) { '+' } else { '−' }
     Write-Host "`n=== 2A. Min Start ฝั่ง $sg (เริ่มจากล้อหยุดทุกครั้ง) ===" -ForegroundColor Yellow
     $start = $null
-    foreach ($p in 5, 10, 15, 20, 25, 30, 35, 40) {
+    foreach ($p in 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60) {
       [void](Send ("RW,{0}" -f ($s * $p)) 3000)
       $ok = Ask "ที่ $sg$p % ล้อออกตัวหมุนเองไหม"
       Wait-Stop
@@ -84,13 +84,13 @@ try {
         if ($again) { $start = $p; break }
       }
     }
-    $R["Min Start $sg"] = if ($start) { "$start %" } else { '> 40 % (ไม่ออกตัวถึง 40)' }
+    $R["Min Start $sg"] = if ($start) { "$start %" } else { '> 60 % (ไม่ออกตัวถึง 60)' }
 
     if (-not $start) { $R["Min Stable $sg"] = "วัดไม่ได้ (ล้อไม่ออกตัว)"; continue }
     Write-Host "`n=== 2B. Min Stable ฝั่ง $sg (หมุนอยู่แล้วค่อยลด) ===" -ForegroundColor Yellow
-    [void](Send ("RW,{0}" -f ($s * 40)) 3000)
-    $stable = 40
-    foreach ($p in 35, 30, 25, 20, 15, 10, 5) {
+    [void](Send ("RW,{0}" -f ($s * 60)) 3000)
+    $stable = 60
+    foreach ($p in 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5) {
       [void](Send ("RW,{0}" -f ($s * $p)) 3000)
       if (Ask "ที่ $sg$p % ล้อยังหมุนต่อเนื่อง ไม่สะดุดไหม") { $stable = $p } else { break }
     }
