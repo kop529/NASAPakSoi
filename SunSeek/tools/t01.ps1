@@ -86,6 +86,7 @@ try {
     }
     $R["Min Start $sg"] = if ($start) { "$start %" } else { '> 40 % (ไม่ออกตัวถึง 40)' }
 
+    if (-not $start) { $R["Min Stable $sg"] = "วัดไม่ได้ (ล้อไม่ออกตัว)"; continue }
     Write-Host "`n=== 2B. Min Stable ฝั่ง $sg (หมุนอยู่แล้วค่อยลด) ===" -ForegroundColor Yellow
     [void](Send ("RW,{0}" -f ($s * 40)) 3000)
     $stable = 40
