@@ -174,5 +174,61 @@ console.log('closed loop, organizer law (REACTION, SUN, target 0, lamp at +30 de
   }
 }
 
+console.log('RW_CMD (T02 assist, ported from the workshop firmware)');
+{
+  const out = run(['RW_CMD,+20,+80,300', 'ADCS_STRATEGY,MOMENTUM', 'RW_BIAS,40', '#WAIT 500', 'RW_CMD,+20,+80,300', '#WAIT 100', '#STATE',
+    '#WAIT 400', '#STATE', 'RW_CMD,+70,+80,300', 'RW_CMD,1,2', 'RW_CMD,1,2,6000', 'STOP', '#WAIT 20']);
+  const s = states(out);
+  check('refused in REACTION', !!find(out, /^ERR,RW_CMD_REQUIRES_MOMENTUM_STRATEGY$/));
+  check('ACK,RW_CMD,20,80,300', !!find(out, /^ACK,RW_CMD,20,80,300$/));
+  check('assist drives 80 % first', s[0].cmd > 79 && s[0].cmd < 81, `cmd ${s[0].cmd}`);
+  check('then bias 60 % + EVT,RW_MANEUVER_COMPLETE,60', s[1].cmd > 59 && s[1].cmd < 61 && !!find(out, /^EVT,RW_MANEUVER_COMPLETE,60$/), `cmd ${s[1].cmd}`);
+  check('out of range / syntax / duration refused', !!find(out, /^ERR,RW_CMD_OUT_OF_RANGE$/) && all(out, /^ERR,RW_CMD_SYNTAX$/).length === 2);
+}
+
+console.log('wheel slew limit (rw.slew): RW,100 then RW,-100');
+{
+  const rev = (slew) => {
+    const out = run([`TEAM_SET,rw.slew,${slew}`, 'RW,100', '#WAIT 2000', '#STATE', 'RW,-100', '#WAIT 50', '#STATE',
+      ...Array.from({ length: 60 }, () => ['#WAIT 20', '#STATE']).flat(), 'STOP', '#WAIT 1', '#STATE']);
+    const s = states(out);
+    let acc = 0;
+    for (let i = 2; i < s.length - 1; i++) acc = Math.max(acc, Math.abs(s[i].rate - s[i - 1].rate) / (s[i].t - s[i - 1].t));
+    return { s, acc, out };
+  };
+  const a = rev(0), b = rev(500);
+  check('slew 0 = organizer: -100 at once', a.s[1].cmd === -100);
+  check('slew 500 %/s: 50 ms after RW,-100 the pins are near +75 %', Math.abs(b.s[1].cmd - 75) <= 2, `cmd ${b.s[1].cmd}`);
+  check('slew 500: reaches -100 within 0.45 s', b.s[23].cmd === -100, `cmd ${b.s[23].cmd}`);
+  check('STOP is applied at once even with a slew limit', b.s[b.s.length - 1].cmd === 0);
+  check('peak body kick is smaller with the slew limit', b.acc < 0.8 * a.acc, `${b.acc.toFixed(0)} vs ${a.acc.toFixed(0)} deg/s^2`);
+  check('RW_CMD telemetry still shows the request', !!find(b.out, /^TM,RW_CMD,-100,/));
+}
+
+// F4: organizer law vs + deadzone lift (adcs.dzc) vs + integral (adcs.ki). Lamp at +30 deg, target 0, 30 s, REACTION.
+console.log('closed loop F4 (REACTION, drag 0.15/s, lamp +30 deg, 30 s)');
+{
+  const loop = (stick, extra) => {
+    const out = run(['#SET drag 0.15', '#SET rateSign -1', `#SET stick ${stick}`, '#SET lamp 30', '#WAIT 300', ...CAL, ...extra,
+      'ADCS_STRATEGY,REACTION', 'ADCS_MODE,AUTO', ...Array.from({ length: 150 }, () => ['#WAIT 200', '#STATE']).flat(), 'STOP', '#WAIT 10']);
+    const s = states(out);
+    const end = s[s.length - 1];
+    const tail = s.slice(-25);  // last 5 s
+    const over = Math.max(0, ...s.map((x) => -x.sun));  // went past the target (sun angle < 0)
+    const t1 = s.find((x) => Math.abs(x.sun) < 1);
+    return { end: end.sun, wob: Math.max(...tail.map((x) => Math.abs(x.sun))), over, t1: t1 ? t1.t : NaN };
+  };
+  const res = {};
+  for (const stick of [0, 20]) {
+    for (const [name, extra] of [['organizer PD', []], ['+ dzc', ['TEAM_SET,adcs.dzc,1', 'TEAM_SET,rw.minStart,10', 'TEAM_SET,rw.minStable,5']],
+      ['+ ki 0.5', ['TEAM_SET,adcs.ki,0.5']], ['+ ki 0.5 + dzc', ['TEAM_SET,adcs.ki,0.5', 'TEAM_SET,adcs.dzc,1', 'TEAM_SET,rw.minStart,10', 'TEAM_SET,rw.minStable,5']]]) {
+      const r = loop(stick, extra);
+      res[`${stick}/${name}`] = r;
+      console.log(`       stick ${String(stick).padStart(2)}  ${name.padEnd(16)} end ${r.end.toFixed(2).padStart(6)} deg, worst last 5 s ${r.wob.toFixed(2).padStart(5)}, overshoot ${r.over.toFixed(2).padStart(5)}, |e|<1 at ${isNaN(r.t1) ? '  never' : r.t1.toFixed(1).padStart(5) + ' s'}`);
+    }
+  }
+  check('integral term ends inside the 2 deg deadband, organizer PD does not (stick 0)', res['0/+ ki 0.5'].wob <= 2 && res['0/organizer PD'].wob > 3);
+}
+
 console.log(`\n${passes} passed, ${fails} failed`);
 process.exitCode = fails ? 1 : 0;

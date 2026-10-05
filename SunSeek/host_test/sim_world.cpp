@@ -1,5 +1,6 @@
 #include "sim_world.h"
 #include <cmath>
+#include <algorithm>
 #include <cstdio>
 #include <random>
 
@@ -32,6 +33,11 @@ void SimWorld::step(double dt) {
   wheelRate += dW;
   // angular momentum exchange wheel <-> body, then bearing drag on the body
   bodyRate += -inertiaRatio * dW;
+  if (bodyStick > 0) {  // Coulomb friction: breakaway bodyStick, sliding 0.7 * bodyStick
+    const double drive = std::fabs(inertiaRatio * dW) / dt;
+    if (std::fabs(bodyRate) < 0.3 && drive < bodyStick) bodyRate = 0;
+    else bodyRate -= (bodyRate > 0 ? 1 : -1) * std::min(std::fabs(bodyRate), 0.7 * bodyStick * dt);
+  }
   bodyRate -= bearingDrag * bodyRate * dt;
   bodyDeg = wrap180(bodyDeg + bodyRate * dt);
   t += dt;
@@ -76,7 +82,7 @@ bool SimWorld::set(const std::string& k, double v) {
     {"body", &bodyDeg}, {"bodyRate", &bodyRate}, {"wheel", &wheelRate}, {"lamp", &lampDeg}, {"lampK", &lampK},
     {"ambient", &ambient}, {"flicker", &flicker}, {"noise", &noiseMv}, {"alpha", &alpha}, {"gamma", &gamma},
     {"q", &q}, {"minStart", &minStartPct}, {"minStable", &minStablePct}, {"wheelMax", &wheelMaxRate},
-    {"wheelTau", &wheelTau}, {"ratio", &inertiaRatio}, {"drag", &bearingDrag}, {"gyroBias", &gyroBiasDps},
+    {"wheelTau", &wheelTau}, {"ratio", &inertiaRatio}, {"drag", &bearingDrag}, {"stick", &bodyStick}, {"gyroBias", &gyroBiasDps},
     {"gyroNoise", &gyroNoiseDps}, {"north", &magNorthDeg},
   };
   for (auto& d : dbl) if (k == d.key) { *d.p = v; return true; }

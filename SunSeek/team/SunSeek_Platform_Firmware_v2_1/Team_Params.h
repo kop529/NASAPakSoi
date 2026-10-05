@@ -43,6 +43,12 @@ struct TeamParams {
   float rwMinStable = RW_MIN_START_PERCENT;
   // F4: wheel deadzone compensation in REACTION mode (0 = organizer law, 1 = command starts at rw.minStart/minStable)
   int adcsDzc = 0;
+  // F4: integral gain (%/(deg*s), 0 = organizer law). The wheel PWM sets wheel SPEED, so Kp*e alone ends where the
+  // wheel speed left by bearing drag needs Kp*e = that PWM (sim: 4.8 deg short); the integrator supplies that PWM.
+  float adcsKi = 0;
+  // wheel command slew limit in %/s (0 = organizer behaviour: jump at once). A jump +100 -> -100 puts ~2x the
+  // supply across the spinning motor: a current spike, a body kick that threw the balance ring off (5 Oct), a brown-out risk.
+  float rwSlew = 0;
   // team telemetry over USB, 0 = off
   int tmHz = 0;
 };
@@ -90,6 +96,8 @@ static TeamParamDef _tpDefs[] = {
   {"rw.minStart", TPT_FLOAT,  &TP.rwMinStart,    0, 0, 100},
   {"rw.minStable",TPT_FLOAT,  &TP.rwMinStable,   0, 0, 100},
   {"adcs.dzc",    TPT_INT,    &TP.adcsDzc,       0, 0, 1},
+  {"adcs.ki",     TPT_FLOAT,  &TP.adcsKi,        0, 0, 10},
+  {"rw.slew",     TPT_FLOAT,  &TP.rwSlew,        0, 0, 5000},
   {"team.tm",     TPT_INT,    &TP.tmHz,          0, 0, 20},
 };
 static const int TEAM_PARAM_COUNT = sizeof(_tpDefs) / sizeof(_tpDefs[0]);

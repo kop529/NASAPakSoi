@@ -3,6 +3,7 @@
 /* SunSeek Platform v2.0 — MODULE LAYER */
 #include <Arduino.h>
 #include "Config_Actuator.h"
+#include "Team_Params.h"  // TEAM NasaPakSoi: rw.slew
 
 /*
   ReactionWheel.h — T02 v1.2
@@ -49,9 +50,15 @@ inline int _rwPercentToPWM(int percent) {
   return map(percent, 0, 100, 0, 255);
 }
 
-inline void _rwDrive(int command) {
-  command = constrain(command, -100, 100);
-  _rwMotorCommand = command;
+// TEAM NasaPakSoi: _rwMotorCommand is the requested command (telemetry, ADCS); the pins follow it at most
+// rw.slew %/s (0 = at once, the organizer behaviour). A request of 0 (STOP / coast) is always applied at once.
+static float _rwApplied = 0;
+static int _rwPinsCommand = 1000;  // last command written to the pins (1000 = none yet)
+static unsigned long _rwSlewLast = 0;
+
+inline void _rwOutput(int command) {
+  if (command == _rwPinsCommand) return;
+  _rwPinsCommand = command;
 
   int pwm = _rwPercentToPWM(abs(command));
 
@@ -68,6 +75,27 @@ inline void _rwDrive(int command) {
     digitalWrite(RW_PIN_AIN2, HIGH);
     analogWrite(RW_PIN_PWMA, pwm);
   }
+}
+
+inline void _rwSlewStep() {
+  const unsigned long n = millis();
+  const float dt = (n - _rwSlewLast) / 1000.0f;
+  _rwSlewLast = n;
+  const float goal = (float)_rwMotorCommand;
+  if (TP.rwSlew <= 0 || goal == 0) {
+    _rwApplied = goal;
+  } else {
+    const float step = TP.rwSlew * dt;
+    _rwApplied += constrain(goal - _rwApplied, -step, step);
+  }
+  _rwOutput((int)lroundf(_rwApplied));
+}
+
+inline int rwGetAppliedCommand() { return (int)lroundf(_rwApplied); }
+
+inline void _rwDrive(int command) {
+  _rwMotorCommand = constrain(command, -100, 100);
+  _rwSlewStep();
 }
 
 inline void _rwResetMomentumState() {
@@ -89,6 +117,7 @@ inline void rwBegin() {
 }
 
 inline void rwUpdate() {
+  _rwSlewStep();  // TEAM NasaPakSoi
   if (_rwState == RW_MOMENTUM_ASSIST &&
       millis() - _rwAssistStart >= _rwDuration) {
     _rwDrive(_rwTarget);

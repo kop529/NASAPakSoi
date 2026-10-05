@@ -42,6 +42,7 @@ static ADCSState _a = {
 };
 
 static unsigned long _aLast = 0;
+static float _aI = 0;  // TEAM NasaPakSoi F4: integral term of the controller (PWM %)
 
 inline float adcsWrap180(float x){ while(x>180)x-=360; while(x<=-180)x+=360; return x; }
 inline const char* adcsModeText(){return _a.mode==ADCS_AUTO?"AUTO":"MANUAL";}
@@ -123,6 +124,7 @@ inline bool adcsAuto(){
   if(rwGetMode()==RW_MODE_MOMENTUM)rwSetBias(_a.bias);
   _a.mode=ADCS_AUTO;
   _aLast=0;
+  _aI=0;  // TEAM NasaPakSoi
   return true;
 }
 
@@ -148,8 +150,15 @@ inline void adcsUpdate(){
   // TEAM NasaPakSoi: deadband / output limit / control sign are team parameters (TEAM_SET adcs.db,
   // adcs.max, adcs.sign) instead of compile-time constants; defaults are the organizer's values.
   float u=0;
-  if(fabsf(_a.error)>=TP.adcsDb)
-    u=_a.kp*_a.error-_a.kd*_a.rate;
+  if(fabsf(_a.error)>=TP.adcsDb){
+    // TEAM NasaPakSoi F4: integral term (adcs.ki); clamped to +-adcs.max so it cannot wind up
+    if(TP.adcsKi>0)_aI=constrain(_aI+TP.adcsKi*_a.error*(ADCS_CONTROL_PERIOD_MS/1000.0f),-TP.adcsMax,TP.adcsMax);
+    u=_a.kp*_a.error-_a.kd*_a.rate+_aI;
+  }else if(TP.adcsKi>0){
+    // inside the deadband hold the integrator: the wheel keeps its speed (u=0 would let it coast down,
+    // and that momentum would turn the body out of the deadband again)
+    u=_aI;
+  }
 
   _a.u=u;
 

@@ -27,10 +27,12 @@ struct SimWorld {
   // ---- actuator / dynamics ----
   double wheelMaxRate = 30000;  // deg/s at 100 % PWM (no load)
   double wheelTau = 0.35;       // s, motor time constant
-  double minStartPct = 15;      // static friction: PWM needed to start from rest
-  double minStablePct = 9;      // below this a spinning wheel stops
+  double minStartPct = 10;      // static friction: PWM needed to start from rest (T01, 5 Oct)
+  double minStablePct = 5;      // below this a spinning wheel stops (T01)
   double inertiaRatio = 1.0 / 400;  // I_wheel / I_body
   double bearingDrag = 0.15;    // 1/s, body rate decay on the bearing
+  double bodyStick = 0;         // deg/s^2: platform static friction; the wheel reaction must exceed it to move a body at rest
+                                // (T02: +-10 % momentum steps did not move the body, an 80 % assist did)
   double gyroBiasDps = 0.0;     // true gyro bias (Z)
   double gyroNoiseDps = 0.05;
   int bodyRateSign = 1;         // -1 = IMU mounted upside down

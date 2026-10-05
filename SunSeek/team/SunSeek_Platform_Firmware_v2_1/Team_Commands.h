@@ -45,7 +45,7 @@ inline String teamTelemetryLine() {
   snprintf(b, sizeof(b),
     "TM,TEAM_T,T,%lu,SEQ,%lu,MVL,%.1f,MVR,%.1f,S,%.5g,D,%.5f,TH,%.3f,ANG,%.3f,NZ,%.3f,SAT,%d,LIT,%d,EST,%.3f,GZ,%.3f,RW,%d,AUTO,%d",
     (unsigned long)millis(), (unsigned long)s.seq, s.mvL, s.mvR, s.teamS, s.teamD, s.teamAngle, s.angleDeg,
-    s.noiseDeg, s.sat ? 1 : 0, s.light ? 1 : 0, a.estimatedAngle, a.rate, rwGetMotorCommand(),
+    s.noiseDeg, s.sat ? 1 : 0, s.light ? 1 : 0, a.estimatedAngle, a.rate, rwGetAppliedCommand(),
     a.mode == ADCS_AUTO ? 1 : 0);
   return String(b);
 }
