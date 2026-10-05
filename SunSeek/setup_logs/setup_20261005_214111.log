@@ -1,0 +1,73 @@
+﻿>> PING
+PONG
+>> TEAM_INFO
+ACK,TEAM_INFO
+TM,TEAM_FW,NasaPakSoi-team-1,SUN_MODEL,0,UNSAVED,0,LUT_N,0
+>> STOP
+ACK,STOP
+EVT,SAFE
+>> TEAM_SET,rw.minStart,10
+ACK,TEAM_SET,rw.minStart,10
+>> TEAM_SET,rw.minStable,5
+ACK,TEAM_SET,rw.minStable,5
+>> TEAM_SET,rw.slew,500
+ACK,TEAM_SET,rw.slew,500
+>> TEAM_SET,adcs.kp,4
+ACK,TEAM_SET,adcs.kp,4
+>> TEAM_SET,adcs.kd,1
+ACK,TEAM_SET,adcs.kd,1
+>> TEAM_SET,adcs.ki,1
+ACK,TEAM_SET,adcs.ki,1
+>> TEAM_SET,adcs.db,0.5
+ACK,TEAM_SET,adcs.db,0.5
+>> TEAM_SET,adcs.dzc,0
+ACK,TEAM_SET,adcs.dzc,0
+>> TEAM_SET,adcs.kick,20
+ACK,TEAM_SET,adcs.kick,20
+>> TEAM_SAVE
+ACK,TEAM_SAVE,42
+>> TEAM_LIST
+ACK,TEAM_LIST,42
+TM,TEAM_PARAM,sun.model,0
+TM,TEAM_PARAM,sun.win,20
+TM,TEAM_PARAM,sun.satHi,3050
+TM,TEAM_PARAM,sun.satLo,60
+TM,TEAM_PARAM,sun.vcc,3300
+TM,TEAM_PARAM,sun.topo,0
+TM,TEAM_PARAM,sun.gamma,0.6
+TM,TEAM_PARAM,sun.gammaR,0
+TM,TEAM_PARAM,sun.qL,1
+TM,TEAM_PARAM,sun.qR,1
+TM,TEAM_PARAM,sun.alpha,30
+TM,TEAM_PARAM,sun.g,1
+TM,TEAM_PARAM,sun.aL,0
+TM,TEAM_PARAM,sun.aR,0
+TM,TEAM_PARAM,sun.th0,0
+TM,TEAM_PARAM,sun.minS,0.05
+TM,TEAM_PARAM,sun.dmax,0.95
+TM,TEAM_PARAM,sun.lut,1
+TM,TEAM_PARAM,adcs.kp,4
+TM,TEAM_PARAM,adcs.kd,1
+TM,TEAM_PARAM,adcs.bias,40
+TM,TEAM_PARAM,adcs.db,0.5
+TM,TEAM_PARAM,adcs.max,80
+TM,TEAM_PARAM,adcs.sign,1
+TM,TEAM_PARAM,imu.gbz,0
+TM,TEAM_PARAM,imu.rsign,1
+TM,TEAM_PARAM,rw.minStart,10
+TM,TEAM_PARAM,rw.minStable,5
+TM,TEAM_PARAM,adcs.dzc,0
+TM,TEAM_PARAM,adcs.ki,1
+TM,TEAM_PARAM,rw.slew,500
+TM,TEAM_PARAM,imu.autoz,0
+TM,TEAM_PARAM,adcs.srate,0
+TM,TEAM_PARAM,adcs.sk,1
+TM,TEAM_PARAM,adcs.lock,0
+TM,TEAM_PARAM,adcs.unlock,2
+TM,TEAM_PARAM,adcs.lockMs,500
+TM,TEAM_PARAM,adcs.hgain,0.5
+TM,TEAM_PARAM,adcs.kick,20
+TM,TEAM_PARAM,adcs.kickMs,1500
+TM,TEAM_PARAM,adcs.krate,1
+TM,TEAM_PARAM,team.tm,0
+TM,TEAM_LUT,N,0,X0,0,DX,1,SUM,0,ON,1
