@@ -8,7 +8,7 @@
     powershell -ExecutionPolicy Bypass -File C:\TYSC\SunSeek\tools\t01.ps1 -Port COM9
   ฉุกเฉิน: กด Ctrl+C ได้ทุกเมื่อ สคริปต์จะส่ง STOP ให้ก่อนปิด (หรือปิดสวิตช์บอร์ด)
 #>
-param([string]$Port = '', [int]$Baud = 115200, [int]$MaxPct = 80)
+param([string]$Port = '', [int]$Baud = 115200, [int]$MaxPct = 80, [int]$StopWaitMs = 8000)  # coast from 30 % takes ~6 s (5 Oct)
 
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
@@ -45,7 +45,7 @@ function Ask([string]$q) {
   while ($true) { $a = (Read-Host "   ? $q (y/n)").Trim().ToLower(); if ($a -in 'y', 'n') { Log "? $q -> $a"; return $a -eq 'y' } }
 }
 function Note([string]$q) { $a = Read-Host "   ? $q"; Log "? $q -> $a"; return $a }
-function Wait-Stop { [void](Send 'STOP' 300); Write-Host '   (รอล้อหยุดสนิท 3 วินาที)'; [void](Listen 3000) }
+function Wait-Stop { [void](Send 'STOP' 300); Write-Host "   (รอล้อหยุดสนิท $([math]::Round($StopWaitMs / 1000)) วินาที — Min Start ต้องเริ่มจากล้อนิ่ง)"; [void](Listen $StopWaitMs) }
 
 $R = New-Object 'System.Collections.Generic.Dictionary[string,string]'  # [ordered] picks the Int32 indexer in PS 5.1
 try {
