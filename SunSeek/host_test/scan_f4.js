@@ -1,5 +1,6 @@
 // F4 parameter scan on the simulated world (not a pass/fail test). Run inside WSL after run.sh has built the program:
 //   node /mnt/c/TYSC/SunSeek/host_test/scan_f4.js
+// env: WORLDS, TEAMS (| separated), STRATEGY (REACTION / MOMENTUM), LAMP (start error, deg, default 30).
 // Prints final error / worst error in the last 5 s / overshoot / time to |e|<1 deg for each combination.
 'use strict';
 const { spawnSync } = require('child_process');
@@ -10,7 +11,7 @@ const CAL = ['TEAM_SET,sun.model,1', `TEAM_SET,sun.aL,${AMB.toFixed(5)}`, `TEAM_
 const WHEEL = ['TEAM_SET,rw.minStart,10', 'TEAM_SET,rw.minStable,5'];
 
 function loop(world, team, secs = 30, strategy = 'REACTION') {
-  const lines = [...world.map((w) => `#SET ${w}`), '#SET rateSign -1', '#SET lamp 30', '#WAIT 300', ...CAL, ...WHEEL, ...team,
+  const lines = [...world.map((w) => `#SET ${w}`), '#SET rateSign -1', `#SET lamp ${process.env.LAMP || 30}`, '#WAIT 300', ...CAL, ...WHEEL, ...team,
     `ADCS_STRATEGY,${strategy}`, 'ADCS_MODE,AUTO', ...Array.from({ length: secs * 5 }, () => ['#WAIT 200', '#STATE']).flat(), 'STOP', '#WAIT 10'];
   const r = spawnSync(exe, { input: lines.join('\n') + '\n', encoding: 'utf8', maxBuffer: 256 << 20 });
   const s = r.stdout.split('\n').filter((l) => l.startsWith('#STATE ')).map((l) => Object.fromEntries(l.slice(7).split(' ').map((p) => { const [k, v] = p.split('='); return [k, +v]; })));

@@ -99,5 +99,30 @@ calibrate('marks counted clockwise (page flips them)', [], -1);
 calibrate('LDR pins swapped on the board (organizer angle sign reversed too)', ['swap 1'], 1);
 calibrate('lit room (ambient 0.3) + 100 Hz flicker 20 %', ['ambient 0.3', 'flicker 0.2'], 1);
 
+// ---- W3: the sign-check page (NS.ss.gyroSign / NS.ss.kickSign) on the firmware sim ----
+const streamRows = (out) => out.filter((l) => l.startsWith('TM,TEAM_T,')).map(kv);
+console.log('W3 gyro sign: turned by hand +-15 deg/s (wheel off)');
+for (const [name, rateSign, rsign, want] of [['IMU as in the sim worlds above (rateSign -1)', -1, 1, 'ok'], ['IMU upside down', 1, 1, 'flip'],
+  ['upside down, imu.rsign -1 set', 1, -1, 'ok']]) {
+  const out = run(['#SET drag 0', `#SET rateSign ${rateSign}`, '#SET lamp 0', `TEAM_SET,imu.rsign,${rsign}`, '#WAIT 300', 'TEAM_STREAM,20',
+    '#SET bodyRate 15', '#WAIT 1200', '#SET bodyRate -15', '#WAIT 2000', '#SET bodyRate 15', '#WAIT 1000', '#SET bodyRate 0', 'TEAM_STREAM,0', '#WAIT 50']);
+  const g = NS.ss.gyroSign(streamRows(out));
+  check(`${name}: ${want}`, g.verdict === want, `slope ${g.slope.toFixed(2)} corr ${g.corr.toFixed(2)} n ${g.n}`);
+}
+{
+  const out = run(['#SET lamp 0', '#WAIT 300', 'TEAM_STREAM,20', '#WAIT 2000', 'TEAM_STREAM,0', '#WAIT 50']);
+  check('satellite not turned: "move"', NS.ss.gyroSign(streamRows(out)).verdict === 'move');
+}
+console.log('W3 control sign: RW,+30 for 300 ms then RW,0 on the platform (drag 0.15/s)');
+for (const [name, world, want] of [['as wired in the sim', [], 1], ['LDR pins swapped', ['swap 1'], -1], ['stiff platform (stick 10)', ['stick 10'], 1]]) {
+  const out = run([...world.map((w) => `#SET ${w}`), '#SET drag 0.15', '#SET lamp 0', '#WAIT 300', 'STOP', 'ADCS_STRATEGY,REACTION', 'TEAM_STREAM,20', '#WAIT 800',
+    'RW,30', '#WAIT 300', 'RW,0', '#WAIT 1200', 'TEAM_STREAM,0', 'STOP', '#WAIT 50']);
+  const rows = streamRows(out);
+  // the page takes the board time of the last line before it sends RW: here the line at ~800 ms into the stream
+  const tKick = rows[rows.findIndex((r) => r.T - rows[0].T >= 780) - 1].T;
+  const k = NS.ss.kickSign(rows, tKick);
+  check(`${name}: adcs.sign must be ${want}`, k.verdict === want, `angle moved ${k.delta.toFixed(2)} deg`);
+}
+
 console.log(`\n${passes} passed, ${fails} failed`);
 process.exitCode = fails ? 1 : 0;

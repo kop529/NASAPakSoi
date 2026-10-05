@@ -235,6 +235,16 @@ console.log('SunSeek team firmware calibration (W4): NS.fit.calibrate + TEAM_* c
   threw = '';
   try { NS.ss.th0For(80, -20, 0); } catch (e) { threw = e.message; }
   check('th0For refuses more than 90 deg', /90/.test(threw));
+  // W3 sign checks on synthetic TM,TEAM_T rows (20 Hz): angle follows a hand turn, the gyro reads +/- that rate
+  const turn = (gs, extra = {}) => Array.from({ length: 100 }, (_, i) => { const t = i * 50; const w = 2 * Math.PI * 0.4; return { T: t, ANG: 20 * Math.sin(w * t / 1000), GZ: gs * 20 * w * Math.cos(w * t / 1000) * NS.RAD / NS.RAD, LIT: 1, SAT: 0, ...extra }; });
+  check('gyroSign: rate matches the angle -> ok', NS.ss.gyroSign(turn(1)).verdict === 'ok');
+  check('gyroSign: rate opposite -> flip', NS.ss.gyroSign(turn(-1)).verdict === 'flip');
+  check('gyroSign: no IMU (rate 0) -> nogyro', NS.ss.gyroSign(turn(0)).verdict === 'nogyro');
+  check('gyroSign: no light -> not counted (move)', NS.ss.gyroSign(turn(1, { LIT: 0 })).verdict === 'move');
+  const kick = (dir) => Array.from({ length: 60 }, (_, i) => ({ T: i * 50, ANG: i * 50 > 1000 ? dir * Math.min(3, (i * 50 - 1000) / 200) : 0, GZ: 0, LIT: 1, SAT: 0 }));
+  check('kickSign: angle grows after a + kick -> adcs.sign 1', NS.ss.kickSign(kick(1), 1000).verdict === 1);
+  check('kickSign: angle falls -> adcs.sign -1', NS.ss.kickSign(kick(-1), 1000).verdict === -1);
+  check('kickSign: body did not move -> unclear', NS.ss.kickSign(kick(0), 1000).verdict === 'unclear');
   check('errHelp knows the team codes', /MANUAL/.test(NS.ss.errHelp('ERR,TEAM_REQUIRES_MANUAL,sun.model')) && /RW_BIAS|MOMENTUM/.test(NS.ss.errHelp('ERR,RW_CMD_REQUIRES_MOMENTUM_STRATEGY')));
 }
 

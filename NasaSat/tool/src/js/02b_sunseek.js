@@ -278,6 +278,50 @@ NS.ss.th0For = (curTh0, readDeg, ref) => {
   return +v.toFixed(3);
 };
 
+// ---- W3 sign checks on TM,TEAM_T rows ({T ms, ANG = SUN_ANGLE the ADCS uses, GZ = BODY_RATE after imu.rsign, LIT, SAT})
+// The organizer's estimator predicts angle += BODY_RATE*dt and its control law brakes with -Kd*BODY_RATE, so both need
+// d(SUN_ANGLE)/dt = +BODY_RATE (imu.rsign), and a + wheel command must make SUN_ANGLE grow (adcs.sign).
+const ssUsable = (r) => r && Number.isFinite(r.T) && Number.isFinite(r.ANG) && r.LIT !== 0 && r.SAT !== 1;
+
+// turned by hand (wheel off): regression of BODY_RATE on d(SUN_ANGLE)/dt.
+// verdict: ok (keep imu.rsign) | flip (multiply imu.rsign by -1) | move (not turned enough) | nogyro | unclear
+NS.ss.gyroSign = (rows) => {
+  const r = (rows || []).filter(ssUsable);
+  const d = [], g = [];
+  for (let i = 1; i + 1 < r.length; i++) {
+    const dt = (r[i + 1].T - r[i - 1].T) / 1000;
+    if (!(dt > 0 && dt < 0.5) || !Number.isFinite(r[i].GZ)) continue;
+    d.push((r[i + 1].ANG - r[i - 1].ANG) / dt);
+    g.push(r[i].GZ);
+  }
+  const n = d.length;
+  const maxRate = n ? Math.max(...d.map(Math.abs)) : 0;
+  const sdd = Math.sqrt(d.reduce((s, x) => s + x * x, 0));
+  const sgg = Math.sqrt(g.reduce((s, x) => s + x * x, 0));
+  const sdg = d.reduce((s, x, i) => s + x * g[i], 0);
+  const out = { n, maxRate, slope: sdd ? sdg / (sdd * sdd) : NaN, corr: sdd && sgg ? sdg / (sdd * sgg) : NaN };
+  // 1 deg/s: before calibration the organizer's 90*NDV squeezes the angle ~6x (a 15 deg/s turn reads ~2.5 deg/s); only the sign matters
+  if (n < 10 || maxRate < 1) return { ...out, verdict: 'move' };
+  if (!(sgg / Math.sqrt(n) > 0.5)) return { ...out, verdict: 'nogyro' }; // rms body rate under 0.5 deg/s while the sun angle moved
+  out.verdict = out.corr > 0.7 && out.slope > 0.3 ? 'ok' : out.corr < -0.7 && out.slope < -0.3 ? 'flip' : 'unclear';
+  return out;
+};
+
+// a short + wheel kick at tKick (ms, board clock): how SUN_ANGLE moved. verdict: sign (+1 keep / -1) for adcs.sign as
+// it must be, or 'unclear' (moved less than 0.3 deg: kick harder, or the platform sticks)
+NS.ss.kickSign = (rows, tKick, cmdSign = 1) => {
+  const r = (rows || []).filter(ssUsable);
+  const mean = (a) => (a.length ? a.reduce((s, x) => s + x.ANG, 0) / a.length : NaN);
+  const before = mean(r.filter((x) => x.T >= tKick - 400 && x.T <= tKick));
+  const after = mean(r.filter((x) => x.T >= tKick + 500 && x.T <= tKick + 900));
+  const delta = after - before;
+  const gz = r.filter((x) => x.T >= tKick && x.T <= tKick + 600 && Number.isFinite(x.GZ)).map((x) => x.GZ);
+  const rate = gz.length ? gz.reduce((s, x) => s + x, 0) / gz.length : NaN;
+  if (!Number.isFinite(delta)) return { delta, rate, verdict: 'nodata' };
+  if (Math.abs(delta) < 0.3) return { delta, rate, verdict: 'unclear' }; // the organizer model shows ~1/6 of the real turn
+  return { delta, rate, verdict: Math.sign(delta) * cmdSign };
+};
+
 // Short Thai fix for an ERR code of the organizer firmware (single codes, so "ERR ADCS_PREPARE GYRO_NOT_READY" works too).
 // Takes a text that contains the code (an ERR line, a toast); '' when it knows nothing.
 NS.ss.errHelp = (() => {

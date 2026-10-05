@@ -42,6 +42,7 @@
     <div class="nav-h">เครื่องมือ</div>
     <button data-tab="live"><span class="nn"></span>ค่าสด</button>
     <button data-tab="tune"><span class="nn"></span>จูนค่า</button>
+    <button data-tab="sign" class="ss-only" hidden><span class="nn"></span>ตรวจทิศ (SunSeek)</button>
     <button data-tab="ev"><span class="nn"></span>หลักฐาน &amp; AI</button>
     <div class="nav-foot">
       <div>Space / Esc = STOP</div>
@@ -575,6 +576,36 @@
         </div>
       </details>
       <div id="cfgGroups"></div>
+    </section>
+
+    <!-- ============ SIGN CHECK (team SunSeek firmware) ============ -->
+    <section id="tab-sign" class="tab">
+      <div class="pagehead">
+        <div><h1>ตรวจทิศ</h1><p class="lead">ทำหลังคาลิเบรต และทุกครั้งที่ถอดประกอบหรือย้ายบอร์ด ถ้าทิศผิด โหมด AUTO จะหมุนหนีเป้าหรือแกว่ง</p></div>
+        <div class="pageact"><button id="sgRead">อ่านค่าในบอร์ด<small>TEAM_GET imu.rsign / adcs.sign</small></button></div>
+      </div>
+      <div class="ss-note ns-only"><span class="pill warn">ใช้กับ SunSeek</span>หน้านี้ใช้กับเฟิร์มแวร์ทีมบนบอร์ด SunSeek: เลือก "SunSeek (ผู้จัด)" ที่หน้าเชื่อมต่อ</div>
+      <div id="sgCur" class="kv muted">ยังไม่ได้อ่าน</div>
+      <div class="sec">
+        <div class="sh">
+          <div><h2>1. ทิศ gyro (imu.rsign)</h2><p class="lead">ล้อหยุด หันดาวเทียมเข้าหาหลอด กดเริ่ม แล้วใช้มือหมุนไป-กลับช้า ๆ ประมาณ ±20° ใน 5 วินาที</p></div>
+          <div class="pageact"><button id="sgGyro" class="primary">เริ่มวัด 5 วินาที<small>TEAM_STREAM,20</small></button></div>
+        </div>
+        <p class="note">ต้องการ: มุมดวงอาทิตย์เพิ่มขึ้น = BODY_RATE เป็นบวก (ตัวประมาณมุมของกรรมการบวก gyro เข้ามุมแบบนี้ และ Kd ใช้ gyro เบรก) · ต้องมี IMU ทำงาน (SENSOR_GYRO READY)</p>
+        <div id="sgGyroOut" class="kv"></div>
+      </div>
+      <div class="sec">
+        <div class="sh">
+          <div><h2>2. ทิศสั่งล้อ (adcs.sign)</h2><p class="lead">วางบนแท่น หันเข้าหาหลอด มือไม่แตะ ล้อหยุดนิ่ง กดปุ่ม: ล้อจะเตะสั้น ๆ แล้วปล่อย ใช้แค่ตัวรับแสง ไม่ต้องมี IMU</p></div>
+          <div class="pageact"><button id="sgKickRun" class="primary">เตะทดสอบ<small id="sgKickCmd">RW,30 → RW,0</small></button></div>
+        </div>
+        <div class="row">
+          <label>แรงเตะ (%) <input type="number" id="sgKick" value="30" min="10" max="60" step="5"></label>
+          <label>นาน (ms) <input type="number" id="sgKickMs" value="300" min="100" max="800" step="50"></label>
+        </div>
+        <p class="note">ต้องการ: สั่งล้อ + แล้วมุมดวงอาทิตย์เพิ่มขึ้น ถ้าลดลง adcs.sign ต้องเป็น −1 · ถ้าไม่ขยับ (แท่นฝืด) เพิ่มแรงเตะทีละ 10 · ปุ่ม STOP ใช้ได้ตลอด</p>
+        <div id="sgKickOut" class="kv"></div>
+      </div>
     </section>
 
     <!-- ============ EVIDENCE & AI ============ -->

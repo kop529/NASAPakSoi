@@ -28,13 +28,14 @@ void SimWorld::step(double dt) {
     const double eff = std::max(0.0, std::fabs(c) - minStablePct) / (100.0 - minStablePct);
     target = (c >= 0 ? 1 : -1) * eff * wheelMaxRate;
   }
-  double dW = (target - wheelRate) * dt / wheelTau;
+  // driver off (IN1 = IN2 = LOW): the wheel coasts on its own losses (T01: ~6 s from 30 %), else it follows the PWM
+  double dW = c == 0 ? -wheelRate * dt / wheelCoastTau : (target - wheelRate) * dt / wheelTau;
   if (atRest && target == 0) dW = -wheelRate;  // stops completely
   wheelRate += dW;
   // angular momentum exchange wheel <-> body, then bearing drag on the body
-  bodyRate += -inertiaRatio * dW;
+  bodyRate += -inertiaRatio * (dW + wheelAir * wheelRate * dt);  // wheel acceleration + air drag the motor keeps feeding
   if (bodyStick > 0) {  // Coulomb friction: breakaway bodyStick, sliding 0.7 * bodyStick
-    const double drive = std::fabs(inertiaRatio * dW) / dt;
+    const double drive = std::fabs(inertiaRatio * (dW + wheelAir * wheelRate * dt)) / dt;
     if (std::fabs(bodyRate) < 0.3 && drive < bodyStick) bodyRate = 0;
     else bodyRate -= (bodyRate > 0 ? 1 : -1) * std::min(std::fabs(bodyRate), 0.7 * bodyStick * dt);
   }
@@ -82,7 +83,7 @@ bool SimWorld::set(const std::string& k, double v) {
     {"body", &bodyDeg}, {"bodyRate", &bodyRate}, {"wheel", &wheelRate}, {"lamp", &lampDeg}, {"lampK", &lampK},
     {"ambient", &ambient}, {"flicker", &flicker}, {"noise", &noiseMv}, {"alpha", &alpha}, {"gamma", &gamma},
     {"q", &q}, {"minStart", &minStartPct}, {"minStable", &minStablePct}, {"wheelMax", &wheelMaxRate},
-    {"wheelTau", &wheelTau}, {"ratio", &inertiaRatio}, {"drag", &bearingDrag}, {"stick", &bodyStick}, {"gyroBias", &gyroBiasDps},
+    {"wheelTau", &wheelTau}, {"coast", &wheelCoastTau}, {"ratio", &inertiaRatio}, {"drag", &bearingDrag}, {"stick", &bodyStick}, {"air", &wheelAir}, {"gyroBias", &gyroBiasDps},
     {"gyroNoise", &gyroNoiseDps}, {"north", &magNorthDeg},
   };
   for (auto& d : dbl) if (k == d.key) { *d.p = v; return true; }

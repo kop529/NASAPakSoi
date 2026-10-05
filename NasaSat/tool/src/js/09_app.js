@@ -19,7 +19,7 @@
     jobs: new Set(), th0ok: false, telCount: 0, telHz: 0, conErr: 0,
     // proto: 'nasasat' = our firmware (@id CMD -> OK / ERR) · 'sunseek' = the organizer's firmware (CMD,arg -> ACK / ERR / TM / EVT)
     proto: 'nasasat',
-    ss: { state: new NS.ss.State(), client: null, hinted: false, tmCount: 0, tmPrev: 0, tmHz: 0, errAt: {}, showT: null, timer: null },
+    ss: { state: new NS.ss.State(), client: null, hinted: false, tmCount: 0, tmPrev: 0, tmHz: 0, errAt: {}, showT: null, timer: null, rec: null }, // rec: TM,TEAM_T rows while a sign check records
   });
 
   const now = () => (performance.now() - S.t0) / 1000;
@@ -376,6 +376,7 @@
   function handleSunSeekLine(raw) {
     const p = S.ss.client.feed(raw); // parses, keeps the State, completes the command that waits for this line
     if (p.kind === 'tm') S.ss.tmCount++;
+    if (S.ss.rec && p.kind === 'tm' && p.tm.group === 'TEAM_T') S.ss.rec.push({ ...p.tm.num }); // a sign check is recording
     if (p.kind === 'err') {
       const text = ['ERR', p.err.code, ...p.err.args].join(' ');
       const t = Date.now();
@@ -434,6 +435,81 @@
     const v = S.ss.state.num(`TEAM_PARAM.${key}`);
     if (!Number.isFinite(v)) throw new Error(`อ่าน ${key} ไม่ได้`);
     return v;
+  }
+
+  // ---- W3 sign checks (team firmware): TM,TEAM_T recorded at 20 Hz while the satellite moves
+  async function ssStreamOff() { S.ss.rec = null; if (S.tr && S.connected) await S.ss.client.send('TEAM_STREAM,0'); }
+  function fixButton(box, text, lines) { // "fix it" under a result: the TEAM_SET + TEAM_SAVE that make the board right
+    box.append(el('div', {}), el('div', {}, el('button', { class: 'small primary', text, onclick: async () => {
+      try { await ssSendAll(['STOP', ...lines, 'TEAM_SAVE']); NS.toast('แก้และบันทึกแล้ว: วัดซ้ำอีกครั้งเพื่อยืนยัน', 'good'); signRead(); } catch (e) { NS.toast(e.message, 'bad', 8000); }
+    } })));
+  }
+  async function signRead() {
+    try {
+      const r = await ssReadParam('imu.rsign');
+      const a = await ssReadParam('adcs.sign');
+      NS.kv($('#sgCur'), { 'imu.rsign (ทิศ gyro)': r, 'adcs.sign (ทิศสั่งล้อ)': a });
+      return { rsign: r, sign: a };
+    } catch (e) { NS.kv($('#sgCur'), { 'อ่านไม่ได้': e.message }); throw e; }
+  }
+  async function signGyro() {
+    const box = $('#sgGyroOut');
+    try {
+      const cur = await signRead();
+      S.ss.rec = [];
+      await ssSendAll(['TEAM_STREAM,20']);
+      for (let i = 5; i > 0; i--) { NS.kv(box, { 'กำลังวัด': `หมุนดาวเทียมไป-กลับช้า ๆ ตอนนี้ (เหลือ ${i} วินาที)` }); await NS.sleep(1000); }
+      const rows = S.ss.rec || [];
+      await ssStreamOff();
+      const g = NS.ss.gyroSign(rows);
+      const info = `ความชัน ${NS.fmt(g.slope, 2)} · สหสัมพันธ์ ${NS.fmt(g.corr, 2)} · ${g.n} จุด · มุมเปลี่ยนเร็วสุด ${NS.fmt(g.maxRate, 1)}°/s`;
+      const T = {
+        ok: 'ถูกแล้ว ✓ ไม่ต้องแก้',
+        flip: `กลับทิศ ✗ ต้องตั้ง imu.rsign = ${-cur.rsign}`,
+        move: 'ยังหมุนไม่พอ: หมุนให้กว้างขึ้น (±20°) แล้ววัดใหม่',
+        nogyro: 'ไม่มีค่า gyro: IMU ไม่ทำงาน (กด STATUS ดู SENSOR_GYRO) · ข้ามข้อนี้ไปก่อนได้ ข้อ 2 ไม่ต้องใช้ IMU',
+        unclear: 'ไม่ชัด: หมุนให้สม่ำเสมอ ไม่เขย่า หันเข้าหาหลอดตลอด แล้ววัดใหม่',
+      };
+      NS.kv(box, { 'ผล': T[g.verdict], 'รายละเอียด': info });
+      if (g.verdict === 'flip') fixButton(box, `แก้ให้: imu.rsign = ${-cur.rsign} + บันทึก`, [`TEAM_SET,imu.rsign,${-cur.rsign}`]);
+      addEvidence('sign_gyro', `ทิศ gyro: ${g.verdict} (${info})`, g);
+    } catch (e) { NS.kv(box, { 'ไม่สำเร็จ': e.message }); NS.toast(e.message, 'bad', 8000); } finally { await ssStreamOff(); }
+  }
+  async function signKick() {
+    const box = $('#sgKickOut');
+    const pct = NS.clamp(Math.round(+$('#sgKick').value || 30), 10, 60);
+    const ms = NS.clamp(Math.round(+$('#sgKickMs').value || 300), 100, 800);
+    try {
+      const cur = await signRead();
+      await ssSendAll(['STOP', 'ADCS_STRATEGY,REACTION']);
+      S.ss.rec = [];
+      await ssSendAll(['TEAM_STREAM,20']);
+      NS.kv(box, { 'กำลังวัด': 'อยู่นิ่ง… แล้วล้อจะเตะ' });
+      await NS.sleep(900);
+      const pre = S.ss.rec || [];
+      const tKick = pre.length ? pre[pre.length - 1].T : NaN; // board time of the last line before the kick
+      await ssSendAll([`RW,${pct}`]);
+      await NS.sleep(ms);
+      await ssSendAll(['RW,0']);
+      await NS.sleep(1300);
+      const rows = S.ss.rec || [];
+      await ssStreamOff();
+      await ssSendAll(['STOP']);
+      if (!Number.isFinite(tKick)) throw new Error('ไม่ได้รับ TM,TEAM_T (ต้องใช้เฟิร์มแวร์ทีมผ่าน USB)');
+      const k = NS.ss.kickSign(rows, tKick);
+      const info = `มุมดวงอาทิตย์เปลี่ยน ${NS.fmt(k.delta, 2)}° · BODY_RATE เฉลี่ยช่วงเตะ ${NS.fmt(k.rate, 2)}°/s`;
+      const res = { รายละเอียด: info };
+      if (k.verdict === 1 || k.verdict === -1) {
+        res['ผล'] = k.verdict === cur.sign ? `ถูกแล้ว ✓ adcs.sign = ${cur.sign}` : `ผิด ✗ ต้องตั้ง adcs.sign = ${k.verdict}`;
+        if (Math.abs(k.rate) > 0.5 && Math.sign(k.rate) !== Math.sign(k.delta)) res['เตือน'] = 'gyro หมุนสวนกับมุม: ทำข้อ 1 (ทิศ gyro) ด้วย';
+      } else res['ผล'] = k.verdict === 'unclear' ? `ตัวดาวเทียมแทบไม่ขยับ: เพิ่มแรงเตะเป็น ${Math.min(60, pct + 10)}% แล้วลองใหม่ (หรือแท่นฝืด/ติด)` : 'ไม่มีข้อมูลมุม: หันเข้าหาหลอด แล้วลองใหม่';
+      NS.kv(box, res);
+      if ((k.verdict === 1 || k.verdict === -1) && k.verdict !== cur.sign) fixButton(box, `แก้ให้: adcs.sign = ${k.verdict} + บันทึก`, [`TEAM_SET,adcs.sign,${k.verdict}`]);
+      addEvidence('sign_kick', `ทิศสั่งล้อ: ต้องเป็น ${k.verdict} (บอร์ด ${cur.sign}) · ${info}`, { ...k, pct, ms });
+    } catch (e) {
+      NS.kv(box, { 'ไม่สำเร็จ': e.message }); NS.toast(e.message, 'bad', 8000);
+      if (S.tr && S.connected) S.ss.client.sendNow('STOP'); // never leave the wheel driven
+    } finally { await ssStreamOff(); }
   }
 
   async function ssHandshake() { // our HELLO / CFG LIST do not exist there; PING and STATUS only read (their lines fill the status card)
@@ -1711,6 +1787,13 @@
         markStep(8);
       } catch (e) { NS.toast(e.message, 'bad'); }
     });
+    // sign checks (W3)
+    $('#sgRead').addEventListener('click', () => signRead().catch(() => {}));
+    $('#sgGyro').addEventListener('click', signGyro);
+    $('#sgKickRun').addEventListener('click', signKick);
+    const sgCmd = () => { $('#sgKickCmd').textContent = `RW,${+$('#sgKick').value || 30} → ${+$('#sgKickMs').value || 300} ms → RW,0`; };
+    for (const id of ['#sgKick', '#sgKickMs']) $(id).addEventListener('input', sgCmd);
+    sgCmd();
     $('#th0Save').addEventListener('click', async () => { try { if (isSs()) { await ssSendAll(['TEAM_SAVE']); NS.toast('บันทึกถาวรแล้ว (TEAM_SAVE)', 'good'); return; } await send('SAVE'); await refreshCfg(); NS.toast('บันทึกถาวรแล้ว', 'good'); } catch (e) { NS.toast(e.message, 'bad'); } });
 
     // tune
