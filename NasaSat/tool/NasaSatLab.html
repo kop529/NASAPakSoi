@@ -561,10 +561,11 @@ label.radio:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
       <div class="pagehead">
         <div><h1>คาลิเบรต</h1><p class="lead">ทำตามขั้น 1 → 8 ขั้นที่ 2 และ 8 ห้ามข้าม ขั้นที่ 3 ข้ามได้</p></div>
       </div>
+      <div class="ss-note ss-only" hidden><span class="pill warn">โหมด SunSeek</span>ใช้กับเฟิร์มแวร์ทีม (TEAM_*) ผ่าน USB · ไม่มีตัวขับ: หมุนดาวเทียมด้วยมือตามขีดบนแท่น แล้วกดบันทึก · ขั้น 7 เปลี่ยนบอร์ดไปใช้โมเดลทีม (sun.model 1) · กลับไปสูตรกรรมการ: TEAM_SET,sun.model,0</div>
       <div class="steps" id="calSteps">
         <button data-step="1" class="active"><b>01</b><span class="sl">ตั้งค่า</span></button>
         <button data-step="2"><b>02</b><span class="sl">แสงรอบข้าง</span><small class="nos">ห้ามข้าม</small></button>
-        <button data-step="3"><b>03</b><span class="sl">Balance</span><small>ข้ามได้</small></button>
+        <button data-step="3" class="ns-only"><b>03</b><span class="sl">Balance</span><small>ข้ามได้</small></button>
         <button data-step="4"><b>04</b><span class="sl">Sweep</span></button>
         <button data-step="5"><b>05</b><span class="sl">Fit</span></button>
         <button data-step="6"><b>06</b><span class="sl">ตรวจความแม่น</span></button>
@@ -577,6 +578,7 @@ label.radio:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
           <div><h2>ขั้นที่ 1: ตั้งค่าตัวขับและเซนเซอร์</h2><p class="lead">ทำตัวขับก่อน แล้วบอกบอร์ดว่าใช้ LDR รุ่นไหน ต่อวงจรแบบไหน</p></div>
           <div class="pageact"><button id="calSendSetup" class="primary">ส่งค่าเข้าบอร์ด<small>SET est.gamma / alpha / sen.topo / vcc</small></button></div>
         </div>
+        <div class="ns-only">
         <h3>ตัวขับ (ทำก่อน)</h3>
         <div class="row">
           <button data-cmd="ZERO" title="ตั้งตำแหน่งปัจจุบันเป็น 0° ของตัวขับ">ตั้งศูนย์ตัวขับ<small>ZERO</small></button>
@@ -589,6 +591,7 @@ label.radio:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
           <div class="row"><button data-cmd="SPR">วัด step ต่อรอบ<small>SPR</small></button></div>
           <div id="sprOut" class="inline-res"></div>
         </details>
+        </div>
         <h3>เซนเซอร์</h3>
         <div class="formgrid">
           <label>รุ่น LDR (ค่า γ)
@@ -643,7 +646,7 @@ label.radio:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
           <div><h2>ขั้นที่ 4: เก็บข้อมูล Sweep</h2><p class="lead">ตัวขับกวาดมุมแล้วบอร์ดวัดแสงทุกจุด เสร็จแล้วโปรแกรม Fit ให้เองเมื่อได้ 6 จุดขึ้นไป</p></div>
           <div class="pageact sw-auto"><span class="muted" id="swStatus"></span><button id="swStart" class="primary">เริ่ม Sweep<small id="swCmd">SWEEP -60 60 5 300 cal</small></button></div>
         </div>
-        <div class="row mid">
+        <div class="row mid ns-only">
           <label class="radio"><input type="radio" name="swMode" value="auto" checked> อัตโนมัติ (ตัวขับหมุนเอง)</label>
           <label class="radio"><input type="radio" name="swMode" value="manual"> หมุนมือ + กดบันทึก</label>
         </div>
@@ -709,7 +712,7 @@ label.radio:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
       <div class="calstep" data-step="6">
         <div class="sh">
           <div><h2>ขั้นที่ 6: ตรวจความแม่น (validate)</h2><p class="lead">เก็บจุดใหม่ที่ไม่ได้ใช้ fit (มุมกึ่งกลางระหว่างจุดเดิม) แล้ววัดความคลาดเคลื่อน</p></div>
-          <div class="pageact"><button id="valAuto" class="primary">Sweep ตรวจอัตโนมัติ<small>SWEEP … val</small></button></div>
+          <div class="pageact ns-only"><button id="valAuto" class="primary">Sweep ตรวจอัตโนมัติ<small>SWEEP … val</small></button></div>
         </div>
         <details><summary>ทำไมกวาดย้อนทิศ</summary><p class="note">ปุ่มอัตโนมัติกวาด<b>ย้อนทิศ</b>กับขั้นที่ 4 ถ้า LDR หน่วงหรือเฟืองมีระยะฟรีที่ชดเชยไม่หมด จะเห็นเป็น bias ในผลนี้ (ถ้า bias เกิน 0.2° ให้เพิ่ม "รอต่อจุด" หรือวัด BACKLASH ใหม่)</p></details>
         <div id="valVerdict"></div>
@@ -1489,6 +1492,59 @@ NS.ss.Client = class {
   }
 };
 
+// ===== our team firmware on the SunSeek board (NasaPakSoi-team, TEAM_* commands) =====
+// Its sun model is the same estimator as 04_estimator.js (parity-tested in SunSeek/host_test), parameters sun.*.
+NS.ss.LUT_MAX = 256; // TEAM_LUT_MAX
+
+// web estimator params (NS.fit.calibrate().est) -> the exact command list that loads them, switches the board to the team
+// model (sun.model 1) and saves. Throws (Thai) when a value is outside what the firmware accepts.
+NS.ss.teamLines = (e) => {
+  if (!e) throw new Error('ยังไม่มีผล Fit');
+  if (!(e.alpha >= 1 && e.alpha <= 89)) throw new Error(`α ${(+e.alpha).toFixed(2)}° อยู่นอกช่วงที่เฟิร์มแวร์ทีมรับ (1..89°): Fit ใหม่ในโหมด SunSeek`);
+  const p6 = (v) => (+v).toPrecision(6);
+  const L = [
+    `TEAM_SET,sun.vcc,${e.vcc ?? 3300}`, `TEAM_SET,sun.topo,${e.topo ?? 0}`,
+    `TEAM_SET,sun.gamma,${e.gamma.toFixed(4)}`, `TEAM_SET,sun.gammaR,${(e.gammaR || 0).toFixed(4)}`,
+    `TEAM_SET,sun.qL,${e.qL.toFixed(4)}`, `TEAM_SET,sun.qR,${e.qR.toFixed(4)}`, `TEAM_SET,sun.alpha,${e.alpha.toFixed(3)}`,
+    `TEAM_SET,sun.g,${p6(e.g)}`, `TEAM_SET,sun.aL,${p6(e.aL)}`, `TEAM_SET,sun.aR,${p6(e.aR)}`,
+    `TEAM_SET,sun.minS,${p6(e.minS)}`, `TEAM_SET,sun.dmax,${e.dmax ?? 0.95}`, `TEAM_SET,sun.th0,${+(e.th0 || 0).toFixed(3)}`,
+  ];
+  const v = e.lut && e.lut.v ? e.lut.v : [];
+  if (v.length) {
+    if (v.length > NS.ss.LUT_MAX) throw new Error(`LUT ${v.length} ค่า เกิน ${NS.ss.LUT_MAX}: เพิ่มความละเอียดตาราง (°) แล้ว Fit ใหม่`);
+    if (v.some((x) => !(Math.abs(x) <= 90))) throw new Error('ค่าใน LUT เกิน ±90°: ข้อมูล Sweep ผิดปกติ');
+    L.push(`TEAM_LUT_BEGIN,${e.lut.x0},${e.lut.dx},${v.length}`);
+    for (let i = 0; i < v.length;) { // as many values per line as fit well under the 240-character limit
+      let line = `TEAM_LUT_DATA,${i}`;
+      let j = i;
+      while (j < v.length && line.length + 1 + String(v[j]).length <= 200) line += ',' + v[j++];
+      L.push(line);
+      i = j;
+    }
+    L.push('TEAM_LUT_END', 'TEAM_SET,sun.lut,1');
+  } else L.push('TEAM_LUT_CLEAR', 'TEAM_SET,sun.lut,0');
+  L.push('TEAM_SET,sun.model,1', 'TEAM_SAVE');
+  return L;
+};
+
+// average of TM,TEAM_T readings ({MVL, MVR, SAT, TH, ANG, ...} numbers) -> {n, mvL, mvR, sdL, sdR, sat, th, ang} or null
+NS.ss.avgTeamT = (rows) => {
+  const ok = (rows || []).filter((r) => r && Number.isFinite(r.MVL) && Number.isFinite(r.MVR));
+  if (!ok.length) return null;
+  const mean = (k) => { const a = ok.map((r) => r[k]).filter(Number.isFinite); return a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN; };
+  const sd = (k, mu) => Math.sqrt(ok.reduce((s, r) => s + (r[k] - mu) ** 2, 0) / ok.length);
+  const mvL = mean('MVL');
+  const mvR = mean('MVR');
+  return { n: ok.length, mvL, mvR, sdL: sd('MVL', mvL), sdR: sd('MVR', mvR), sat: ok.some((r) => r.SAT === 1), th: mean('TH'), ang: mean('ANG') };
+};
+
+// new sun.th0 so that the angle read now (with the current th0) becomes `ref`; the firmware accepts -90..90
+NS.ss.th0For = (curTh0, readDeg, ref) => {
+  const v = curTh0 + (ref - readDeg);
+  if (!Number.isFinite(v) || Math.abs(v) > 90) throw new Error(`th0 ใหม่ ${NS.isNum(v) ? v.toFixed(2) : v}° เกิน ±90°: ตรวจว่าหันเข้าหาหลอดและใช้โมเดลทีมอยู่`);
+  return +v.toFixed(3);
+};
+
 // Short Thai fix for an ERR code of the organizer firmware (single codes, so "ERR ADCS_PREPARE GYRO_NOT_READY" works too).
 // Takes a text that contains the code (an ERR line, a toast); '' when it knows nothing.
 NS.ss.errHelp = (() => {
@@ -1522,6 +1578,24 @@ NS.ss.errHelp = (() => {
     ESTIMATOR_MA_WINDOW_RANGE_1_TO_500: 'ESTIMATOR_MA_WINDOW ต้องเป็นเลข 1 ถึง 500',
     ESTIMATOR_FILTER_RANGE_0_TO_1: 'ESTIMATOR_FILTER ต้องเป็นเลข 0 ถึง 1',
     ESTIMATOR_GYRO_WEIGHT_RANGE_0_TO_1: 'ESTIMATOR_GYRO_WEIGHT ต้องเป็นเลข 0 ถึง 1',
+    // our team firmware (TEAM_*); the organizer's firmware answers TEAM_* with UNKNOWN_COMMAND
+    TEAM_UNKNOWN_KEY: 'ไม่รู้จักชื่อค่านี้: พิมพ์ TEAM_LIST ดูชื่อทั้งหมด',
+    TEAM_RANGE: 'ค่าอยู่นอกช่วงที่เฟิร์มแวร์ทีมรับ (ตัวเลขหลังชื่อคือช่วง ต่ำสุด,สูงสุด)',
+    TEAM_VALUE: 'ค่าต้องเป็นตัวเลข',
+    TEAM_SET_SYNTAX: 'รูปแบบคือ TEAM_SET,<ชื่อ>,<ค่า>',
+    TEAM_REQUIRES_MANUAL: 'เปลี่ยนค่านี้ได้เฉพาะโหมด MANUAL: กด STOP ก่อน',
+    TEAM_SAVE_FLASH: 'บันทึกลง flash ไม่สำเร็จ: ลอง TEAM_SAVE อีกครั้ง',
+    TEAM_DEFAULTS_NEEDS_YES: 'ต้องพิมพ์ TEAM_DEFAULTS,YES (ล้างค่าที่จูนทั้งหมด)',
+    TEAM_LUT_NOT_STARTED: 'ต้องส่ง TEAM_LUT_BEGIN ก่อน TEAM_LUT_DATA',
+    TEAM_LUT_INCOMPLETE: 'LUT ส่งมาไม่ครบ: ส่งชุดคำสั่งคาลิเบรตใหม่ทั้งชุด',
+    TEAM_LUT_BEGIN_SYNTAX: 'TEAM_LUT_BEGIN,<x0>,<dx>,<n> (n ไม่เกิน 256)',
+    TEAM_LUT_DATA_SYNTAX: 'TEAM_LUT_DATA,<เริ่มที่>,<ค่า>,...',
+    TEAM_LUT_DATA_VALUE: 'ค่าใน LUT ผิด (ต้องไม่เกิน ±90 และไม่เกินจำนวนที่ประกาศ)',
+    TEAM_STREAM_RANGE_0_TO_20: 'TEAM_STREAM ต้องเป็น 0 ถึง 20',
+    TEAM_UNKNOWN_COMMAND: 'ไม่รู้จักคำสั่ง TEAM_ นี้',
+    RW_CMD_REQUIRES_MOMENTUM_STRATEGY: 'RW_CMD ใช้ได้เฉพาะกลยุทธ์ MOMENTUM: ส่ง ADCS_STRATEGY,MOMENTUM แล้ว RW_BIAS ก่อน',
+    RW_CMD_SYNTAX: 'รูปแบบ RW_CMD,<delta>,<assist>,<ms> เช่น RW_CMD,+20,+80,300 (ms ไม่เกิน 5000)',
+    RW_CMD_OUT_OF_RANGE: 'RW_CMD: bias + delta ต้องอยู่ 0..100 และ assist −100..100',
     SENSOR_SNAPSHOT_READ_FAILED: READ,
     SENSOR_RAW_READ_FAILED: READ,
     GYRO_READ_FAILED: READ,
@@ -2086,6 +2160,53 @@ NS.fit.buildLUT = (pts, est, phi, o = {}) => {
     v.push(Math.round((truth - (x + (est.th0 || 0))) * 1000) / 1000);
   }
   return { x0: +x0.toFixed(3), dx, v };
+};
+
+// The whole "Fit" step from sweep points (the tool's Fit button and the SunSeek firmware test both use this):
+// physical fit (+ gamma ratio from two lamp levels when o.gr has l1 and l2), estimator params, validity threshold,
+// usable range, LUT, errors. o: {gamma, alpha0, fitQ, fitGamma, amb, gr, vcc, topo, lutDx, positiveAlpha}
+// positiveAlpha (SunSeek): the angle must keep the sign of the organizer's 90*NDV (else adcs.sign tuned with the organizer
+// model is wrong after switching sun.model). A negative alpha means the angle marks count the other way: the marks are
+// negated (flipped: true, pts = the flipped points) and the fit is done again.
+NS.fit.calibrate = (ptsAll, o = {}) => {
+  let all = ptsAll;
+  let flipped = false;
+  const run = () => {
+    const pts = all.filter((p) => !p.sat);
+    const opts = { gamma: o.gamma, alpha0: o.alpha0 || 30, fitQ: o.fitQ, fitGamma: o.fitGamma, amb: o.amb || null };
+    let r = NS.fit.fitPhysical(pts, opts);
+    let gRatio = null;
+    if (o.gr && o.gr.l1 && o.gr.l2) { // the ratio's room-light correction uses the left gamma: refine both together
+      const amb = o.amb ? { GL: o.amb.GL, GR: o.amb.GR } : null;
+      for (let it = 0; it < 3; it++) {
+        gRatio = NS.fit.gammaRatio(o.gr.l1, o.gr.l2, amb, r.P.gL).ratio;
+        r = NS.fit.fitPhysical(pts, { ...opts, gRatio });
+      }
+    }
+    return { pts, r, gRatio };
+  };
+  let f = run();
+  if (o.positiveAlpha && f.r.P.alpha < 0) {
+    all = ptsAll.map((p) => ({ ...p, ang: -p.ang }));
+    flipped = true;
+    f = run();
+  }
+  const { pts, r, gRatio } = f;
+  const est = NS.fit.toEst(r.P, { vcc: o.vcc, topo: o.topo });
+  const phi = r.P.phi;
+  // suggested validity threshold: 15% of total light when facing the lamp
+  const near = pts.filter((p) => Math.abs(phi - p.ang) < 12).map((p) => NS.est.estimate(p.GL, p.GR, { ...est, lutOn: 0 }).S);
+  est.minS = +((near.length ? NS.median(near) : 1) * 0.15).toPrecision(3);
+  const use = NS.fit.usable(pts, est);
+  const rng = NS.fit.range(pts, est, phi);
+  if (rng) est.dmax = rng.dmax;
+  est.lut = NS.fit.buildLUT(pts, est, phi, { dx: o.lutDx || 1 });
+  const errsNo = NS.fit.errors(pts, { ...est, lut: null, lutOn: 0 }, phi).filter((_, i) => use[i]);
+  const errsLut = NS.fit.errors(pts, est, phi).filter((_, i) => use[i]);
+  return {
+    r, est, phi, rng, use, gRatio, flipped, pts, all, nSat: all.length - pts.length,
+    errsNo, errsLut, mNo: NS.fit.metrics(errsNo.map((e) => e.err)), mLut: NS.fit.metrics(errsLut.map((e) => e.err)),
+  };
 };
 
 // the exact command list that loads a calibration into the board (tool, tests and docs all use this one)
@@ -3600,7 +3721,7 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     cfgDefs: new Map(), cfgVals: new Map(), cfgSaved: new Map(), lut: null,
     hello: null, hwid: null, diag: null,
     log: [], tel: [], telCols: null, evidence: [], badLines: 0,
-    cal: { pts: [], val: [], fit: null, amb: null, bal: null, manualIdx: 0 },
+    cal: { pts: [], val: [], fit: null, amb: null, bal: null, manualIdx: 0, angSign: 1 }, // angSign -1: SunSeek marks count the other way (NS.fit.calibrate)
     images: [], curImg: null, imgMeta: new Map(), imgWait: [], evWait: [], scan: null, sunAz: null, hk: null,
     m1: { runs: [], cur: null, hold: null },
     pins: null, pinBase: null, paused: false, replay: null, portInfo: null, lastHandshake: 0,
@@ -3978,6 +4099,52 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     else if (r.error && !r.aborted) NS.toast(`ส่งไม่ได้: ${SS_ERR_TH[r.error] || r.error}`, 'bad');
     return r;
   }
+  // ---- our team firmware on the SunSeek board (calibration page): TEAM_SUN readings and TEAM_* command lists
+  const isSs = () => S.proto === 'sunseek';
+  const ssWhy = (r) => (r.timeout ? 'บอร์ดไม่ตอบ' : r.reply ? `${r.reply.raw} ${NS.ss.errHelp(r.reply.raw) || (/UNKNOWN_COMMAND/.test(r.reply.raw) ? 'บอร์ดนี้ไม่ใช่เฟิร์มแวร์ทีม (NasaPakSoi-team)' : '')}`.trim() : r.error || 'ส่งไม่ได้');
+  async function ssTeamSun() { // one TM,TEAM_T line now: TEAM_SUN answers ACK,TEAM_SUN then the line
+    if (!S.tr || !S.connected) throw new Error('ยังไม่ได้เชื่อมต่อ');
+    const t0 = S.ss.state.at('TEAM_T.SEQ');
+    const r = await S.ss.client.send('TEAM_SUN');
+    if (!r.ok) throw new Error(`TEAM_SUN: ${ssWhy(r)}`);
+    for (let k = 0; k < 50 && S.ss.state.at('TEAM_T.SEQ') === t0; k++) await NS.sleep(10);
+    if (S.ss.state.at('TEAM_T.SEQ') === t0) throw new Error('ไม่ได้รับ TM,TEAM_T หลัง TEAM_SUN');
+    const n = (k) => S.ss.state.num('TEAM_T.' + k);
+    return { MVL: n('MVL'), MVR: n('MVR'), SAT: n('SAT'), LIT: n('LIT'), TH: n('TH'), ANG: n('ANG') };
+  }
+  async function ssCapture(n = 8) { // ~0.1 s apart (each reading is already a 20 ms window average)
+    const rows = [];
+    for (let i = 0; i < n; i++) { rows.push(await ssTeamSun()); await NS.sleep(80); }
+    return NS.ss.avgTeamT(rows);
+  }
+  async function ssStable() { // same rule as stableRaw(): two 1 s readings within 0.3 %
+    let prev = null;
+    for (let k = 0; k < 8; k++) {
+      const a = await ssCapture(10);
+      if (a.sat) throw new Error('ADC ตัน: ลดแสงหรือถอยหลอดก่อน แล้ววัดใหม่');
+      const G = [NS.est.toG(a.mvL, calVcc(), calTopo()), NS.est.toG(a.mvR, calVcc(), calTopo())];
+      if (prev && Math.abs(G[0] / prev[0] - 1) < 0.003 && Math.abs(G[1] / prev[1] - 1) < 0.003) return { GL: (G[0] + prev[0]) / 2, GR: (G[1] + prev[1]) / 2, ang: 0 };
+      prev = G;
+    }
+    throw new Error('ค่ายังไม่นิ่งใน 10 วินาที (LDR ยังเปลี่ยน, ไฟกระพริบ หรือมีคนเดินผ่าน) ลองใหม่');
+  }
+  async function ssSendAll(lines, progress) { // one by one; stops at the first refusal and says which line
+    for (let i = 0; i < lines.length; i++) {
+      if (!S.tr || !S.connected) throw new Error('ยังไม่ได้เชื่อมต่อ');
+      const r = await S.ss.client.send(lines[i], { timeout: 4000 });
+      if (!r.ok) throw new Error(`บรรทัด ${i + 1}/${lines.length} "${lines[i]}": ${ssWhy(r)}`);
+      if (progress) progress(i + 1, lines.length);
+    }
+  }
+  async function ssReadParam(key) { // TEAM_GET,key -> number (TM,TEAM_PARAM,key,value)
+    const t0 = S.ss.state.at(`TEAM_PARAM.${key}`);
+    await ssSendAll([`TEAM_GET,${key}`]);
+    for (let k = 0; k < 50 && S.ss.state.at(`TEAM_PARAM.${key}`) === t0; k++) await NS.sleep(10);
+    const v = S.ss.state.num(`TEAM_PARAM.${key}`);
+    if (!Number.isFinite(v)) throw new Error(`อ่าน ${key} ไม่ได้`);
+    return v;
+  }
+
   async function ssHandshake() { // our HELLO / CFG LIST do not exist there; PING and STATUS only read (their lines fill the status card)
     await S.ss.client.send('PING');
     await S.ss.client.send('STATUS');
@@ -4033,6 +4200,13 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     applyProtoUI();
     if (was !== p && S.connected && S.tr && !S.replay) setTimeout(handshake, 0);
   }
+  // the <small> captions of the calibration buttons: our command / the team SunSeek firmware's
+  const SS_CAPTIONS = [
+    ['#calSendSetup small', 'SET est.gamma / alpha / sen.topo / vcc', 'TEAM_SET sun.gamma / alpha / topo / vcc'],
+    ['#calAmb small', 'AMB 600', 'TEAM_SUN × 12'], ['#swRecord small', 'RAW 400', 'TEAM_SUN × 8'], ['#valRecord small', 'RAW 400', 'TEAM_SUN × 8'],
+    ['#grLvl1 small', 'RAW 1000', 'TEAM_SUN'], ['#grLvl2 small', 'RAW 1000', 'TEAM_SUN'],
+    ['#pushSend small', 'SET … / CAL LUT / SAVE', 'TEAM_SET … / TEAM_LUT / TEAM_SAVE'], ['#th0Run small', 'CAL TH0', 'TEAM_SET sun.th0'], ['#th0Save small', 'SAVE', 'TEAM_SAVE'],
+  ];
   function applyProtoUI() { // everything on the page that depends on the protocol
     const ss = S.proto === 'sunseek';
     const sim = $('input[name=trKind]:checked').value === 'sim';
@@ -4048,7 +4222,9 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     // TM lines are the data here, so the console shows them (untick "แสดง telemetry" to hide a stream); our own choice comes back afterwards
     if (ss && S.ss.showT === null) { S.ss.showT = $('#conShowT').checked; $('#conShowT').checked = true; }
     else if (!ss && S.ss.showT !== null) { $('#conShowT').checked = S.ss.showT; S.ss.showT = null; }
-    for (const t of ['hw', 'cal', 'm1', 'm2', 'live', 'tune']) { // pages that only make sense with our firmware
+    for (const [id, nsT, ssT] of SS_CAPTIONS) { const c = $(id); if (c) c.textContent = ss ? ssT : nsT; }
+    swSync();
+    for (const t of ['hw', 'm1', 'm2', 'live', 'tune']) { // pages that only make sense with our firmware (calibration speaks both)
       const sec = $('#tab-' + t);
       let n = sec.querySelector('.ss-note');
       if (ss && !n) {
@@ -4438,6 +4614,24 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     $('#swNext').textContent = nx === undefined ? 'ครบแล้ว' : nx;
     if (nx !== undefined) $('#swAngle').value = nx;
   }
+  function swSync() { // SunSeek has no turntable: always by hand
+    const auto = !isSs() && $('input[name=swMode]:checked').value === 'auto';
+    $('.sw-auto').hidden = !auto; $('.sw-manual').hidden = auto;
+    if (!auto) showNextManual();
+  }
+  // one averaged reading for a sweep / check point: RAW 400 on our firmware, TEAM_SUN x8 on the team SunSeek firmware
+  async function readPoint(ang) {
+    if (isSs()) {
+      const a = await ssCapture(8);
+      const p = mkPt(ang * (S.cal.angSign || 1), a.mvL, a.mvR);
+      if (a.sat) { p.sat = true; NS.toast(`จุด ${ang}° ADC ตัน: ไม่ใช้ในการ Fit (ลดแสงหรือถอยหลอด)`, 'warn', 5000); }
+      return p;
+    }
+    const w = waitJson('raw', 8000);
+    await send('RAW 400');
+    const j = await w;
+    return mkPt(ang, j.mv[0], j.mv[1]);
+  }
   const markStep = (n) => { const b = $(`#calSteps button[data-step="${n}"]`); if (b) b.classList.add('done'); updateNav(); };
 
   // ---- gamma ratio from two lamp brightnesses at one pose (audit F04): the LDRs must have stopped drifting
@@ -4465,14 +4659,14 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
   }
   async function measureLevel(n) {
     try {
-      if (S.last && S.last.m1 && S.last.m1 !== 0) await send('M1 STOP');
+      if (!isSs() && S.last && S.last.m1 && S.last.m1 !== 0) await send('M1 STOP');
       $('#grOut').textContent = `กำลังวัดระดับ ${n} (รอให้ค่านิ่ง)…`;
-      const l = await stableRaw();
+      const l = isSs() ? await ssStable() : await stableRaw();
       if (n === 1) { S.cal.gr = { l1: l, l2: null, ratio: null }; renderGr({ 'ต่อไป': 'บังหน้าหลอดด้วยกระดาษขาว 1–2 ชั้น (ห้ามขยับดาวเทียม) แล้วกด "วัดระดับ 2"' }); return; }
       if (!S.cal.gr || !S.cal.gr.l1) throw new Error('วัดระดับ 1 ก่อน');
       if (Math.abs(l.ang - S.cal.gr.l1.ang) > 0.05) throw new Error('ตัวขับขยับระหว่างการวัดสองระดับ ต้องวัดที่ท่าเดียวกัน: เริ่มใหม่จากระดับ 1');
       S.cal.gr.l2 = l;
-      const r = NS.fit.gammaRatio(S.cal.gr.l1, l, ambConductance(), cfg('est.gamma', 0.6));
+      const r = NS.fit.gammaRatio(S.cal.gr.l1, l, ambConductance(), isSs() ? +$('#calLdr').value : cfg('est.gamma', 0.6));
       S.cal.gr.ratio = r.ratio;
       renderGr({ 'แสงหลอดลดลง': `${r.factor.toFixed(2)} เท่า`, 'γ ขวา / γ ซ้าย': `${r.ratio.toFixed(4)}${S.cal.amb ? '' : ' (ยังไม่ได้วัดแสงรอบข้าง ถ้าห้องเปิดไฟให้ทำขั้นที่ 2 แล้ววัดใหม่)'}`, 'ต่อไป': 'เอากระดาษออก แล้วกด Fit' });
       addEvidence('gamma_ratio', `γ ขวา/ซ้าย = ${r.ratio.toFixed(4)} จากแสงสองระดับ (ลดลง ${r.factor.toFixed(2)} เท่า)`, { ...S.cal.gr, factor: r.factor });
@@ -4483,38 +4677,29 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
   }
 
   function runFit() {
-    const pts = S.cal.pts.filter((p) => !p.sat);
-    const nSat = S.cal.pts.length - pts.length;
+    const nSat = S.cal.pts.filter((p) => p.sat).length;
     if (nSat) NS.toast(`ตัด ${nSat} จุดที่ ADC ตันออกจากการ Fit`, 'warn', 5000);
     try {
-      const gamma = +$('#calLdr').value;
       const amb = $('#fitUseAmb').checked && S.cal.amb ? S.cal.amb : null;
       $('#fitStatus').textContent = 'กำลังคำนวณ…';
-      // fitGamma unticked = automatic: each LDR's gamma is fitted when the lamp-off (AMB) reading exists
-      const opts = { gamma, alpha0: +$('#calAlpha').value || 30, fitQ: $('#fitQ').checked, fitGamma: $('#fitGamma').checked || undefined, amb };
-      let r = NS.fit.fitPhysical(pts, opts);
       const gr = S.cal.gr;
       const useRatio = !!($('#fitUseRatio').checked && gr && gr.l1 && gr.l2);
-      if (useRatio) { // the ratio's room-light correction uses the left gamma: refine both together
-        for (let it = 0; it < 3; it++) {
-          gr.ratio = NS.fit.gammaRatio(gr.l1, gr.l2, amb ? { GL: amb.GL, GR: amb.GR } : null, r.P.gL).ratio;
-          r = NS.fit.fitPhysical(pts, { ...opts, gRatio: gr.ratio });
-        }
+      // fitGamma unticked = automatic: each LDR's gamma is fitted when the lamp-off (AMB) reading exists
+      const c = NS.fit.calibrate(S.cal.pts, {
+        gamma: +$('#calLdr').value, alpha0: Math.abs(+$('#calAlpha').value) || 30, fitQ: $('#fitQ').checked, fitGamma: $('#fitGamma').checked || undefined,
+        amb, gr: useRatio ? gr : null, vcc: calVcc(), topo: calTopo(), lutDx: +$('#fitLutDx').value || 1, positiveAlpha: S.proto === 'sunseek',
+      });
+      if (c.flipped) { // SunSeek: keep the organizer's angle sign (see NS.fit.calibrate); the marks from now on count the same way
+        S.cal.pts = c.all;
+        S.cal.val = S.cal.val.map((p) => ({ ...p, ang: -p.ang }));
+        renderSweep();
+        S.cal.angSign = -(S.cal.angSign || 1); // points recorded from now on are flipped the same way: keep typing the marks as they are
+        NS.toast('มุมบนขีดนับกลับทิศกับเครื่องหมายมุมของกรรมการ: กลับเครื่องหมายทุกจุดให้แล้ว จุดที่บันทึกต่อจากนี้กรอกตามขีดเหมือนเดิม โปรแกรมกลับให้เอง', 'warn', 12000);
       }
-      const est = NS.fit.toEst(r.P, { vcc: calVcc(), topo: calTopo() });
-      const phi = r.P.phi;
-      // suggested validity threshold: 15% of total light when facing the lamp
-      const near = pts.filter((p) => Math.abs(phi - p.ang) < 12).map((p) => NS.est.estimate(p.GL, p.GR, { ...est, lutOn: 0 }).S);
-      est.minS = +((near.length ? NS.median(near) : 1) * 0.15).toPrecision(3);
-      const use = NS.fit.usable(pts, est);
-      const rng = NS.fit.range(pts, est, phi);
-      if (rng) est.dmax = rng.dmax;
-      est.lut = NS.fit.buildLUT(pts, est, phi, { dx: +$('#fitLutDx').value || 1 });
-      const errsNo = NS.fit.errors(pts, { ...est, lut: null, lutOn: 0 }, phi).filter((_, i) => use[i]);
-      const errsLut = NS.fit.errors(pts, est, phi).filter((_, i) => use[i]);
-      const mNo = NS.fit.metrics(errsNo.map((e) => e.err));
-      const mLut = NS.fit.metrics(errsLut.map((e) => e.err));
-      S.cal.fit = { P: r.P, est, phi, rms: r.rms, mNo, mLut, time: new Date().toISOString(), n: r.n, span: r.span, gRatio: useRatio ? gr.ratio : null };
+      if (useRatio) gr.ratio = c.gRatio;
+      const { r, est, phi, rng, errsNo, errsLut, mNo, mLut } = c;
+      const pts = c.pts;
+      S.cal.fit = { P: r.P, est, phi, rms: r.rms, mNo, mLut, time: new Date().toISOString(), n: r.n, span: r.span, gRatio: useRatio ? gr.ratio : null, flipped: c.flipped };
       renderVerdict($('#fitVerdict'), NS.rules.fitVerdict({ maeLut: mLut.mae, maxLut: mLut.max, gL: r.P.gL, gR: r.P.gR, ambSource: r.ambSource, nSat, gRatioUsed: useRatio, rangeLo: rng ? rng.lo : NaN, rangeHi: rng ? rng.hi : NaN }));
       NS.kv($('#fitParams'), {
         'α (มุมเอียงจริง)': `${r.P.alpha.toFixed(2)}°${r.P.alpha < 0 ? ' (ติดลบ = ช่องสลับทิศ ไม่เป็นไร โปรแกรมจัดการให้)' : ''}`,
@@ -4570,11 +4755,16 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     if (m.n >= 4) markStep(6);
   }
 
-  function pushLines() {
+  function pushLines() { // throws (Thai) when the fit cannot go into the team firmware
     const f = S.cal.fit;
-    return f ? NS.fit.pushLines(f.est) : [];
+    if (!f) return [];
+    return isSs() ? NS.ss.teamLines(f.est) : NS.fit.pushLines(f.est);
   }
-  function renderPushPreview() { $('#pushPreview').textContent = pushLines().join('\n') || 'ยังไม่มีผล Fit'; }
+  function renderPushPreview() {
+    let t;
+    try { t = pushLines().join('\n') || 'ยังไม่มีผล Fit'; } catch (e) { t = 'ส่งไม่ได้: ' + e.message; }
+    $('#pushPreview').textContent = t;
+  }
 
   // ------------------------------------------------------------------ mission 1
   function finishRun() {
@@ -5078,9 +5268,19 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
       Object.values(charts).forEach((c) => { c.dirty = true; });
       if (b.dataset.step === '7') renderPushPreview();
     }));
-    $$('.calstep .next').forEach((b) => b.addEventListener('click', () => { $(`#calSteps button[data-step="${b.dataset.next}"]`).click(); $('main').scrollTop = 0; }));
+    $$('.calstep .next').forEach((b) => b.addEventListener('click', () => { // a step hidden in this mode (Balance in SunSeek) is skipped
+      let n = +b.dataset.next;
+      while ($(`#calSteps button[data-step="${n}"]`) && $(`#calSteps button[data-step="${n}"]`).hidden) n++;
+      $(`#calSteps button[data-step="${n}"]`).click(); $('main').scrollTop = 0;
+    }));
     $('#calSendSetup').addEventListener('click', async () => {
       try {
+        if (isSs()) {
+          await ssSendAll([`TEAM_SET,sun.gamma,${+$('#calLdr').value}`, `TEAM_SET,sun.alpha,${Math.abs(+$('#calAlpha').value) || 30}`, `TEAM_SET,sun.topo,${+$('#calTopo').value}`, `TEAM_SET,sun.vcc,${+$('#calVcc').value}`]);
+          markStep(1);
+          NS.toast('ส่งค่าตั้งแล้ว (ยังใช้สูตรกรรมการจนกว่าจะส่งผลคาลิเบรตในขั้นที่ 7)', 'good');
+          return;
+        }
         await send(`SET est.gamma ${+$('#calLdr').value}`);
         await send(`SET est.alpha ${+$('#calAlpha').value}`);
         await send(`SET sen.topo ${+$('#calTopo').value}`);
@@ -5091,6 +5291,16 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     });
     $('#calAmb').addEventListener('click', async () => {
       try {
+        if (isSs()) { // lamp off: the room light as conductance (what AMB computes on our firmware)
+          const a = await ssCapture(12);
+          if (a.sat) throw new Error('ADC ตัน: ห้องสว่างเกินหรือยังไม่ได้ปิดหลอด');
+          const g = +$('#calLdr').value;
+          const GL = NS.est.toG(a.mvL, calVcc(), calTopo()); const GR = NS.est.toG(a.mvR, calVcc(), calTopo());
+          S.cal.amb = { GL, GR, gamma: g, aL: +Math.pow(GL, 1 / g).toPrecision(6), aR: +Math.pow(GR, 1 / g).toPrecision(6) };
+          NS.kv($('#calAmbOut'), { 'mV ซ้าย / ขวา': `${a.mvL.toFixed(1)} / ${a.mvR.toFixed(1)} (สั่น ±${a.sdL.toFixed(1)} / ±${a.sdR.toFixed(1)})`, 'aL / aR': `${S.cal.amb.aL} / ${S.cal.amb.aR}` });
+          markStep(2);
+          return;
+        }
         const w = waitJson('amb', 8000);
         await send('AMB 600');
         const j = await w;
@@ -5111,7 +5321,6 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
         markStep(3);
       } catch (e) { NS.toast(e.message, 'bad'); }
     });
-    const swSync = () => { const auto = $('input[name=swMode]:checked').value === 'auto'; $('.sw-auto').hidden = !auto; $('.sw-manual').hidden = auto; if (!auto) showNextManual(); };
     $$('input[name=swMode]').forEach((e) => e.addEventListener('change', swSync));
     swSync();
     for (const id of ['#swFrom', '#swTo', '#swStep']) $(id).addEventListener('change', showNextManual);
@@ -5128,18 +5337,14 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     });
     $('#swRecord').addEventListener('click', async () => {
       try {
-        const w = waitJson('raw', 8000);
-        await send('RAW 400');
-        const j = await w;
-        const ang = +$('#swAngle').value;
-        S.cal.pts.push(mkPt(ang, j.mv[0], j.mv[1]));
+        S.cal.pts.push(await readPoint(+$('#swAngle').value));
         S.cal.manualIdx++;
         renderSweep();
         showNextManual();
       } catch (e) { NS.toast(e.message, 'bad'); }
     });
     $('#swUndo').addEventListener('click', () => { S.cal.pts.pop(); S.cal.manualIdx = Math.max(0, S.cal.manualIdx - 1); renderSweep(); showNextManual(); });
-    armConfirm($('#swClear'), () => { S.cal.pts = []; S.cal.manualIdx = 0; renderSweep(); showNextManual(); });
+    armConfirm($('#swClear'), () => { S.cal.pts = []; S.cal.manualIdx = 0; S.cal.angSign = 1; renderSweep(); showNextManual(); });
     $('#swExport').addEventListener('click', () => NS.download(`sweep_${NS.fileStamp()}.csv`, NS.fit.toCSV(S.cal.pts), 'text/csv'));
     $('#swImport').addEventListener('change', async (e) => {
       const f = e.target.files[0]; if (!f) return;
@@ -5157,18 +5362,23 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     });
     $('#valRecord').addEventListener('click', async () => {
       try {
-        const w = waitJson('raw', 8000);
-        await send('RAW 400');
-        const j = await w;
-        S.cal.val.push(mkPt(+$('#valAngle').value, j.mv[0], j.mv[1]));
+        S.cal.val.push(await readPoint(+$('#valAngle').value));
         renderVal();
       } catch (e) { NS.toast(e.message, 'bad'); }
     });
     $('#valClear').addEventListener('click', () => { S.cal.val = []; renderVal(); });
     $('#pushSend').addEventListener('click', async () => {
-      const lines = pushLines();
-      if (!lines.length) { NS.toast('ยังไม่มีผล Fit', 'warn'); return; }
       try {
+        const lines = pushLines();
+        if (!lines.length) { NS.toast('ยังไม่มีผล Fit', 'warn'); return; }
+        if (isSs()) {
+          await ssSendAll(lines, (i, n) => { $('#pushOut').textContent = `กำลังส่ง ${i}/${n}…`; });
+          await S.ss.client.send('TEAM_INFO');
+          $('#pushOut').textContent = `ส่ง ${lines.length} คำสั่งสำเร็จ: บอร์ดใช้โมเดลทีม (sun.model 1) และบันทึกถาวรแล้ว (${NS.clock()}) · ต่อไปทำขั้นที่ 8`;
+          markStep(7);
+          addEvidence('calibration_push', 'ส่งผลคาลิเบรตเข้าเฟิร์มแวร์ทีม SunSeek และ TEAM_SAVE', { lines });
+          return;
+        }
         for (const l of lines) await send(l, { timeout: 6000 });
         $('#pushOut').textContent = `ส่ง ${lines.length} คำสั่งสำเร็จ และบันทึกถาวรแล้ว (${NS.clock()})`;
         markStep(7);
@@ -5190,6 +5400,19 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
 
     $('#th0Run').addEventListener('click', async () => {
       try {
+        if (isSs()) { // the team angle read now (TH, with the current th0 and LUT) becomes the reference angle
+          const ref = +$('#th0Ref').value || 0;
+          const cur = await ssReadParam('sun.th0');
+          const a = await ssCapture(12);
+          if (!Number.isFinite(a.th)) throw new Error('อ่านมุมไม่ได้ (TH)');
+          if (a.sat) throw new Error('ADC ตัน: ลดแสงหรือถอยหลอดก่อน');
+          const nv = NS.ss.th0For(cur, a.th, ref);
+          await ssSendAll([`TEAM_SET,sun.th0,${nv}`]);
+          NS.kv($('#th0Out'), { 'มุมที่อ่านได้ก่อนตั้ง': `${a.th.toFixed(3)}°`, 'th0 เดิม → ใหม่': `${cur} → ${nv}`, 'ต่อไป': 'กด "บันทึกถาวร" (TEAM_SAVE)' });
+          S.th0ok = true;
+          markStep(8);
+          return;
+        }
         if (S.last && S.last.m1 && S.last.m1 !== 0) await send('M1 STOP');
         const w = waitJson('th0', 10000);
         await send(`CAL TH0 ${+$('#th0Ref').value || 0}`);
@@ -5197,7 +5420,7 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
         markStep(8);
       } catch (e) { NS.toast(e.message, 'bad'); }
     });
-    $('#th0Save').addEventListener('click', async () => { try { await send('SAVE'); await refreshCfg(); NS.toast('บันทึกถาวรแล้ว', 'good'); } catch (e) { NS.toast(e.message, 'bad'); } });
+    $('#th0Save').addEventListener('click', async () => { try { if (isSs()) { await ssSendAll(['TEAM_SAVE']); NS.toast('บันทึกถาวรแล้ว (TEAM_SAVE)', 'good'); return; } await send('SAVE'); await refreshCfg(); NS.toast('บันทึกถาวรแล้ว', 'good'); } catch (e) { NS.toast(e.message, 'bad'); } });
 
     // tune
     $('#cfgReload').addEventListener('click', refreshCfg);

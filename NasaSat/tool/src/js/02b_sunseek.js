@@ -225,6 +225,59 @@ NS.ss.Client = class {
   }
 };
 
+// ===== our team firmware on the SunSeek board (NasaPakSoi-team, TEAM_* commands) =====
+// Its sun model is the same estimator as 04_estimator.js (parity-tested in SunSeek/host_test), parameters sun.*.
+NS.ss.LUT_MAX = 256; // TEAM_LUT_MAX
+
+// web estimator params (NS.fit.calibrate().est) -> the exact command list that loads them, switches the board to the team
+// model (sun.model 1) and saves. Throws (Thai) when a value is outside what the firmware accepts.
+NS.ss.teamLines = (e) => {
+  if (!e) throw new Error('ยังไม่มีผล Fit');
+  if (!(e.alpha >= 1 && e.alpha <= 89)) throw new Error(`α ${(+e.alpha).toFixed(2)}° อยู่นอกช่วงที่เฟิร์มแวร์ทีมรับ (1..89°): Fit ใหม่ในโหมด SunSeek`);
+  const p6 = (v) => (+v).toPrecision(6);
+  const L = [
+    `TEAM_SET,sun.vcc,${e.vcc ?? 3300}`, `TEAM_SET,sun.topo,${e.topo ?? 0}`,
+    `TEAM_SET,sun.gamma,${e.gamma.toFixed(4)}`, `TEAM_SET,sun.gammaR,${(e.gammaR || 0).toFixed(4)}`,
+    `TEAM_SET,sun.qL,${e.qL.toFixed(4)}`, `TEAM_SET,sun.qR,${e.qR.toFixed(4)}`, `TEAM_SET,sun.alpha,${e.alpha.toFixed(3)}`,
+    `TEAM_SET,sun.g,${p6(e.g)}`, `TEAM_SET,sun.aL,${p6(e.aL)}`, `TEAM_SET,sun.aR,${p6(e.aR)}`,
+    `TEAM_SET,sun.minS,${p6(e.minS)}`, `TEAM_SET,sun.dmax,${e.dmax ?? 0.95}`, `TEAM_SET,sun.th0,${+(e.th0 || 0).toFixed(3)}`,
+  ];
+  const v = e.lut && e.lut.v ? e.lut.v : [];
+  if (v.length) {
+    if (v.length > NS.ss.LUT_MAX) throw new Error(`LUT ${v.length} ค่า เกิน ${NS.ss.LUT_MAX}: เพิ่มความละเอียดตาราง (°) แล้ว Fit ใหม่`);
+    if (v.some((x) => !(Math.abs(x) <= 90))) throw new Error('ค่าใน LUT เกิน ±90°: ข้อมูล Sweep ผิดปกติ');
+    L.push(`TEAM_LUT_BEGIN,${e.lut.x0},${e.lut.dx},${v.length}`);
+    for (let i = 0; i < v.length;) { // as many values per line as fit well under the 240-character limit
+      let line = `TEAM_LUT_DATA,${i}`;
+      let j = i;
+      while (j < v.length && line.length + 1 + String(v[j]).length <= 200) line += ',' + v[j++];
+      L.push(line);
+      i = j;
+    }
+    L.push('TEAM_LUT_END', 'TEAM_SET,sun.lut,1');
+  } else L.push('TEAM_LUT_CLEAR', 'TEAM_SET,sun.lut,0');
+  L.push('TEAM_SET,sun.model,1', 'TEAM_SAVE');
+  return L;
+};
+
+// average of TM,TEAM_T readings ({MVL, MVR, SAT, TH, ANG, ...} numbers) -> {n, mvL, mvR, sdL, sdR, sat, th, ang} or null
+NS.ss.avgTeamT = (rows) => {
+  const ok = (rows || []).filter((r) => r && Number.isFinite(r.MVL) && Number.isFinite(r.MVR));
+  if (!ok.length) return null;
+  const mean = (k) => { const a = ok.map((r) => r[k]).filter(Number.isFinite); return a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN; };
+  const sd = (k, mu) => Math.sqrt(ok.reduce((s, r) => s + (r[k] - mu) ** 2, 0) / ok.length);
+  const mvL = mean('MVL');
+  const mvR = mean('MVR');
+  return { n: ok.length, mvL, mvR, sdL: sd('MVL', mvL), sdR: sd('MVR', mvR), sat: ok.some((r) => r.SAT === 1), th: mean('TH'), ang: mean('ANG') };
+};
+
+// new sun.th0 so that the angle read now (with the current th0) becomes `ref`; the firmware accepts -90..90
+NS.ss.th0For = (curTh0, readDeg, ref) => {
+  const v = curTh0 + (ref - readDeg);
+  if (!Number.isFinite(v) || Math.abs(v) > 90) throw new Error(`th0 ใหม่ ${NS.isNum(v) ? v.toFixed(2) : v}° เกิน ±90°: ตรวจว่าหันเข้าหาหลอดและใช้โมเดลทีมอยู่`);
+  return +v.toFixed(3);
+};
+
 // Short Thai fix for an ERR code of the organizer firmware (single codes, so "ERR ADCS_PREPARE GYRO_NOT_READY" works too).
 // Takes a text that contains the code (an ERR line, a toast); '' when it knows nothing.
 NS.ss.errHelp = (() => {
@@ -258,6 +311,24 @@ NS.ss.errHelp = (() => {
     ESTIMATOR_MA_WINDOW_RANGE_1_TO_500: 'ESTIMATOR_MA_WINDOW ต้องเป็นเลข 1 ถึง 500',
     ESTIMATOR_FILTER_RANGE_0_TO_1: 'ESTIMATOR_FILTER ต้องเป็นเลข 0 ถึง 1',
     ESTIMATOR_GYRO_WEIGHT_RANGE_0_TO_1: 'ESTIMATOR_GYRO_WEIGHT ต้องเป็นเลข 0 ถึง 1',
+    // our team firmware (TEAM_*); the organizer's firmware answers TEAM_* with UNKNOWN_COMMAND
+    TEAM_UNKNOWN_KEY: 'ไม่รู้จักชื่อค่านี้: พิมพ์ TEAM_LIST ดูชื่อทั้งหมด',
+    TEAM_RANGE: 'ค่าอยู่นอกช่วงที่เฟิร์มแวร์ทีมรับ (ตัวเลขหลังชื่อคือช่วง ต่ำสุด,สูงสุด)',
+    TEAM_VALUE: 'ค่าต้องเป็นตัวเลข',
+    TEAM_SET_SYNTAX: 'รูปแบบคือ TEAM_SET,<ชื่อ>,<ค่า>',
+    TEAM_REQUIRES_MANUAL: 'เปลี่ยนค่านี้ได้เฉพาะโหมด MANUAL: กด STOP ก่อน',
+    TEAM_SAVE_FLASH: 'บันทึกลง flash ไม่สำเร็จ: ลอง TEAM_SAVE อีกครั้ง',
+    TEAM_DEFAULTS_NEEDS_YES: 'ต้องพิมพ์ TEAM_DEFAULTS,YES (ล้างค่าที่จูนทั้งหมด)',
+    TEAM_LUT_NOT_STARTED: 'ต้องส่ง TEAM_LUT_BEGIN ก่อน TEAM_LUT_DATA',
+    TEAM_LUT_INCOMPLETE: 'LUT ส่งมาไม่ครบ: ส่งชุดคำสั่งคาลิเบรตใหม่ทั้งชุด',
+    TEAM_LUT_BEGIN_SYNTAX: 'TEAM_LUT_BEGIN,<x0>,<dx>,<n> (n ไม่เกิน 256)',
+    TEAM_LUT_DATA_SYNTAX: 'TEAM_LUT_DATA,<เริ่มที่>,<ค่า>,...',
+    TEAM_LUT_DATA_VALUE: 'ค่าใน LUT ผิด (ต้องไม่เกิน ±90 และไม่เกินจำนวนที่ประกาศ)',
+    TEAM_STREAM_RANGE_0_TO_20: 'TEAM_STREAM ต้องเป็น 0 ถึง 20',
+    TEAM_UNKNOWN_COMMAND: 'ไม่รู้จักคำสั่ง TEAM_ นี้',
+    RW_CMD_REQUIRES_MOMENTUM_STRATEGY: 'RW_CMD ใช้ได้เฉพาะกลยุทธ์ MOMENTUM: ส่ง ADCS_STRATEGY,MOMENTUM แล้ว RW_BIAS ก่อน',
+    RW_CMD_SYNTAX: 'รูปแบบ RW_CMD,<delta>,<assist>,<ms> เช่น RW_CMD,+20,+80,300 (ms ไม่เกิน 5000)',
+    RW_CMD_OUT_OF_RANGE: 'RW_CMD: bias + delta ต้องอยู่ 0..100 และ assist −100..100',
     SENSOR_SNAPSHOT_READ_FAILED: READ,
     SENSOR_RAW_READ_FAILED: READ,
     GYRO_READ_FAILED: READ,

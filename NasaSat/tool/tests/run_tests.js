@@ -192,6 +192,52 @@ console.log('brightness invariance: gamma ratio from two lamp brightnesses (audi
   }
 }
 
+console.log('SunSeek team firmware calibration (W4): NS.fit.calibrate + TEAM_* command list');
+{
+  const amb = sample(0, 0, 0.03, 0); // lamp off
+  const c = NS.fit.calibrate(pts, { gamma: 0.6, alpha0: 30, fitQ: true, amb: { GL: amb.GL, GR: amb.GR }, vcc: 3300, topo: 0, lutDx: 1, positiveAlpha: true });
+  const m = NS.fit.metrics(NS.fit.errors(val, c.est, c.phi).map((e) => e.err));
+  check('calibrate(): same quality as the step-by-step fit', m.mae < 0.3 && !c.flipped && c.r.P.alpha > 0, `MAE ${m.mae.toFixed(3)} alpha ${c.r.P.alpha.toFixed(2)}`);
+  // the marks on the SunSeek platform counted the other way: alpha comes out negative unless flipped
+  const rev = pts.map((p) => ({ ...p, ang: -p.ang }));
+  const cNo = NS.fit.calibrate(rev, { gamma: 0.6, fitQ: true, vcc: 3300, topo: 0 });
+  const cYes = NS.fit.calibrate(rev, { gamma: 0.6, fitQ: true, vcc: 3300, topo: 0, positiveAlpha: true });
+  check('reversed marks give a negative alpha', cNo.r.P.alpha < 0, `${cNo.r.P.alpha.toFixed(2)}`);
+  check('positiveAlpha flips them back (same sign as 90*NDV)', cYes.flipped && cYes.r.P.alpha > 0 && cYes.all[0].ang === pts[0].ang, `${cYes.r.P.alpha.toFixed(2)}`);
+  const s20 = sample(20, 1, 0.03, 0);
+  const th20 = NS.est.estimate(s20.GL, s20.GR, cYes.est).theta;
+  const ndv = (s20.mvL - s20.mvR) / (s20.mvL + s20.mvR);
+  check('flipped calibration: team angle has the sign of the organizer angle', Math.sign(th20) === Math.sign(ndv) && Math.abs(th20 - 20) < 0.5, `θ ${th20.toFixed(2)} NDV ${ndv.toFixed(3)}`);
+
+  const L = NS.ss.teamLines(c.est);
+  check('team lines: TEAM_SET sun.* first, sun.model 1 then TEAM_SAVE last', /^TEAM_SET,sun\.vcc,3300$/.test(L[0]) && L[L.length - 2] === 'TEAM_SET,sun.model,1' && L[L.length - 1] === 'TEAM_SAVE');
+  check('team lines: every line < 240 characters', L.every((l) => l.length < 240), `${Math.max(...L.map((l) => l.length))}`);
+  const b = L.find((l) => l.startsWith('TEAM_LUT_BEGIN,'));
+  const n = +b.split(',')[3];
+  const vals = L.filter((l) => l.startsWith('TEAM_LUT_DATA,')).flatMap((l) => l.split(',').slice(2).map(Number));
+  check('team lines: LUT data covers BEGIN n exactly, in order', vals.length === n && vals.every((v, i) => v === c.est.lut.v[i]) && L.includes('TEAM_LUT_END') && L.includes('TEAM_SET,sun.lut,1'), `n ${n}`);
+  const firstIdx = L.filter((l) => l.startsWith('TEAM_LUT_DATA,')).map((l) => +l.split(',')[1]);
+  check('team lines: each DATA line starts where the last ended', firstIdx[0] === 0 && firstIdx.every((x, i) => i === 0 || x > firstIdx[i - 1]));
+  const noLut = NS.ss.teamLines({ ...c.est, lut: null });
+  check('team lines without a LUT clear the old one', noLut.includes('TEAM_LUT_CLEAR') && noLut.includes('TEAM_SET,sun.lut,0'));
+  let threw = '';
+  try { NS.ss.teamLines({ ...c.est, alpha: -30 }); } catch (e) { threw = e.message; }
+  check('team lines refuse alpha the firmware refuses', /α/.test(threw), threw);
+  const big = { ...c.est, lut: { x0: -100, dx: 0.5, v: new Array(300).fill(0.1) } };
+  threw = '';
+  try { NS.ss.teamLines(big); } catch (e) { threw = e.message; }
+  check('team lines refuse a LUT longer than 256', /256/.test(threw));
+
+  const a = NS.ss.avgTeamT([{ MVL: 1000, MVR: 2000, SAT: 0, TH: 1, ANG: 2 }, { MVL: 1010, MVR: 1990, SAT: 1, TH: 3, ANG: 2 }, { MVL: NaN, MVR: 1 }]);
+  check('avgTeamT: mean, spread, any clip', a.n === 2 && a.mvL === 1005 && a.mvR === 1995 && a.sdL === 5 && a.sat && a.th === 2);
+  check('avgTeamT: nothing usable -> null', NS.ss.avgTeamT([{ MVL: NaN, MVR: NaN }]) === null);
+  check('th0For: read 2.5 deg at the reference 0 with th0 1 -> -1.5', NS.ss.th0For(1, 2.5, 0) === -1.5);
+  threw = '';
+  try { NS.ss.th0For(80, -20, 0); } catch (e) { threw = e.message; }
+  check('th0For refuses more than 90 deg', /90/.test(threw));
+  check('errHelp knows the team codes', /MANUAL/.test(NS.ss.errHelp('ERR,TEAM_REQUIRES_MANUAL,sun.model')) && /RW_BIAS|MOMENTUM/.test(NS.ss.errHelp('ERR,RW_CMD_REQUIRES_MOMENTUM_STRATEGY')));
+}
+
 console.log('image assembler (lost / damaged / stalled chunks)');
 {
   const got = [];

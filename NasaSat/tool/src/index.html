@@ -204,10 +204,11 @@
       <div class="pagehead">
         <div><h1>คาลิเบรต</h1><p class="lead">ทำตามขั้น 1 → 8 ขั้นที่ 2 และ 8 ห้ามข้าม ขั้นที่ 3 ข้ามได้</p></div>
       </div>
+      <div class="ss-note ss-only" hidden><span class="pill warn">โหมด SunSeek</span>ใช้กับเฟิร์มแวร์ทีม (TEAM_*) ผ่าน USB · ไม่มีตัวขับ: หมุนดาวเทียมด้วยมือตามขีดบนแท่น แล้วกดบันทึก · ขั้น 7 เปลี่ยนบอร์ดไปใช้โมเดลทีม (sun.model 1) · กลับไปสูตรกรรมการ: TEAM_SET,sun.model,0</div>
       <div class="steps" id="calSteps">
         <button data-step="1" class="active"><b>01</b><span class="sl">ตั้งค่า</span></button>
         <button data-step="2"><b>02</b><span class="sl">แสงรอบข้าง</span><small class="nos">ห้ามข้าม</small></button>
-        <button data-step="3"><b>03</b><span class="sl">Balance</span><small>ข้ามได้</small></button>
+        <button data-step="3" class="ns-only"><b>03</b><span class="sl">Balance</span><small>ข้ามได้</small></button>
         <button data-step="4"><b>04</b><span class="sl">Sweep</span></button>
         <button data-step="5"><b>05</b><span class="sl">Fit</span></button>
         <button data-step="6"><b>06</b><span class="sl">ตรวจความแม่น</span></button>
@@ -220,6 +221,7 @@
           <div><h2>ขั้นที่ 1: ตั้งค่าตัวขับและเซนเซอร์</h2><p class="lead">ทำตัวขับก่อน แล้วบอกบอร์ดว่าใช้ LDR รุ่นไหน ต่อวงจรแบบไหน</p></div>
           <div class="pageact"><button id="calSendSetup" class="primary">ส่งค่าเข้าบอร์ด<small>SET est.gamma / alpha / sen.topo / vcc</small></button></div>
         </div>
+        <div class="ns-only">
         <h3>ตัวขับ (ทำก่อน)</h3>
         <div class="row">
           <button data-cmd="ZERO" title="ตั้งตำแหน่งปัจจุบันเป็น 0° ของตัวขับ">ตั้งศูนย์ตัวขับ<small>ZERO</small></button>
@@ -232,6 +234,7 @@
           <div class="row"><button data-cmd="SPR">วัด step ต่อรอบ<small>SPR</small></button></div>
           <div id="sprOut" class="inline-res"></div>
         </details>
+        </div>
         <h3>เซนเซอร์</h3>
         <div class="formgrid">
           <label>รุ่น LDR (ค่า γ)
@@ -286,7 +289,7 @@
           <div><h2>ขั้นที่ 4: เก็บข้อมูล Sweep</h2><p class="lead">ตัวขับกวาดมุมแล้วบอร์ดวัดแสงทุกจุด เสร็จแล้วโปรแกรม Fit ให้เองเมื่อได้ 6 จุดขึ้นไป</p></div>
           <div class="pageact sw-auto"><span class="muted" id="swStatus"></span><button id="swStart" class="primary">เริ่ม Sweep<small id="swCmd">SWEEP -60 60 5 300 cal</small></button></div>
         </div>
-        <div class="row mid">
+        <div class="row mid ns-only">
           <label class="radio"><input type="radio" name="swMode" value="auto" checked> อัตโนมัติ (ตัวขับหมุนเอง)</label>
           <label class="radio"><input type="radio" name="swMode" value="manual"> หมุนมือ + กดบันทึก</label>
         </div>
@@ -352,7 +355,7 @@
       <div class="calstep" data-step="6">
         <div class="sh">
           <div><h2>ขั้นที่ 6: ตรวจความแม่น (validate)</h2><p class="lead">เก็บจุดใหม่ที่ไม่ได้ใช้ fit (มุมกึ่งกลางระหว่างจุดเดิม) แล้ววัดความคลาดเคลื่อน</p></div>
-          <div class="pageact"><button id="valAuto" class="primary">Sweep ตรวจอัตโนมัติ<small>SWEEP … val</small></button></div>
+          <div class="pageact ns-only"><button id="valAuto" class="primary">Sweep ตรวจอัตโนมัติ<small>SWEEP … val</small></button></div>
         </div>
         <details><summary>ทำไมกวาดย้อนทิศ</summary><p class="note">ปุ่มอัตโนมัติกวาด<b>ย้อนทิศ</b>กับขั้นที่ 4 ถ้า LDR หน่วงหรือเฟืองมีระยะฟรีที่ชดเชยไม่หมด จะเห็นเป็น bias ในผลนี้ (ถ้า bias เกิน 0.2° ให้เพิ่ม "รอต่อจุด" หรือวัด BACKLASH ใหม่)</p></details>
         <div id="valVerdict"></div>

@@ -12,3 +12,4 @@ node sunmodel_parity.js
 # the whole sketch (organizer code has sign-compare warnings of its own: errors only)
 g++ -std=c++17 -O1 -DTEAM_HOST_TEST -Imock -I"$FW" -w -o build/sunseek_host host_main.cpp sim_world.cpp
 node e2e.js
+node cal_e2e.js

@@ -286,6 +286,53 @@ NS.fit.buildLUT = (pts, est, phi, o = {}) => {
   return { x0: +x0.toFixed(3), dx, v };
 };
 
+// The whole "Fit" step from sweep points (the tool's Fit button and the SunSeek firmware test both use this):
+// physical fit (+ gamma ratio from two lamp levels when o.gr has l1 and l2), estimator params, validity threshold,
+// usable range, LUT, errors. o: {gamma, alpha0, fitQ, fitGamma, amb, gr, vcc, topo, lutDx, positiveAlpha}
+// positiveAlpha (SunSeek): the angle must keep the sign of the organizer's 90*NDV (else adcs.sign tuned with the organizer
+// model is wrong after switching sun.model). A negative alpha means the angle marks count the other way: the marks are
+// negated (flipped: true, pts = the flipped points) and the fit is done again.
+NS.fit.calibrate = (ptsAll, o = {}) => {
+  let all = ptsAll;
+  let flipped = false;
+  const run = () => {
+    const pts = all.filter((p) => !p.sat);
+    const opts = { gamma: o.gamma, alpha0: o.alpha0 || 30, fitQ: o.fitQ, fitGamma: o.fitGamma, amb: o.amb || null };
+    let r = NS.fit.fitPhysical(pts, opts);
+    let gRatio = null;
+    if (o.gr && o.gr.l1 && o.gr.l2) { // the ratio's room-light correction uses the left gamma: refine both together
+      const amb = o.amb ? { GL: o.amb.GL, GR: o.amb.GR } : null;
+      for (let it = 0; it < 3; it++) {
+        gRatio = NS.fit.gammaRatio(o.gr.l1, o.gr.l2, amb, r.P.gL).ratio;
+        r = NS.fit.fitPhysical(pts, { ...opts, gRatio });
+      }
+    }
+    return { pts, r, gRatio };
+  };
+  let f = run();
+  if (o.positiveAlpha && f.r.P.alpha < 0) {
+    all = ptsAll.map((p) => ({ ...p, ang: -p.ang }));
+    flipped = true;
+    f = run();
+  }
+  const { pts, r, gRatio } = f;
+  const est = NS.fit.toEst(r.P, { vcc: o.vcc, topo: o.topo });
+  const phi = r.P.phi;
+  // suggested validity threshold: 15% of total light when facing the lamp
+  const near = pts.filter((p) => Math.abs(phi - p.ang) < 12).map((p) => NS.est.estimate(p.GL, p.GR, { ...est, lutOn: 0 }).S);
+  est.minS = +((near.length ? NS.median(near) : 1) * 0.15).toPrecision(3);
+  const use = NS.fit.usable(pts, est);
+  const rng = NS.fit.range(pts, est, phi);
+  if (rng) est.dmax = rng.dmax;
+  est.lut = NS.fit.buildLUT(pts, est, phi, { dx: o.lutDx || 1 });
+  const errsNo = NS.fit.errors(pts, { ...est, lut: null, lutOn: 0 }, phi).filter((_, i) => use[i]);
+  const errsLut = NS.fit.errors(pts, est, phi).filter((_, i) => use[i]);
+  return {
+    r, est, phi, rng, use, gRatio, flipped, pts, all, nSat: all.length - pts.length,
+    errsNo, errsLut, mNo: NS.fit.metrics(errsNo.map((e) => e.err)), mLut: NS.fit.metrics(errsLut.map((e) => e.err)),
+  };
+};
+
 // the exact command list that loads a calibration into the board (tool, tests and docs all use this one)
 NS.fit.pushLines = (e) => {
   const L = [
