@@ -5,13 +5,16 @@
 
   ตัวอย่าง
     powershell -File C:\TYSC\NasaSat\ai\board.ps1 -List
-    powershell -File C:\TYSC\NasaSat\ai\board.ps1 -Cmd HELLO,HWID
+    powershell -File C:\TYSC\NasaSat\ai\board.ps1 -Cmd 'HELLO;HWID'
     powershell -File C:\TYSC\NasaSat\ai\board.ps1 -Port COM10 -Cmd 'RAW 1000' -Wait 2500
     powershell -File C:\TYSC\NasaSat\ai\board.ps1 -Listen 5000 -ShowT     (ฟังเฉย ๆ 5 วินาที รวม telemetry)
+    เฟิร์มแวร์ผู้จัด (SunSeek):  -Cmd 'PING;STATUS;TEAM_INFO'   -Cmd 'ADCS_STRATEGY,REACTION;RW,20' -Wait 1500
 
   หมายเหตุ
+    - หลายคำสั่งคั่นด้วย ; (ห้ามใช้ , เพราะคำสั่งของ SunSeek มี , อยู่ในตัว และ powershell -File ไม่แยกที่ , ให้)
     - ไม่ใส่ @id ให้เอง ถ้าต้องการจับคู่คำตอบให้พิมพ์ '@7 GET ctl.k' เอง
-    - บรรทัด telemetry (T,...) ถูกซ่อนโดยปริยาย แสดงแค่จำนวน + บรรทัดล่าสุด ใช้ -ShowT เพื่อดูทั้งหมด
+    - บรรทัด telemetry (T,... ของ NasaSat และ TM,TEAM_T,... ของเฟิร์มแวร์ทีมบน SunSeek) ถูกซ่อนโดยปริยาย
+      แสดงแค่จำนวน + บรรทัดล่าสุด ใช้ -ShowT เพื่อดูทั้งหมด
     - DTR/RTS ปล่อยต่ำไว้ (บอร์ดที่มีวงจร auto-reset จะไม่รีเซ็ตตอนเปิดพอร์ต) ถ้าบอร์ด USB ในตัวเงียบ ลอง -Dtr
     - ทุกครั้งที่รันจะเก็บ log ไว้ที่ ai\logs\ (หลักฐาน)
 #>
@@ -83,7 +86,7 @@ function Pump([int]$ms) {
         $script:buf = $script:buf.Substring($i + 1)
         if (-not $line) { continue }
         Add-Content -LiteralPath $logFile -Value $line -Encoding UTF8
-        if ($line.StartsWith('T,')) {
+        if ($line.StartsWith('T,') -or $line.StartsWith('TM,TEAM_T,')) {
           $script:tCount++; $script:tLast = $line
           if ($ShowT) { $line }
         } elseif ($line.StartsWith('TH')) {
@@ -98,7 +101,7 @@ function Pump([int]$ms) {
 try {
   "# $Port @ $Baud  (log: $logFile)"
   Pump 300   # ทิ้ง/แสดงของที่ค้างในบัฟเฟอร์ก่อน
-  foreach ($c in $Cmd) {
+  foreach ($c in @($Cmd | ForEach-Object { $_ -split ';' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })) {
     ">> $c"
     Add-Content -LiteralPath $logFile -Value ">> $c" -Encoding UTF8
     $sp.Write($c + "`n")

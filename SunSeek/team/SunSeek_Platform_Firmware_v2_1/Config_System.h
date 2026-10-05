@@ -7,4 +7,4 @@
   TRAINING LEVEL: BASIC — intended to be edited by learners when instructed.
 */
 
-#define TEAM_NAME "Team_DekMUT"
+#define TEAM_NAME "NasaPakSoi"

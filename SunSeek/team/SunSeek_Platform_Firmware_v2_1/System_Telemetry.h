@@ -183,11 +183,11 @@ inline void sensorSendCalibrationStatus() {
   sendTelemetry(
     "TM,GYRO_BIAS_X," + String(GYRO_BIAS_X_DPS, 3) +
     ",GYRO_BIAS_Y," + String(GYRO_BIAS_Y_DPS, 3) +
-    ",GYRO_BIAS_Z," + String(GYRO_BIAS_Z_DPS, 3)
+    ",GYRO_BIAS_Z," + String(TP.imuGbz, 3)  // TEAM NasaPakSoi: the value actually in use
   );
   sendTelemetry(
     "TM,BODY_RATE_AXIS," + String(IMU_BODY_RATE_AXIS) +
-    ",BODY_RATE_SIGN," + String(IMU_BODY_RATE_SIGN, 1)
+    ",BODY_RATE_SIGN," + String(TP.imuRsign, 1)  // TEAM NasaPakSoi
   );
   sendTelemetry(
     "TM,MAG_OFFSET_X," + String(MAG_OFFSET_X, 2) +

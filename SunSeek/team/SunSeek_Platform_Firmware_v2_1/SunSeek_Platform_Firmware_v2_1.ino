@@ -17,6 +17,7 @@ void setup(){
   Serial.begin(115200);
   delay(1000);
   rwBegin();
+  teamParamsBegin();   // TEAM NasaPakSoi: saved team parameters, before anything that uses them
   imuBegin();
   sunSensorBegin();
   adcsBegin();
@@ -25,6 +26,7 @@ void setup(){
   Serial.println("SUNSEEK PLATFORM v2.1 — Training Firmware");
   Serial.println("Spacecraft ID: "+getSpacecraftID());
   Serial.println("Payload UART: TX=GPIO41 RX=GPIO42 @115200");
+  Serial.println("TEAM FIRMWARE: " TEAM_FW_VERSION);  // TEAM NasaPakSoi
   sensorSendHealth();
   ttcSendADCSConfig();
   payloadSendCommand("STATUS");
@@ -39,6 +41,7 @@ void loop(){
   sensorADCSUpdate();
   sensorTelemetryUpdate();
   missionUpdate();
+  teamTelemetryUpdate();  // TEAM NasaPakSoi: TM,TEAM_T over USB when team.tm > 0
   if(rwTakeManeuverCompleteEvent()){
     sendTelemetry("EVT,RW_MANEUVER_COMPLETE,"+String(rwGetCurrentBias()));
     ttcSendRWTelemetry();

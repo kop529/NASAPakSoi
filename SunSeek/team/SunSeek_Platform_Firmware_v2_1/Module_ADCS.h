@@ -49,6 +49,8 @@ inline const char* adcsRefText(){return _a.ref==ADCS_MAG?"MAG":"SUN";}
 
 inline void adcsBegin(){
   estimatorBegin();
+  // TEAM NasaPakSoi: gains/bias start from the team's saved values (organizer defaults if none)
+  _a.kp=TP.adcsKp;_a.kd=TP.adcsKd;_a.bias=(int)lroundf(TP.adcsBias);
   _aLast=millis();
 }
 
@@ -72,7 +74,13 @@ inline bool adcsTarget(float t){
 
 inline bool adcsTune(float kp,float kd,int bias){
   if(kp<0||kp>ADCS_KP_MAX||kd<0||kd>ADCS_KD_MAX||bias<0||bias>100)return false;
-  _a.kp=kp;_a.kd=kd;_a.bias=bias;return true;
+  _a.kp=kp;_a.kd=kd;_a.bias=bias;
+  // TEAM NasaPakSoi: ADCS_TUNE and TEAM_SET adcs.* share one store, so TEAM_SAVE keeps either
+  if(TP.adcsKp!=kp||TP.adcsKd!=kd||TP.adcsBias!=(float)bias){
+    TP.adcsKp=kp;TP.adcsKd=kd;TP.adcsBias=(float)bias;
+    for(int i=0;i<TEAM_PARAM_COUNT;i++){String k=_tpDefs[i].key;if(k=="adcs.kp"||k=="adcs.kd"||k=="adcs.bias")_tpDirty[i]=true;}
+  }
+  return true;
 }
 
 inline bool adcsRead(){
@@ -137,8 +145,10 @@ inline void adcsUpdate(){
   // In MANUAL we update sensing/estimation only; actuator remains operator-controlled.
   if(_a.mode!=ADCS_AUTO)return;
 
+  // TEAM NasaPakSoi: deadband / output limit / control sign are team parameters (TEAM_SET adcs.db,
+  // adcs.max, adcs.sign) instead of compile-time constants; defaults are the organizer's values.
   float u=0;
-  if(fabsf(_a.error)>=ADCS_DEADBAND_DEG)
+  if(fabsf(_a.error)>=TP.adcsDb)
     u=_a.kp*_a.error-_a.kd*_a.rate;
 
   _a.u=u;
@@ -146,15 +156,15 @@ inline void adcsUpdate(){
   // IMPORTANT: preserve the verified T04/T05 reaction and momentum laws.
   if(rwGetMode()==RW_MODE_REACTION){
     int c=(int)roundf(constrain(
-      ADCS_CONTROL_SIGN*u,
-      -(float)ADCS_MAX_RW_COMMAND,
-      (float)ADCS_MAX_RW_COMMAND));
+      TP.adcsSign*u,
+      -TP.adcsMax,
+      TP.adcsMax));
     rwSetReactionCommand(c);
   }else{
     int c=(int)roundf(constrain(
-      (float)_a.bias+ADCS_CONTROL_SIGN*u,
+      (float)_a.bias+TP.adcsSign*u,
       0.0f,
-      (float)ADCS_MAX_RW_COMMAND));
+      TP.adcsMax));
     rwSetBias(c);
   }
 }

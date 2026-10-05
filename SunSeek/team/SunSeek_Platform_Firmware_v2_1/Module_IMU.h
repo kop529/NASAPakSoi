@@ -6,6 +6,7 @@
 #include <Wire.h>
 #include <math.h>
 #include "Config_Sensor.h"
+#include "Team_Params.h"  // TEAM NasaPakSoi: gyro Z bias + body-rate sign are team parameters
 
 /*
   IMU.h — T03 lightweight GY-89 driver
@@ -155,8 +156,8 @@ inline bool imuProcess(const IMURawSample &r, IMUProcessedSample &p) {
 
   p.gyroX = r.gx * GYRO_SENSITIVITY_DPS_PER_LSB - GYRO_BIAS_X_DPS;
   p.gyroY = r.gy * GYRO_SENSITIVITY_DPS_PER_LSB - GYRO_BIAS_Y_DPS;
-  p.gyroZ = r.gz * GYRO_SENSITIVITY_DPS_PER_LSB - GYRO_BIAS_Z_DPS;
-  p.bodyRate = IMU_BODY_RATE_SIGN * imuAxisValue(p.gyroX, p.gyroY, p.gyroZ, IMU_BODY_RATE_AXIS);
+  p.gyroZ = r.gz * GYRO_SENSITIVITY_DPS_PER_LSB - TP.imuGbz;  // TEAM NasaPakSoi (was GYRO_BIAS_Z_DPS)
+  p.bodyRate = TP.imuRsign * imuAxisValue(p.gyroX, p.gyroY, p.gyroZ, IMU_BODY_RATE_AXIS);  // TEAM (was IMU_BODY_RATE_SIGN)
 
   p.magX = (r.mx - MAG_OFFSET_X) * MAG_SCALE_X * MAG_SENSITIVITY_UT_PER_LSB;
   p.magY = (r.my - MAG_OFFSET_Y) * MAG_SCALE_Y * MAG_SENSITIVITY_UT_PER_LSB;
