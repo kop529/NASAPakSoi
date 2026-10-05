@@ -51,11 +51,11 @@ $R = New-Object 'System.Collections.Generic.Dictionary[string,string]'  # [order
 try {
   # ---------- 0. เริ่ม: บอร์ดตอบไหม, โหมดถูกไหม
   [void](Listen 500)
-  $r = Send 'PING' 800
-  if (-not ($r -match '^PONG')) { $r = Send 'PING' 1500 }
-  if (-not ($r -match '^PONG')) { throw 'บอร์ดไม่ตอบ PING: เช็กว่าอัปโหลดเฟิร์มแวร์ v2.1 แล้ว, ปิด Serial Monitor แล้ว, ลองกดปุ่ม RESET บนบอร์ด' }
-  $r = Send 'STOP' 500
-  $R['Safe stop (ตอนเริ่ม)'] = if (($r -match '^ACK,STOP') -and ($r -match '^EVT,SAFE')) { 'ACK,STOP + EVT,SAFE ✓' } else { 'ไม่ครบ: ' + ($r -join ' | ') }
+  $resp = Send 'PING' 800
+  if (-not ($resp -match '^PONG')) { $resp = Send 'PING' 1500 }
+  if (-not ($resp -match '^PONG')) { throw 'บอร์ดไม่ตอบ PING: เช็กว่าอัปโหลดเฟิร์มแวร์ v2.1 แล้ว, ปิด Serial Monitor แล้ว, ลองกดปุ่ม RESET บนบอร์ด' }
+  $resp = Send 'STOP' 500
+  $R['Safe stop (ตอนเริ่ม)'] = if (($resp -match '^ACK,STOP') -and ($resp -match '^EVT,SAFE')) { 'ACK,STOP + EVT,SAFE ✓' } else { 'ไม่ครบ: ' + ($resp -join ' | ') }
   [void](Send 'ADCS_MODE,MANUAL' 400); [void](Send 'ADCS_STRATEGY,REACTION' 400)
   Write-Host "`nเช็กก่อนเริ่ม: ล้อยึดแน่น ไม่มีสาย/มือใกล้ล้อ แท่นหมุนได้อิสระ" -ForegroundColor Yellow
   if (-not (Ask 'พร้อมเริ่มไหม')) { throw 'ผู้ใช้ยกเลิก' }
@@ -123,12 +123,12 @@ try {
   # ---------- 6. Safe stop ขณะหมุน
   Write-Host "`n=== 6. Safe stop ขณะหมุน ===" -ForegroundColor Yellow
   [void](Send 'RW,30' 2500)
-  $r = Send 'STOP' 800
-  $okStop = ($r -match '^ACK,STOP') -and ($r -match '^EVT,SAFE')
-  $R['Safe stop (ขณะหมุน)'] = if ($okStop) { 'ACK,STOP + EVT,SAFE ✓' } else { 'ไม่ครบ: ' + ($r -join ' | ') }
+  $resp = Send 'STOP' 800
+  $okStop = ($resp -match '^ACK,STOP') -and ($resp -match '^EVT,SAFE')
+  $R['Safe stop (ขณะหมุน)'] = if ($okStop) { 'ACK,STOP + EVT,SAFE ✓' } else { 'ไม่ครบ: ' + ($resp -join ' | ') }
   $R['ล้อหยุดจริง'] = if (Ask 'ล้อหยุด (ค่อย ๆ หมุนฟรีจนหยุด) ไหม') { 'ใช่' } else { 'ไม่ ← ตรวจสาย/บอร์ด' }
-  $r = Send 'STATUS' 1500
-  $R['STATUS หลังหยุด'] = (@($r | Where-Object { $_ -match '^TM,RW_CMD' }) -join ' ')
+  $resp = Send 'STATUS' 1500
+  $R['STATUS หลังหยุด'] = (@($resp | Where-Object { $_ -match '^TM,RW_CMD' }) -join ' ')
 }
 catch { Write-Host "`nหยุด: $($_.Exception.Message)" -ForegroundColor Red; $R['หยุดกลางทาง'] = $_.Exception.Message }
 finally {
