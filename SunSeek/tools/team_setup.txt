@@ -15,6 +15,8 @@ TEAM_SET,adcs.kd,1
 TEAM_SET,adcs.ki,1
 TEAM_SET,adcs.db,0.5
 TEAM_SET,adcs.dzc,0
+# stiction kick: the platform needed ~20 % wheel steps to break free (5 Oct room tests); sim: sticky platforms 3-5 deg -> < 0.5 deg
+TEAM_SET,adcs.kick,20
 
 # --- turn on after the checks they depend on (remove the leading '# ' and run team_setup.ps1 again) ---
 # F7 sun search when the lamp is lost (needs the calibration page step 7 = sun.minS / sun.dmax, and the sign page)

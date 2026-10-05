@@ -253,6 +253,23 @@ console.log('F5 hold at the target (adcs.lock / unlock / hgain): noise 6 mV + fl
   check('lock 0 = no HOLD events (organizer behaviour)', !find(a.out, /^EVT,TEAM_HOLD/));
 }
 
+console.log('F4 stiction kick (adcs.kick 20): sticky platform (stick 20) and a slippery one (drag 0), lamp -10 deg');
+{
+  const k = (world, extra) => {
+    const out = run([...world.map((w) => `#SET ${w}`), '#SET rateSign -1', '#SET lamp -10', '#WAIT 300', ...CAL, 'TEAM_SET,rw.minStart,10', 'TEAM_SET,rw.minStable,5',
+      'TEAM_SET,adcs.kp,4', 'TEAM_SET,adcs.kd,1', 'TEAM_SET,adcs.ki,1', 'TEAM_SET,adcs.db,0.5', ...extra,
+      'ADCS_STRATEGY,REACTION', 'ADCS_MODE,AUTO', ...Array.from({ length: 30 }, () => ['#WAIT 1000', '#STATE']).flat(), 'STOP', '#WAIT 10']);
+    const s = states(out);
+    return { out, wob: Math.max(...s.slice(-5).map((x) => Math.abs(x.sun))) };
+  };
+  const stickOff = k(['drag 0.15', 'stick 20'], []);
+  const stickOn = k(['drag 0.15', 'stick 20'], ['TEAM_SET,adcs.kick,20']);
+  const slipOn = k(['drag 0'], ['TEAM_SET,adcs.kick,20']);
+  console.log(`       sticky: no kick ${stickOff.wob.toFixed(2)} deg, kick ${stickOn.wob.toFixed(2)} deg · slippery with kick ${slipOn.wob.toFixed(2)} deg`);
+  check('sticky platform: the kick frees it (< 1 deg; without: stuck > 2 deg)', stickOn.wob < 1 && stickOff.wob > 2 && !!find(stickOn.out, /^EVT,TEAM_KICK,/));
+  check('slippery platform: the kick does no harm (< 1 deg)', slipOn.wob < 1);
+}
+
 console.log('RW_CMD (T02 assist, ported from the workshop firmware)');
 {
   const out = run(['RW_CMD,+20,+80,300', 'ADCS_STRATEGY,MOMENTUM', 'RW_BIAS,40', '#WAIT 500', 'RW_CMD,+20,+80,300', '#WAIT 100', '#STATE',

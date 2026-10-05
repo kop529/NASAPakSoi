@@ -62,6 +62,13 @@ struct TeamParams {
   float adcsUnlock = 2;
   float adcsLockMs = 500;
   float adcsHgain = 0.5;
+  // F4 stiction kick: outside the deadband but the body has not moved (gyro under adcs.krate deg/s) for adcs.kickMs
+  // -> step the wheel command by adcs.kick % toward the target (a torque impulse that breaks the platform static
+  // friction; 5 Oct: +-10..15 % steps did not move the body, +20 % while it turned moved it at once). The step
+  // fades with a 2 s time constant. adcs.kick 0 = off.
+  float adcsKick = 0;
+  float adcsKickMs = 1500;  // sim scan 5 Oct: 600 ms also kicked at the turning points of a slow swing
+  float adcsKrate = 1;
   // team telemetry over USB, 0 = off
   int tmHz = 0;
 };
@@ -118,6 +125,9 @@ static TeamParamDef _tpDefs[] = {
   {"adcs.unlock", TPT_FLOAT,  &TP.adcsUnlock,    0, 0, 30},
   {"adcs.lockMs", TPT_FLOAT,  &TP.adcsLockMs,    0, 0, 10000},
   {"adcs.hgain",  TPT_FLOAT,  &TP.adcsHgain,     0, 0.05, 1},
+  {"adcs.kick",   TPT_FLOAT,  &TP.adcsKick,      0, 0, 60},
+  {"adcs.kickMs", TPT_FLOAT,  &TP.adcsKickMs,    0, 100, 10000},
+  {"adcs.krate",  TPT_FLOAT,  &TP.adcsKrate,     0, 0, 30},
   {"team.tm",     TPT_INT,    &TP.tmHz,          0, 0, 20},
 };
 static const int TEAM_PARAM_COUNT = sizeof(_tpDefs) / sizeof(_tpDefs[0]);

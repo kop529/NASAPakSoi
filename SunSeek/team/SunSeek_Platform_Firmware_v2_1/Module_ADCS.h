@@ -54,6 +54,10 @@ static unsigned long _aLostSince = 0, _aSeenSince = 0;
 // TEAM NasaPakSoi F5: hold at the target
 static bool _aHold = false;
 static unsigned long _aInSince = 0;  // last time |error| was outside adcs.lock
+// TEAM NasaPakSoi F4 stiction kick
+static float _aK = 0;                // kick term (PWM %), fades
+static unsigned long _aMovedAt = 0;  // start of the current "still" window (the body turned, or nothing had to move)
+static float _aKickE0 = 0;           // |error| at the start of that window
 inline bool adcsTeamHold() { return _aHold; }
 inline bool adcsTeamSearching() { return _aSearch; }
 
@@ -144,6 +148,7 @@ inline bool adcsAuto(){
   _aI=0;  // TEAM NasaPakSoi
   _aSearch=false;_aS=0;_aLostSince=_aSeenSince=millis();  // TEAM NasaPakSoi F7
   _aHold=false;_aInSince=millis();  // TEAM NasaPakSoi F5
+  _aK=0;_aMovedAt=millis();_aKickE0=1e9f;  // TEAM NasaPakSoi F4 stiction kick
   return true;
 }
 
@@ -195,19 +200,37 @@ inline void adcsUpdate(){
   const float hg=_aHold?TP.adcsHgain:1.0f;
 
   float u=0;
+  bool pd=false;  // the PD law runs (outside the deadband, not searching)
   if(_aSearch){
     const float dir=(!_aEverSeen||_a.target-_aLastSeenAngle>=0)?1.0f:-1.0f;  // d(angle)/dt = +BODY_RATE (W3 check)
     _aS=constrain(_aS+TP.adcsSk*(dir*TP.adcsSrate-_a.rate)*dtS,-TP.adcsMax,TP.adcsMax);
     u=_aS;
   }else if(fabsf(_a.error)>=(_aHold&&TP.adcsLock>TP.adcsDb?TP.adcsLock:TP.adcsDb)){  // F5: in HOLD the deadband is adcs.lock
+    pd=true;
     // TEAM NasaPakSoi F4: integral term (adcs.ki); clamped to +-adcs.max so it cannot wind up
     if(TP.adcsKi>0)_aI=constrain(_aI+hg*TP.adcsKi*_a.error*dtS,-TP.adcsMax,TP.adcsMax);
     u=hg*(_a.kp*_a.error-_a.kd*_a.rate)+_aI;  // hg: F5 hold gain
+    // TEAM NasaPakSoi F4 stiction kick: still for adcs.kickMs although outside the deadband -> step toward the target
+    if(TP.adcsKick>0){
+      if(fabsf(_a.rate)>=TP.adcsKrate){_aMovedAt=n;_aKickE0=fabsf(_a.error);}
+      else if(n-_aMovedAt>=(unsigned long)TP.adcsKickMs){
+        // stuck = slow AND the error did not shrink 0.2 deg in the window (a body creeping toward the target on a
+        // slippery platform is left alone: a kick there only overshoots)
+        if(fabsf(_a.error)>_aKickE0-0.2f){
+          _aK=constrain(_aK+(_a.error>0?1.0f:-1.0f)*TP.adcsKick,-TP.adcsMax,TP.adcsMax);
+          sendTelemetry("EVT,TEAM_KICK,"+String(_aK,1)+",ERR,"+String(_a.error,2));
+        }
+        _aMovedAt=n;_aKickE0=fabsf(_a.error);
+      }
+    }
   }else if(TP.adcsKi>0){
     // inside the deadband hold the integrator: the wheel keeps its speed (u=0 would let it coast down,
     // and that momentum would turn the body out of the deadband again)
     u=_aI;
   }
+  if(_aSearch||TP.adcsKick<=0)_aK=0;
+  else{u+=_aK;_aK*=expf(-dtS/2.0f);}  // the kick step fades (2 s): its slow return gives only a small reverse torque
+  if(!pd){_aMovedAt=n;_aKickE0=fabsf(_a.error);}  // inside the deadband / hold band or searching: nothing has to move
 
   _a.u=u;
 
