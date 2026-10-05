@@ -1,0 +1,526 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="475.2pt" height="187.2pt" viewBox="0 0 475.2 187.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-09-24T21:18:45.818389</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.1, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 187.2 
+L 475.2 187.2 
+L 475.2 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 38.14 164 
+L 464.376176 164 
+L 464.376176 22.92 
+L 38.14 22.92 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="PolyCollection_1">
+    <defs>
+     <path id="m22fa803da6" d="M 142.609651 -138.765532 
+L 142.609651 -157.867273 
+L 163.503581 -157.867273 
+L 163.503581 -138.765532 
+z
+" style="stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m22fa803da6" x="0" y="187.2" style="fill: #cfcfcf; fill-opacity: 0.6; stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </g>
+   </g>
+   <g id="PolyCollection_2">
+    <defs>
+     <path id="m27c4b7bfe7" d="M 163.503581 -138.765532 
+L 163.503581 -157.867273 
+L 205.291442 -157.867273 
+L 205.291442 -138.765532 
+z
+" style="stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m27c4b7bfe7" x="0" y="187.2" style="fill: #cfcfcf; fill-opacity: 0.6; stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </g>
+   </g>
+   <g id="PolyCollection_3">
+    <defs>
+     <path id="m03aaf834e0" d="M 247.079302 -138.765532 
+L 247.079302 -157.867273 
+L 309.761093 -157.867273 
+L 309.761093 -138.765532 
+z
+" style="stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m03aaf834e0" x="0" y="187.2" style="fill: #cfcfcf; fill-opacity: 0.6; stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </g>
+   </g>
+   <g id="PolyCollection_4">
+    <defs>
+     <path id="m9e56006ada" d="M 309.761093 -138.765532 
+L 309.761093 -157.867273 
+L 456.018604 -157.867273 
+L 456.018604 -138.765532 
+z
+" style="stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m9e56006ada" x="0" y="187.2" style="fill: #3a9bd5; fill-opacity: 0.9; stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_5">
+    <defs>
+     <path id="m4a0c048929" d="M 100.821791 -111.477331 
+L 100.821791 -130.579072 
+L 142.609651 -130.579072 
+L 142.609651 -111.477331 
+z
+" style="stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m4a0c048929" x="0" y="187.2" style="fill: #cfcfcf; fill-opacity: 0.6; stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </g>
+   </g>
+   <g id="PolyCollection_6">
+    <defs>
+     <path id="md38a055b93" d="M 142.609651 -111.477331 
+L 142.609651 -130.579072 
+L 205.291442 -130.579072 
+L 205.291442 -111.477331 
+z
+" style="stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#md38a055b93" x="0" y="187.2" style="fill: #3a9bd5; fill-opacity: 0.9; stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_7">
+    <defs>
+     <path id="me81529da68" d="M 247.079302 -111.477331 
+L 247.079302 -130.579072 
+L 309.761093 -130.579072 
+L 309.761093 -111.477331 
+z
+" style="stroke: #c45e99; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#me81529da68" x="0" y="187.2" style="fill: #c45e99; fill-opacity: 0.9; stroke: #c45e99; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_8">
+    <defs>
+     <path id="m657ccb6a71" d="M 309.761093 -111.477331 
+L 309.761093 -130.579072 
+L 414.230744 -130.579072 
+L 414.230744 -111.477331 
+z
+" style="stroke: #c07f00; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m657ccb6a71" x="0" y="187.2" style="fill: #c07f00; fill-opacity: 0.9; stroke: #c07f00; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_9">
+    <defs>
+     <path id="md8be0bd0b8" d="M 59.03393 -84.18913 
+L 59.03393 -103.29087 
+L 414.230744 -103.29087 
+L 414.230744 -84.18913 
+z
+" style="stroke: #9b9b9b; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#md8be0bd0b8" x="0" y="187.2" style="fill: #9b9b9b; fill-opacity: 0.9; stroke: #9b9b9b; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_10">
+    <defs>
+     <path id="mac50ec1e2f" d="M 100.821791 -56.900928 
+L 100.821791 -76.002669 
+L 142.609651 -76.002669 
+L 142.609651 -56.900928 
+z
+" style="stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#mac50ec1e2f" x="0" y="187.2" style="fill: #3a9bd5; fill-opacity: 0.9; stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_11">
+    <defs>
+     <path id="m75d9dc7969" d="M 153.056616 -56.900928 
+L 153.056616 -76.002669 
+L 205.291442 -76.002669 
+L 205.291442 -56.900928 
+z
+" style="stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m75d9dc7969" x="0" y="187.2" style="fill: #3a9bd5; fill-opacity: 0.9; stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_12">
+    <defs>
+     <path id="m21b65cf6c4" d="M 247.079302 -56.900928 
+L 247.079302 -76.002669 
+L 414.230744 -76.002669 
+L 414.230744 -56.900928 
+z
+" style="stroke: #1e9e7e; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m21b65cf6c4" x="0" y="187.2" style="fill: #1e9e7e; fill-opacity: 0.9; stroke: #1e9e7e; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_13">
+    <defs>
+     <path id="mfb3bcea2ad" d="M 59.03393 -29.612727 
+L 59.03393 -48.714468 
+L 79.92786 -48.714468 
+L 79.92786 -29.612727 
+z
+" style="stroke: #6b4fa0; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#mfb3bcea2ad" x="0" y="187.2" style="fill: #6b4fa0; fill-opacity: 0.9; stroke: #6b4fa0; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_14">
+    <defs>
+     <path id="mc7b383fbd2" d="M 79.92786 -29.612727 
+L 79.92786 -48.714468 
+L 205.291442 -48.714468 
+L 205.291442 -29.612727 
+z
+" style="stroke: #aa3333; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#mc7b383fbd2" x="0" y="187.2" style="fill: #aa3333; fill-opacity: 0.9; stroke: #aa3333; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_15">
+    <defs>
+     <path id="mfe7434bc3f" d="M 247.079302 -29.612727 
+L 247.079302 -48.714468 
+L 309.761093 -48.714468 
+L 309.761093 -29.612727 
+z
+" style="stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#mfe7434bc3f" x="0" y="187.2" style="fill: #cfcfcf; fill-opacity: 0.6; stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </g>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <path d="M 38.14 164 
+L 38.14 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_2">
+      <defs>
+       <path id="m240d4cc3e5" d="M 0 0 
+L 0 3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="38.14" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="38.14" y="176.182188" transform="rotate(-0 38.14 176.182188)">8:00</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_3">
+      <path d="M 79.92786 164 
+L 79.92786 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="79.92786" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="79.92786" y="176.182188" transform="rotate(-0 79.92786 176.182188)">9:00</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_5">
+      <path d="M 121.715721 164 
+L 121.715721 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="121.715721" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="121.715721" y="176.182188" transform="rotate(-0 121.715721 176.182188)">10:00</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_7">
+      <path d="M 163.503581 164 
+L 163.503581 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_8">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="163.503581" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_4">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="163.503581" y="176.182188" transform="rotate(-0 163.503581 176.182188)">11:00</text>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_9">
+      <path d="M 205.291442 164 
+L 205.291442 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_10">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="205.291442" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_5">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="205.291442" y="176.182188" transform="rotate(-0 205.291442 176.182188)">12:00</text>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_11">
+      <path d="M 247.079302 164 
+L 247.079302 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_12">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="247.079302" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="247.079302" y="176.182188" transform="rotate(-0 247.079302 176.182188)">13:00</text>
+     </g>
+    </g>
+    <g id="xtick_7">
+     <g id="line2d_13">
+      <path d="M 288.867163 164 
+L 288.867163 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_14">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="288.867163" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_7">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="288.867163" y="176.182188" transform="rotate(-0 288.867163 176.182188)">14:00</text>
+     </g>
+    </g>
+    <g id="xtick_8">
+     <g id="line2d_15">
+      <path d="M 330.655023 164 
+L 330.655023 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_16">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="330.655023" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_8">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="330.655023" y="176.182188" transform="rotate(-0 330.655023 176.182188)">15:00</text>
+     </g>
+    </g>
+    <g id="xtick_9">
+     <g id="line2d_17">
+      <path d="M 372.442884 164 
+L 372.442884 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_18">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="372.442884" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_9">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="372.442884" y="176.182188" transform="rotate(-0 372.442884 176.182188)">16:00</text>
+     </g>
+    </g>
+    <g id="xtick_10">
+     <g id="line2d_19">
+      <path d="M 414.230744 164 
+L 414.230744 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_20">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="414.230744" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_10">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="414.230744" y="176.182188" transform="rotate(-0 414.230744 176.182188)">17:00</text>
+     </g>
+    </g>
+    <g id="xtick_11">
+     <g id="line2d_21">
+      <path d="M 456.018604 164 
+L 456.018604 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_22">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="456.018604" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_11">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="456.018604" y="176.182188" transform="rotate(-0 456.018604 176.182188)">18:00</text>
+     </g>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_23">
+      <defs>
+       <path id="mbb0c3e293b" d="M 0 0 
+L -3.5 0 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#mbb0c3e293b" x="38.14" y="148.036402" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_12">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="31.14" y="151.367809" transform="rotate(-0 31.14 151.367809)">9 ต.ค.</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_24">
+      <g>
+       <use xlink:href="#mbb0c3e293b" x="38.14" y="120.748201" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_13">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="31.14" y="124.079607" transform="rotate(-0 31.14 124.079607)">8 ต.ค.</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_25">
+      <g>
+       <use xlink:href="#mbb0c3e293b" x="38.14" y="93.46" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_14">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="31.14" y="96.791406" transform="rotate(-0 31.14 96.791406)">7 ต.ค.</text>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_26">
+      <g>
+       <use xlink:href="#mbb0c3e293b" x="38.14" y="66.171799" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_15">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="31.14" y="69.503205" transform="rotate(-0 31.14 69.503205)">6 ต.ค.</text>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_27">
+      <g>
+       <use xlink:href="#mbb0c3e293b" x="38.14" y="38.883598" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_16">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="31.14" y="42.215004" transform="rotate(-0 31.14 42.215004)">5 ต.ค.</text>
+     </g>
+    </g>
+   </g>
+   <g id="patch_3">
+    <path d="M 38.14 164 
+L 38.14 22.92 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 38.14 164 
+L 464.376176 164 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #333333" x="184.397512" y="40.542113" transform="rotate(-0 184.397512 40.542113)">ปฐมนิเทศ</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #333333" x="278.420198" y="40.542113" transform="rotate(-0 278.420198 40.542113)">พิธีเปิด+บรรยาย</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="382.889849" y="40.542113" transform="rotate(-0 382.889849 40.542113)">ADCS พื้นฐาน (ลงมือ)</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #333333" x="121.715721" y="67.830314" transform="rotate(-0 121.715721 67.830314)">บรรยาย</text>
+   </g>
+   <g id="text_21">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="173.950546" y="67.830314" transform="rotate(-0 173.950546 67.830314)">ADCS ชี้ทิศ</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="278.420198" y="67.830314" transform="rotate(-0 278.420198 67.830314)">สถานีภาคพื้น</text>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="361.995918" y="67.820666" transform="rotate(-0 361.995918 67.820666)">กล้อง Payload</text>
+   </g>
+   <g id="text_24">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="236.632337" y="95.699453" transform="rotate(-0 236.632337 95.699453)">ดูงาน มทม. + สถานีไทยคม (ไม่มีเวลาทำงานกับบอร์ด)</text>
+   </g>
+   <g id="text_25">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="121.715721" y="122.406717" transform="rotate(-0 121.715721 122.406717)">AIT</text>
+   </g>
+   <g id="text_26">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="179.174029" y="122.406717" transform="rotate(-0 179.174029 122.406717)">ปฏิบัติภารกิจ</text>
+   </g>
+   <g id="text_27">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="330.655023" y="122.398592" transform="rotate(-0 330.655023 122.398592)">ปรับจูน + ซ้อมภารกิจ (สำคัญสุด)</text>
+   </g>
+   <g id="text_28">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="142.609651" y="149.694918" transform="rotate(-0 142.609651 149.694918)">แข่งจริง</text>
+   </g>
+   <g id="text_29">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #333333" x="278.420198" y="149.694918" transform="rotate(-0 278.420198 149.694918)">ประกาศผล</text>
+   </g>
+   <g id="text_30">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: start; fill: #6b4fa0" x="40.229393" y="131.117718" transform="rotate(-0 40.229393 131.117718)">08:30 ฟังโจทย์</text>
+   </g>
+   <g id="text_31">
+    <text style="font-size: 10px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="251.258088" y="16.92" transform="rotate(-0 251.258088 16.92)">ตารางรอบชิง 5–9 ต.ค. 2569 (จากกำหนดการล่าสุด)</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pdb3f0faf7b">
+   <rect x="38.14" y="22.92" width="426.236176" height="141.08"/>
+  </clipPath>
+ </defs>
+</svg>

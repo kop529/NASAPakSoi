@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>คู่มือหน้างาน NasaSat</title><style>
+:root { --bg: #ffffff; --fg: #1d1f23; --muted: #5b616b; --line: #d9dde3; --soft: #f3f5f8; --accent: #1f6fb2; --quote: #eef6ee; --quoteLine: #2f8f5b; --code: #f1f3f6; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #16181c; --fg: #e8eaed; --muted: #a3a9b3; --line: #353a42; --soft: #1f2329; --accent: #7db7ea; --quote: #1c2a22; --quoteLine: #5cc28b; --code: #23272e; } }
+:root[data-theme="dark"] { --bg: #16181c; --fg: #e8eaed; --muted: #a3a9b3; --line: #353a42; --soft: #1f2329; --accent: #7db7ea; --quote: #1c2a22; --quoteLine: #5cc28b; --code: #23272e; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', Tahoma, sans-serif; line-height: 1.65; font-size: 16px; }
+main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 1.7rem; line-height: 1.3; margin: 0.2em 0 0.6em; }
+h2 { font-size: 1.3rem; margin: 2em 0 0.6em; padding-top: 0.4em; border-top: 2px solid var(--line); }
+h3 { font-size: 1.08rem; margin: 1.5em 0 0.4em; }
+h4 { font-size: 1rem; margin: 1.2em 0 0.3em; }
+p { margin: 0.5em 0; }
+a { color: var(--accent); }
+code { font-family: Consolas, 'Cascadia Mono', monospace; background: var(--code); padding: 0 4px; border-radius: 4px; font-size: 0.92em; }
+pre { background: var(--code); padding: 10px 12px; border-radius: 8px; overflow-x: auto; font-size: 0.9rem; line-height: 1.5; }
+pre code { background: none; padding: 0; font-family: Consolas, 'Cascadia Mono', 'Leelawadee UI', monospace; }
+.tw { overflow-x: auto; margin: 0.7em 0; }
+table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+th { background: var(--soft); }
+blockquote { margin: 1em 0; padding: 10px 14px; background: var(--quote); border-left: 4px solid var(--quoteLine); border-radius: 6px; }
+figure { margin: 1em 0; }
+figure svg, figure img { width: 100%; height: auto; display: block; background: #ffffff; border-radius: 6px; }
+figcaption { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 1.5em 0; }
+ul, ol { padding-left: 1.4em; }
+li { margin: 0.15em 0; }
+li.task { list-style: none; margin-left: -1.2em; }
+.box { display: inline-block; width: 1.1em; }
+.toc { background: var(--soft); border-radius: 8px; padding: 10px 16px; margin: 1em 0 1.5em; }
+.toc ul { margin: 0.3em 0; padding-left: 0; list-style: none; columns: 2; column-gap: 28px; }
+.meta { color: var(--muted); font-size: 0.85rem; }
+@media (max-width: 640px) { .toc ul { columns: 1; } body { font-size: 15px; } }
+@media print {
+  @page { size: A4; margin: 14mm 13mm; }
+  body { font-size: 10.5pt; background: #fff; color: #000; }
+  main { max-width: none; padding: 0; }
+  h2 { break-before: page; border-top: 0; }
+  h2:first-of-type { break-before: auto; }
+  figure, table, pre, blockquote { break-inside: avoid; }
+  tr { break-inside: avoid; }
+  a { color: #000; text-decoration: none; }
+  .toc { break-after: page; }
+}
+.cheat main { max-width: 1100px; }
+.cheat h2 { break-before: auto; border-top: 1px solid var(--line); font-size: 1.02rem; margin: 0.8em 0 0.3em; }
+.cheat .cols { columns: 2; column-gap: 22px; }
+.cheat .cols > * { break-inside: avoid; }
+.cheat table { font-size: 0.86rem; }
+.cheat th, .cheat td { padding: 3px 6px; }
+@media (max-width: 800px) { .cheat .cols { columns: 1; } }
+@media print {
+  html.cheat { font-size: 8.2pt; }
+  html.cheat body { font-size: 8.2pt; line-height: 1.35; }
+  html.cheat h1 { font-size: 12pt; margin: 0 0 3px; }
+  html.cheat h2 { font-size: 9pt; margin: 0.5em 0 0.2em; }
+  html.cheat p { margin: 0.25em 0; }
+  html.cheat .tw { margin: 0.3em 0; }
+  html.cheat th, html.cheat td { padding: 1.5px 4px; }
+  html.cheat .meta { display: none; }
+}
+</style></head>
+<body class=""><main>
+<h1 id="s59">คู่มือหน้างาน NasaSat — ทีมนาซ่าหน้าปากซอย</h1>
+<p>รอบชิงชนะเลิศ 5–9 ต.ค. 2569 · โรงแรม ibis Styles Bangkok Ratchada ห้อง APEX ชั้น 3 · แข่งจริง 9 ต.ค. 09:00–12:00 (ฟังโจทย์ 08:30)<br>พิมพ์หน้านี้ + <code>CHEATSHEET_TH</code> ติดตัว · ทฤษฎีอยู่ใน <code>THEORY_TH</code> · รายละเอียดคำสั่งอยู่ใน <code>firmware/PROTOCOL.md</code></p>
+<p><strong>กติกาทอง 5 ข้อ</strong></p>
+<ol>
+<li>ปุ่ม STOP (Space / Esc) อยู่ใต้มือคนคุมคีย์บอร์ดตลอด</li>
+<li>ทำอะไรเสร็จ <strong>SAVE</strong> ทันที และ Export โปรไฟล์เก็บ 2 ที่</li>
+<li>เปลี่ยนทีละอย่าง แล้วทดสอบ ถ้าแย่ลงให้ LOAD กลับ</li>
+<li>จดผลทุกครั้งรวมครั้งที่พลาด (แท็บ "หลักฐาน &amp; AI" → ดาวน์โหลด log)</li>
+<li>ตัวเลขที่บอร์ดบอกเป็นค่าประมาณ ความแม่นจริงต้องดูกับของอ้างอิงหรือภาพ</li>
+</ol>
+<hr>
+<nav class="toc"><strong>สารบัญ</strong><ul><li><a href="#s60">1. ภาพรวมสัปดาห์</a></li><li><a href="#s61">2. เก็บข้อมูลฮาร์ดแวร์ (5–6 ต.ค.) — กรอกให้ครบ</a></li><li><a href="#s62">3. คำถามที่ต้องถามผู้จัด (ถามให้ได้คำตอบภายใน 6 ต.ค.)</a></li><li><a href="#s63">4. คืนวันที่ 7 ต.ค. (ที่โรงแรม)</a></li><li><a href="#s64">5. บ่ายวันที่ 8 ต.ค. 13:00–17:00 (ช่วงสำคัญที่สุด)</a></li><li><a href="#s65">6. วันแข่ง 9 ต.ค.</a></li><li><a href="#s66">7. Checklist</a></li><li><a href="#s71">8. ผังแก้ปัญหา (ทำจากบนลงล่าง)</a></li><li><a href="#s72">9. ลูป "วัด → AI → แก้ → ทดสอบ" (ภายใน 10 นาที)</a></li><li><a href="#s73">10. แบ่งหน้าที่ 3 คน</a></li></ul></nav><h2 id="s60">1. ภาพรวมสัปดาห์</h2>
+<figure><svg xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 475.2 187.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-09-24T21:18:45.818389</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.1, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 187.2 
+L 475.2 187.2 
+L 475.2 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 38.14 164 
+L 464.376176 164 
+L 464.376176 22.92 
+L 38.14 22.92 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="PolyCollection_1">
+    <defs>
+     <path id="m22fa803da6" d="M 142.609651 -138.765532 
+L 142.609651 -157.867273 
+L 163.503581 -157.867273 
+L 163.503581 -138.765532 
+z
+" style="stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m22fa803da6" x="0" y="187.2" style="fill: #cfcfcf; fill-opacity: 0.6; stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </g>
+   </g>
+   <g id="PolyCollection_2">
+    <defs>
+     <path id="m27c4b7bfe7" d="M 163.503581 -138.765532 
+L 163.503581 -157.867273 
+L 205.291442 -157.867273 
+L 205.291442 -138.765532 
+z
+" style="stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m27c4b7bfe7" x="0" y="187.2" style="fill: #cfcfcf; fill-opacity: 0.6; stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </g>
+   </g>
+   <g id="PolyCollection_3">
+    <defs>
+     <path id="m03aaf834e0" d="M 247.079302 -138.765532 
+L 247.079302 -157.867273 
+L 309.761093 -157.867273 
+L 309.761093 -138.765532 
+z
+" style="stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m03aaf834e0" x="0" y="187.2" style="fill: #cfcfcf; fill-opacity: 0.6; stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </g>
+   </g>
+   <g id="PolyCollection_4">
+    <defs>
+     <path id="m9e56006ada" d="M 309.761093 -138.765532 
+L 309.761093 -157.867273 
+L 456.018604 -157.867273 
+L 456.018604 -138.765532 
+z
+" style="stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m9e56006ada" x="0" y="187.2" style="fill: #3a9bd5; fill-opacity: 0.9; stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_5">
+    <defs>
+     <path id="m4a0c048929" d="M 100.821791 -111.477331 
+L 100.821791 -130.579072 
+L 142.609651 -130.579072 
+L 142.609651 -111.477331 
+z
+" style="stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m4a0c048929" x="0" y="187.2" style="fill: #cfcfcf; fill-opacity: 0.6; stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </g>
+   </g>
+   <g id="PolyCollection_6">
+    <defs>
+     <path id="md38a055b93" d="M 142.609651 -111.477331 
+L 142.609651 -130.579072 
+L 205.291442 -130.579072 
+L 205.291442 -111.477331 
+z
+" style="stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#md38a055b93" x="0" y="187.2" style="fill: #3a9bd5; fill-opacity: 0.9; stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_7">
+    <defs>
+     <path id="me81529da68" d="M 247.079302 -111.477331 
+L 247.079302 -130.579072 
+L 309.761093 -130.579072 
+L 309.761093 -111.477331 
+z
+" style="stroke: #c45e99; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#me81529da68" x="0" y="187.2" style="fill: #c45e99; fill-opacity: 0.9; stroke: #c45e99; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_8">
+    <defs>
+     <path id="m657ccb6a71" d="M 309.761093 -111.477331 
+L 309.761093 -130.579072 
+L 414.230744 -130.579072 
+L 414.230744 -111.477331 
+z
+" style="stroke: #c07f00; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m657ccb6a71" x="0" y="187.2" style="fill: #c07f00; fill-opacity: 0.9; stroke: #c07f00; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_9">
+    <defs>
+     <path id="md8be0bd0b8" d="M 59.03393 -84.18913 
+L 59.03393 -103.29087 
+L 414.230744 -103.29087 
+L 414.230744 -84.18913 
+z
+" style="stroke: #9b9b9b; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#md8be0bd0b8" x="0" y="187.2" style="fill: #9b9b9b; fill-opacity: 0.9; stroke: #9b9b9b; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_10">
+    <defs>
+     <path id="mac50ec1e2f" d="M 100.821791 -56.900928 
+L 100.821791 -76.002669 
+L 142.609651 -76.002669 
+L 142.609651 -56.900928 
+z
+" style="stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#mac50ec1e2f" x="0" y="187.2" style="fill: #3a9bd5; fill-opacity: 0.9; stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_11">
+    <defs>
+     <path id="m75d9dc7969" d="M 153.056616 -56.900928 
+L 153.056616 -76.002669 
+L 205.291442 -76.002669 
+L 205.291442 -56.900928 
+z
+" style="stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m75d9dc7969" x="0" y="187.2" style="fill: #3a9bd5; fill-opacity: 0.9; stroke: #3a9bd5; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_12">
+    <defs>
+     <path id="m21b65cf6c4" d="M 247.079302 -56.900928 
+L 247.079302 -76.002669 
+L 414.230744 -76.002669 
+L 414.230744 -56.900928 
+z
+" style="stroke: #1e9e7e; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#m21b65cf6c4" x="0" y="187.2" style="fill: #1e9e7e; fill-opacity: 0.9; stroke: #1e9e7e; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_13">
+    <defs>
+     <path id="mfb3bcea2ad" d="M 59.03393 -29.612727 
+L 59.03393 -48.714468 
+L 79.92786 -48.714468 
+L 79.92786 -29.612727 
+z
+" style="stroke: #6b4fa0; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#mfb3bcea2ad" x="0" y="187.2" style="fill: #6b4fa0; fill-opacity: 0.9; stroke: #6b4fa0; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_14">
+    <defs>
+     <path id="mc7b383fbd2" d="M 79.92786 -29.612727 
+L 79.92786 -48.714468 
+L 205.291442 -48.714468 
+L 205.291442 -29.612727 
+z
+" style="stroke: #aa3333; stroke-opacity: 0.9"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#mc7b383fbd2" x="0" y="187.2" style="fill: #aa3333; fill-opacity: 0.9; stroke: #aa3333; stroke-opacity: 0.9"/>
+    </g>
+   </g>
+   <g id="PolyCollection_15">
+    <defs>
+     <path id="mfe7434bc3f" d="M 247.079302 -29.612727 
+L 247.079302 -48.714468 
+L 309.761093 -48.714468 
+L 309.761093 -29.612727 
+z
+" style="stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </defs>
+    <g clip-path="url(#pdb3f0faf7b)">
+     <use xlink:href="#mfe7434bc3f" x="0" y="187.2" style="fill: #cfcfcf; fill-opacity: 0.6; stroke: #cfcfcf; stroke-opacity: 0.6"/>
+    </g>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <path d="M 38.14 164 
+L 38.14 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_2">
+      <defs>
+       <path id="m240d4cc3e5" d="M 0 0 
+L 0 3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="38.14" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="38.14" y="176.182188" transform="rotate(-0 38.14 176.182188)">8:00</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_3">
+      <path d="M 79.92786 164 
+L 79.92786 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="79.92786" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="79.92786" y="176.182188" transform="rotate(-0 79.92786 176.182188)">9:00</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_5">
+      <path d="M 121.715721 164 
+L 121.715721 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="121.715721" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="121.715721" y="176.182188" transform="rotate(-0 121.715721 176.182188)">10:00</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_7">
+      <path d="M 163.503581 164 
+L 163.503581 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_8">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="163.503581" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_4">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="163.503581" y="176.182188" transform="rotate(-0 163.503581 176.182188)">11:00</text>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_9">
+      <path d="M 205.291442 164 
+L 205.291442 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_10">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="205.291442" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_5">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="205.291442" y="176.182188" transform="rotate(-0 205.291442 176.182188)">12:00</text>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_11">
+      <path d="M 247.079302 164 
+L 247.079302 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_12">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="247.079302" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="247.079302" y="176.182188" transform="rotate(-0 247.079302 176.182188)">13:00</text>
+     </g>
+    </g>
+    <g id="xtick_7">
+     <g id="line2d_13">
+      <path d="M 288.867163 164 
+L 288.867163 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_14">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="288.867163" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_7">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="288.867163" y="176.182188" transform="rotate(-0 288.867163 176.182188)">14:00</text>
+     </g>
+    </g>
+    <g id="xtick_8">
+     <g id="line2d_15">
+      <path d="M 330.655023 164 
+L 330.655023 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_16">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="330.655023" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_8">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="330.655023" y="176.182188" transform="rotate(-0 330.655023 176.182188)">15:00</text>
+     </g>
+    </g>
+    <g id="xtick_9">
+     <g id="line2d_17">
+      <path d="M 372.442884 164 
+L 372.442884 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_18">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="372.442884" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_9">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="372.442884" y="176.182188" transform="rotate(-0 372.442884 176.182188)">16:00</text>
+     </g>
+    </g>
+    <g id="xtick_10">
+     <g id="line2d_19">
+      <path d="M 414.230744 164 
+L 414.230744 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_20">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="414.230744" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_10">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="414.230744" y="176.182188" transform="rotate(-0 414.230744 176.182188)">17:00</text>
+     </g>
+    </g>
+    <g id="xtick_11">
+     <g id="line2d_21">
+      <path d="M 456.018604 164 
+L 456.018604 22.92 
+" clip-path="url(#pdb3f0faf7b)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_22">
+      <g>
+       <use xlink:href="#m240d4cc3e5" x="456.018604" y="164" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_11">
+      <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="456.018604" y="176.182188" transform="rotate(-0 456.018604 176.182188)">18:00</text>
+     </g>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_23">
+      <defs>
+       <path id="mbb0c3e293b" d="M 0 0 
+L -3.5 0 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#mbb0c3e293b" x="38.14" y="148.036402" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_12">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="31.14" y="151.367809" transform="rotate(-0 31.14 151.367809)">9 ต.ค.</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_24">
+      <g>
+       <use xlink:href="#mbb0c3e293b" x="38.14" y="120.748201" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_13">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="31.14" y="124.079607" transform="rotate(-0 31.14 124.079607)">8 ต.ค.</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_25">
+      <g>
+       <use xlink:href="#mbb0c3e293b" x="38.14" y="93.46" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_14">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="31.14" y="96.791406" transform="rotate(-0 31.14 96.791406)">7 ต.ค.</text>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_26">
+      <g>
+       <use xlink:href="#mbb0c3e293b" x="38.14" y="66.171799" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_15">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="31.14" y="69.503205" transform="rotate(-0 31.14 69.503205)">6 ต.ค.</text>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_27">
+      <g>
+       <use xlink:href="#mbb0c3e293b" x="38.14" y="38.883598" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_16">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="31.14" y="42.215004" transform="rotate(-0 31.14 42.215004)">5 ต.ค.</text>
+     </g>
+    </g>
+   </g>
+   <g id="patch_3">
+    <path d="M 38.14 164 
+L 38.14 22.92 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 38.14 164 
+L 464.376176 164 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #333333" x="184.397512" y="40.542113" transform="rotate(-0 184.397512 40.542113)">ปฐมนิเทศ</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #333333" x="278.420198" y="40.542113" transform="rotate(-0 278.420198 40.542113)">พิธีเปิด+บรรยาย</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="382.889849" y="40.542113" transform="rotate(-0 382.889849 40.542113)">ADCS พื้นฐาน (ลงมือ)</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #333333" x="121.715721" y="67.830314" transform="rotate(-0 121.715721 67.830314)">บรรยาย</text>
+   </g>
+   <g id="text_21">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="173.950546" y="67.830314" transform="rotate(-0 173.950546 67.830314)">ADCS ชี้ทิศ</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="278.420198" y="67.830314" transform="rotate(-0 278.420198 67.830314)">สถานีภาคพื้น</text>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="361.995918" y="67.820666" transform="rotate(-0 361.995918 67.820666)">กล้อง Payload</text>
+   </g>
+   <g id="text_24">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="236.632337" y="95.699453" transform="rotate(-0 236.632337 95.699453)">ดูงาน มทม. + สถานีไทยคม (ไม่มีเวลาทำงานกับบอร์ด)</text>
+   </g>
+   <g id="text_25">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="121.715721" y="122.406717" transform="rotate(-0 121.715721 122.406717)">AIT</text>
+   </g>
+   <g id="text_26">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="179.174029" y="122.406717" transform="rotate(-0 179.174029 122.406717)">ปฏิบัติภารกิจ</text>
+   </g>
+   <g id="text_27">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="330.655023" y="122.398592" transform="rotate(-0 330.655023 122.398592)">ปรับจูน + ซ้อมภารกิจ (สำคัญสุด)</text>
+   </g>
+   <g id="text_28">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #ffffff" x="142.609651" y="149.694918" transform="rotate(-0 142.609651 149.694918)">แข่งจริง</text>
+   </g>
+   <g id="text_29">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle; fill: #333333" x="278.420198" y="149.694918" transform="rotate(-0 278.420198 149.694918)">ประกาศผล</text>
+   </g>
+   <g id="text_30">
+    <text style="font-size: 6.5px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: start; fill: #6b4fa0" x="40.229393" y="131.117718" transform="rotate(-0 40.229393 131.117718)">08:30 ฟังโจทย์</text>
+   </g>
+   <g id="text_31">
+    <text style="font-size: 10px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="251.258088" y="16.92" transform="rotate(-0 251.258088 16.92)">ตารางรอบชิง 5–9 ต.ค. 2569 (จากกำหนดการล่าสุด)</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pdb3f0faf7b">
+   <rect x="38.14" y="22.92" width="426.236176" height="141.08"/>
+  </clipPath>
+ </defs>
+</svg>
+<figcaption>ตารางรอบชิง 5–9 ต.ค. 2569</figcaption></figure>
+<div class="tw"><table><thead><tr><th>วัน</th><th>กิจกรรมของผู้จัด (กำหนดการล่าสุด)</th><th>สิ่งที่ทีมต้องได้กลับมา</th></tr></thead><tbody><tr><td>5 ต.ค.</td><td>10:30 ลงทะเบียน · 11:00 ปฐมนิเทศ · 13:00 พิธีเปิด · 14:30–18:00 ฝึกปฏิบัติพื้นฐานระบบควบคุมทิศทางดาวเทียม</td><td>ข้อมูลฮาร์ดแวร์ (ข้อ 2) + คำตอบคำถามกติกา (ข้อ 3)</td></tr><tr><td>6 ต.ค.</td><td>10:30 ฝึก ADCS ชี้ทิศ · 13:00 <strong>สื่อสารและควบคุมผ่านสถานีภาคพื้น</strong> · 14:30 <strong>เชื่อมต่อและสั่งงานกล้อง Payload</strong></td><td>รู้ว่าสถานีภาคพื้นคืออะไร ต่อแบบไหน และกล้องใช้บอร์ด/โค้ดอะไร</td></tr><tr><td>7 ต.ค.</td><td>ดูงาน มทม. + สถานีภาคพื้นไทยคม (ไม่มีเวลาทำงานกับบอร์ด)</td><td>ตอนเย็นที่โรงแรม: ปรับค่า/โค้ดตามข้อมูลที่ได้ (ข้อ 4)</td></tr><tr><td>8 ต.ค.</td><td>09:30 AIT · 10:45 ปฏิบัติภารกิจ · <strong>13:00–17:00 ปรับปรุงประสิทธิภาพ + ซ้อมภารกิจ</strong></td><td>คาลิเบรตในห้องแข่งจริง + ซ้อมครบ 2 ภารกิจ (ข้อ 5)</td></tr><tr><td>9 ต.ค.</td><td>08:30 ชี้แจงภารกิจ · <strong>09:00–12:00 แข่ง</strong> · 13:00 ประกาศผล</td><td>ทำตามข้อ 6</td></tr></tbody></table></div>
+<p>ก่อนเดินทาง (ภายใน 4 ต.ค.): ทำ <code>firmware/INSTALL_CHECKLIST.md</code> ให้ครบบนเครื่องแข่ง, Verify ผ่านทั้ง NasaSat และ Fallback, ซ้อมกับตัวจำลองในเว็บจนคล่อง, สำรองทั้งโฟลเดอร์ลง USB drive, พิมพ์เอกสารนี้</p>
+<hr>
+<h2 id="s61">2. เก็บข้อมูลฮาร์ดแวร์ (5–6 ต.ค.) — กรอกให้ครบ</h2>
+<div class="tw"><table><thead><tr><th>เรื่อง</th><th>ค่า</th><th>วิธีหา</th></tr></thead><tbody><tr><td>รุ่นบอร์ด / ตัวอักษรบนโมดูล (เช่น N16R8)</td><td></td><td>ดูฝาเหล็กโมดูล, HWID</td></tr><tr><td>USB เข้าชิปแปลง (CH340/CP210x) หรือ USB ในตัว</td><td></td><td>tool แท็บเชื่อมต่อบอก VID</td></tr><tr><td>ขา LDR ซ้าย / ขวา</td><td></td><td>PINFIND + เอามือบัง</td></tr><tr><td>LDR ต่อฝั่ง 3.3 V หรือ GND</td><td></td><td>บังมือแล้ว mV ลด = ฝั่ง 3.3 V</td></tr><tr><td>ค่าตัวต้านทานคู่ LDR / รุ่น LDR</td><td></td><td>ดูบนบอร์ด / ถามผู้จัด</td></tr><tr><td>มุมเอียง LDR / แบบกล่องกันแสง</td><td></td><td>วัด / ถามผู้จัด</td></tr><tr><td>ตัวขับ: stepper ULN2003 / servo / อื่น ๆ</td><td></td><td>ดูของจริง</td></tr><tr><td>ขา IN1–IN4 ของ ULN2003 (หรือขา servo)</td><td></td><td>สกรีนบอร์ด / โค้ดตัวอย่างผู้จัด</td></tr><tr><td>หมุนได้กี่องศา (สายพันไหม)</td><td></td><td>ลองหมุนมือ</td></tr><tr><td>กล้อง: รุ่น, อยู่บอร์ดเดียวกันไหม, ขา</td><td></td><td>ดูของจริง / โค้ดผู้จัด</td></tr><tr><td>ไฟเลี้ยง: USB อย่างเดียว / มีแบต / มีไฟแยกให้มอเตอร์</td><td></td><td>ดูของจริง</td></tr><tr><td>ESP32 core ที่ผู้จัดใช้</td><td></td><td>ถามผู้จัด</td></tr><tr><td>สถานีภาคพื้นคืออะไร (สาย/ไร้สาย, ESP-NOW/Wi-Fi/อื่น)</td><td></td><td>อบรม 6 ต.ค. บ่าย</td></tr></tbody></table></div>
+<p>ถ้าผู้จัดแจกโค้ดตัวอย่าง: ขออนุญาตถ่ายรูปหรือคัดลอก เพราะในนั้นมีเลขขาทั้งหมด</p>
+<hr>
+<h2 id="s62">3. คำถามที่ต้องถามผู้จัด (ถามให้ได้คำตอบภายใน 6 ต.ค.)</h2>
+<ol>
+<li>ใช้ firmware และเครื่องมือของทีมเองได้ไหม หรือต้องใช้โค้ด/โปรแกรมของผู้จัด</li>
+<li>ภารกิจ 1 วัดผลอย่างไร: มุมแสงกี่มุม, เกณฑ์คลาดได้กี่องศา, วัดจากด้านไหนของดาวเทียม (หน้ากล้อง? เครื่องหมาย?), จำกัดเวลาไหม, ต้องค้างเป้านานเท่าไร</li>
+<li>ภารกิจ 2 วัดผลอย่างไร: เป้าอยู่ตรงไหน (บอกเป็นมุม? เทียบหลอด?), ภาพต้องชัดแค่ไหน, ส่งภาพให้กรรมการทางไหน (ไฟล์? หน้าจอ?)</li>
+<li>ต้องสั่งงานผ่าน "สถานีภาคพื้น" ของผู้จัดไหม ถ้าต้อง เชื่อมต่อแบบไหน ใช้คำสั่งอะไร</li>
+<li>ได้คาลิเบรตในห้องแข่งก่อนเริ่มไหม, หลอดจะย้ายหรือเปลี่ยนความสว่างระหว่างแข่งไหม, ไฟห้องเปิดหรือปิด</li>
+<li>แข่งพร้อมกันทุกทีม หรือเรียกทีละทีม ได้ลองกี่ครั้ง นับครั้งที่ดีที่สุดไหม</li>
+<li>มีอินเทอร์เน็ตให้ใช้ไหม ต้องปิดเน็ตระหว่างแข่งไหม</li>
+<li>สัดส่วนคะแนน (ภารกิจ 1, ภารกิจ 2, นำเสนอ, อื่น ๆ)</li>
+</ol>
+<hr>
+<h2 id="s63">4. คืนวันที่ 7 ต.ค. (ที่โรงแรม)</h2>
+<ol>
+<li>กรอกค่าจากข้อ 2 ลงโปรไฟล์ (แท็บจูนค่า → Export) พร้อมใช้พรุ่งนี้</li>
+<li>ถ้าฮาร์ดแวร์ต่างจากที่เตรียม (ตัวขับแบบอื่น, กล้องแยกบอร์ด, ต้องไร้สาย) ใช้ลูป AI (ข้อ 9) ปรับโค้ด แล้ว<strong>ทดสอบบนคอมก่อนเสมอ</strong> (<code>firmware/host_test</code>) ก่อนเอาไปลงบอร์ดพรุ่งนี้<br>มีเตรียมไว้แล้ว ไม่ต้องเขียนใหม่: กล้อง ESP32-CAM แยกบอร์ด (<code>cam.model 4</code>, firmware README หัวข้อ "กล้องอยู่อีกบอร์ด"),<br>ถอดสาย/ใช้แบต (<code>m1.auto</code>, ปุ่ม BOOT), วิทยุ serial เป็นช่องที่สอง (<code>com.tx/com.rx/com.baud</code>) ถ้าสถานีภาคพื้นเป็น Wi-Fi/ESP-NOW ใช้บอร์ดสะพานต่อช่องที่สอง หรือให้ AI เพิ่มใน <code>ops.cpp</code></li>
+<li>ถ้าต้องแก้ firmware: Verify ใน Arduino IDE ให้ผ่าน, เก็บเวอร์ชันก่อนแก้ไว้ด้วย</li>
+<li>แบ่งหน้าที่พรุ่งนี้ (ข้อ 10) และนอนให้พอ</li>
+</ol>
+<hr>
+<h2 id="s64">5. บ่ายวันที่ 8 ต.ค. 13:00–17:00 (ช่วงสำคัญที่สุด)</h2>
+<div class="tw"><table><thead><tr><th>เวลา</th><th>ทำอะไร</th><th>ได้อะไร</th></tr></thead><tbody><tr><td>13:00–13:30</td><td>เสียบบอร์ด, Upload NasaSat (หรือใช้โค้ดผู้จัดถ้าบังคับ), เชื่อม NasaSatLab, HWID, PINFIND, ตั้งขา, <code>MOVE 10</code> ดูว่าหมุนและทิศถูก, SAVE</td><td>บอร์ดคุยกับเครื่องมือได้</td></tr><tr><td>13:30–14:00</td><td>หันเข้าหลอด → ZERO → BACKLASH → ตั้ง act.bl; ถ้าหมุนได้ 360° ทำ SPR → ตั้ง act.spr</td><td>ตัวขับแม่น</td></tr><tr><td>14:00–14:45</td><td>คาลิเบรตครบทุกขั้นใต้ไฟห้องแข่งจริง รวม γ สองระดับแสง (ข้อ 7.3) → Export ผลคาลิเบรต + โปรไฟล์ → ทดสอบบังหลอดด้วยกระดาษแล้วล็อกใหม่ มุมต้องไม่ขยับเกิน 0.3°</td><td>มุมที่อ่านได้ตรงของจริง และไม่เพี้ยนตามความสว่างหลอด</td></tr><tr><td>14:40–15:25</td><td>ภารกิจ 1 ซ้อม 5 รอบ เริ่มคนละมุม (ซ้าย/ขวา/ไกล) จดเวลาและมุมจริงทุกรอบ</td><td>รู้ความแม่นและเวลาจริง</td></tr><tr><td>15:25–16:10</td><td>ภารกิจ 2: M2 INIT → "เตรียมกล้อง" (พลิกภาพ → ตรวจทิศภาพ → ล็อกหลอดแล้ววัด boresight) → GO SUN หลายมุม → สแกนรอบตัว + คลิกเป้า 1 ครั้ง</td><td>ภาพเป้าหมายใช้ได้ คลิกเล็งได้</td></tr><tr><td>16:10–16:40</td><td>ซ้อมกู้คืน: REBOOT (เว็บต้องต่อใหม่เอง), ถอดเสียบสาย, Import โปรไฟล์ (และ Fallback ถ้ามีเวลา) · ถ้าโจทย์ให้ถอดสาย: ซ้อม <code>m1.auto</code> + ปุ่ม BOOT กับแบต</td><td>กู้ระบบได้ใน 2 นาที</td></tr><tr><td>16:40–17:00</td><td>ดาวน์โหลดหลักฐานทั้งหมด, จดปัญหาที่ต้องแก้คืนนี้</td><td>—</td></tr></tbody></table></div>
+<p>คืนวันที่ 8: แก้เฉพาะปัญหาที่เจอจริง ทดสอบบนคอม แล้ว <strong>หยุดแก้โค้ดก่อน 22:00</strong> (ของที่ใช้ได้ดีกว่าของใหม่ที่ยังไม่ได้ลอง)</p>
+<hr>
+<h2 id="s65">6. วันแข่ง 9 ต.ค.</h2>
+<div class="tw"><table><thead><tr><th>เวลา</th><th>ทำอะไร</th></tr></thead><tbody><tr><td>08:00–08:30</td><td>ลงทะเบียน · ตั้งเครื่อง เปิด NasaSatLab · เสียบบอร์ด (ถ้าอนุญาต) ดูว่า telemetry วิ่ง, RAW ได้ valid ไม่ตัน</td></tr><tr><td>08:30–09:00</td><td>ฟังโจทย์: คนที่ 3 จดทุกเงื่อนไขลงตาราง "โจทย์ → ค่าตั้ง" (ด้านล่าง) ถามกรรมการทันทีถ้าไม่ชัด</td></tr><tr><td>09:00–09:15</td><td>Import โปรไฟล์เมื่อวาน · ตั้งค่าตามโจทย์ · ถ้าไฟห้องต่างจากเมื่อวาน: ตรวจศูนย์ด้วยท่อเล็ง ถ้าคลาดเกินเกณฑ์ CAL TH0 ใหม่ (30 วินาที) ถ้าไฟเปลี่ยนมากและมีเวลา: AMB + Sweep + Fit + ส่ง + CAL TH0 ใหม่ทั้งชุด (γ สองระดับใช้ค่าเดิม)</td></tr><tr><td>09:15–09:25</td><td>ตรวจก่อนลงแข่ง (checklist ข้อ 7.1) + ภารกิจ 1 ลอง 1 รอบ</td></tr><tr><td>ต่อจากนั้น</td><td>ภารกิจ 1 → ภารกิจ 2 ตามที่กรรมการเรียก ทุกรอบจดผล · ผิดปกติกด STOP แล้วใช้ผังแก้ปัญหา (ข้อ 8)</td></tr><tr><td>30 นาทีสุดท้าย</td><td>ลองซ้ำเฉพาะส่วนที่คะแนนยังขาด · ดาวน์โหลดหลักฐาน · เตรียมตอบคำถาม (THEORY ข้อ 11)</td></tr></tbody></table></div>
+<p><strong>ตาราง "โจทย์ → ค่าตั้ง"</strong></p>
+<div class="tw"><table><thead><tr><th>ในโจทย์</th><th>ค่าตั้ง / คำสั่ง</th></tr></thead><tbody><tr><td>หันเข้าหาแสงตรง ๆ</td><td><code>M1 START 0</code></td></tr><tr><td>ทำมุม X กับแสง</td><td><code>M1 START X</code> (ได้ −80..80)</td></tr><tr><td>เกณฑ์คลาดไม่เกิน T องศา</td><td>ช่อง "เกณฑ์ผ่าน" ในแท็บภารกิจ 1 = T; ถ้า T ≤ 0.5 ลด <code>ctl.db</code> เหลือ T/2</td></tr><tr><td>ต้องค้างเป้า S วินาที</td><td>ช่อง "ต้องคงเป้าต่อเนื่อง" = S</td></tr><tr><td>ถ่ายเป้าที่อยู่ห่างหลอด X องศา</td><td><code>M2 GO SUN X</code> (X บวก = ทิศเดียวกับที่ <code>MOVE 10</code> หมุนไป ลองดูทิศก่อน)</td></tr><tr><td>ถ่ายเป้าที่มุม A ของฐานหมุน</td><td><code>ZERO</code> ตรงเครื่องหมาย 0 ของฐาน แล้ว <code>M2 GO A</code></td></tr><tr><td>ถ่ายเป้า (ไม่บอกมุม) ให้อยู่กลางภาพ</td><td>แท็บภารกิจ 2 "สแกนรอบตัว" → คลิกภาพที่เห็นเป้า → คลิกที่เป้า → "เทียบดวงอาทิตย์" (ทนชน) หรือ "หันไปถ่ายตรงนี้"</td></tr><tr><td>ห้ามหมุนเกินช่วง</td><td><code>act.min</code> / <code>act.max</code></td></tr><tr><td>ภาพต้องละเอียดขึ้น/ส่งเร็วขึ้น</td><td><code>cam.res</code> (0 เล็ก … 5 ใหญ่), <code>cam.q</code> (เลขน้อย = ชัด)</td></tr><tr><td>ต้องทำงานโดยไม่ต่อคอม</td><td><code>SET m1.auto 5</code> + <code>SAVE m1.auto</code> (เปิดเครื่องแล้วเริ่มเอง) หรือกดปุ่ม BOOT · ห้ามลืมตั้ง <code>m1.tgt</code> ตามโจทย์แล้ว <code>SAVE m1.tgt</code></td></tr><tr><td>ต้องสั่งผ่านวิทยุ/สถานีภาคพื้น</td><td>วิทยุ serial: <code>SET com.baud &lt;baud&gt;</code>, <code>com.rx</code>, <code>com.tx</code>, <code>SAVE</code> → เว็บต่อพอร์ตของวิทยุตัวรับ</td></tr><tr><td>ต้องรายงานแบต/สุขภาพระบบ</td><td><code>SET hw.vbat &lt;ขา&gt;</code>, <code>SET hw.vdiv &lt;อัตราส่วน&gt;</code> → <code>J hk</code> (หัวเว็บแสดงแบตและอุณหภูมิชิป)</td></tr></tbody></table></div>
+<hr>
+<h2 id="s66">7. Checklist</h2>
+<h3 id="s67">7.1 ก่อนรันภารกิจทุกครั้ง</h3>
+<ul>
+<li class="task"><span class="box">☐</span> telemetry วิ่ง ไม่มีธง ADC ตัน (SAT) · แสง: เห็น (valid)</li>
+<li class="task"><span class="box">☐</span> <code>RAW</code> ตอนหันเข้าหลอด: mV ทั้งสองช่องอยู่ 500–3000</li>
+<li class="task"><span class="box">☐</span> ค่าตั้งตามโจทย์ถูก และ <strong>SAVE แล้ว</strong> (แถบบนไม่มีป้าย "ยังไม่ SAVE")</li>
+<li class="task"><span class="box">☐</span> ไม่มีงานค้าง (ไม่มีธง "มีงานรัน")</li>
+<li class="task"><span class="box">☐</span> สายไม่พัน หมุนได้ตลอดช่วง</li>
+<li class="task"><span class="box">☐</span> คนดูเวลา/จดผล พร้อม</li>
+</ul>
+<h3 id="s68">7.2 ภารกิจ 1</h3>
+<ul>
+<li class="task"><span class="box">☐</span> ตั้งมุมเป้า + เกณฑ์ + เวลาคงเป้า → START</li>
+<li class="task"><span class="box">☐</span> รอ HOLD แล้วรอครบเวลาคงเป้า ตารางต้องขึ้น "ผ่าน"</li>
+<li class="task"><span class="box">☐</span> ถ้า SEARCH นาน: ดูว่าหลอดเปิด, อยู่ในช่วง m1.smin..m1.smax</li>
+<li class="task"><span class="box">☐</span> ถ้าแกว่งไม่หยุด: ลด <code>ctl.k</code> (0.6) หรือเพิ่ม <code>ctl.db</code></li>
+</ul>
+<h3 id="s69">7.3 คาลิเบรต (ประมาณ 6–12 นาที)</h3>
+<ol>
+<li>หันเข้าหลอดคร่าว ๆ → <code>ZERO</code></li>
+<li><code>BACKLASH</code> → ตั้ง act.bl (และ SPR ถ้าหมุน 360° ได้)</li>
+<li>ปิดหลอด → ขั้น 2 วัดแสงรอบข้าง (รอเอง 1–4 วินาที)</li>
+<li>เปิดหลอด → ขั้น 4 Sweep −60..60 ทีละ 5</li>
+<li>ขั้น 5 γ สองระดับแสง (ครั้งเดียวต่อชุด LDR): หันเข้าหลอด → วัดระดับ 1 → กระดาษขาวบังหน้า<strong>หลอด</strong> (ห้ามแตะดาวเทียม แสงต้องลด ≥ 2 เท่า) → วัดระดับ 2 → เอากระดาษออก</li>
+<li>ขั้น 5 Fit: MAE (+LUT) &lt; 0.3°, γ อยู่ 0.4–0.9, ไม่มีจุดตัน, "γ ขวา/ซ้าย จากแสงสองระดับ ... ใช้แล้ว"</li>
+<li>ขั้น 6 ตรวจ (กวาดย้อนทิศ bias &lt; 0.2°) → ขั้น 7 ส่ง + SAVE</li>
+<li>ขั้น 8: หันหน้าดาวเทียมตรงหลอดด้วยของอ้างอิง → ตั้งศูนย์ (บอร์ดบันทึกค่าศูนย์ให้เอง กด SAVE ด้วยก็ได้)</li>
+<li>Export ผลคาลิเบรต + โปรไฟล์</li>
+</ol>
+<h3 id="s70">7.4 ภารกิจ 2</h3>
+<ul>
+<li class="task"><span class="box">☐</span> <code>M2 INIT</code> ได้ "ok sensor" (ไม่ได้: ลอง cam.model อื่น, ESP32-CAM = 4)</li>
+<li class="task"><span class="box">☐</span> เลือกโฟลเดอร์บันทึกภาพอัตโนมัติ (ภาพทุกภาพ + metadata ลงดิสก์เอง)</li>
+<li class="task"><span class="box">☐</span> ภาพกลับหัว/กลับด้าน → ปุ่มพลิก (บันทึกลงบอร์ดให้)</li>
+<li class="task"><span class="box">☐</span> "ตรวจทิศภาพ + มุมรับภาพ" (หันให้มีของหลายอย่างหรือหลอดในภาพ) ได้ "เสร็จ" ไม่ใช่ "ไม่แน่ใจ"</li>
+<li class="task"><span class="box">☐</span> หลังคาลิเบรต + ตั้งศูนย์แล้ว: "ล็อกหลอดแล้ววัด boresight" → "ใช้ค่านี้ + SAVE"</li>
+<li class="task"><span class="box">☐</span> (ถ้าต้องการแสงคงที่) M2 LOCK</li>
+<li class="task"><span class="box">☐</span> GO SUN offset (แนะนำ) หรือ GO มุม หรือสแกน + คลิกเป้า → ดูภาพ: เป้าอยู่กลางภาพ, ไม่เบลอ, CRC ผ่าน</li>
+<li class="task"><span class="box">☐</span> ถ้าได้ snap_fail: อ่านเหตุผล (เกินช่วงหมุน / คลาดเกิน m2.tol) แก้แล้วลองใหม่</li>
+</ul>
+<hr>
+<h2 id="s71">8. ผังแก้ปัญหา (ทำจากบนลงล่าง)</h2>
+<p><strong>เชื่อมต่อไม่ได้ / เงียบ</strong></p>
+<ol>
+<li>บอร์ดรีเซ็ตแล้วเว็บขึ้น "กำลังต่อใหม่…": รอ 30 วินาที (ติ๊ก "ต่อใหม่เอง" ไว้) ถ้าไม่กลับมาค่อยทำข้อถัดไป</li>
+<li>ปิด Serial Monitor ของ Arduino IDE → ต่อใหม่</li>
+<li>ลองสาย USB เส้นอื่น (บางเส้นชาร์จอย่างเดียว) / พอร์ตอื่น</li>
+<li>กด RESET บนบอร์ด แล้วต่อใหม่</li>
+<li>ถ้าเคยเงียบหลังอัปโหลด: USB CDC On Boot ตั้งไม่ตรงชนิด USB → แก้แล้วอัปโหลดใหม่ (INSTALL_CHECKLIST ข้อ 3)</li>
+</ol>
+<p><strong>บอร์ดรีเซ็ตเอง (ดู <code>E BOOT ...</code> ในคอนโซล)</strong></p>
+<ul>
+<li>BROWNOUT → ไฟไม่พอ: ปล่อยขดลวด (act.hold 0), ใช้ hub มีไฟ, แยกไฟมอเตอร์</li>
+<li>TASK_WDT → loop ค้าง: บันทึก log แล้ววิเคราะห์ (ข้อ 9), ใช้งานต่อได้เพราะค่าอยู่ใน flash</li>
+<li>PANIC → โค้ดพัง: บันทึก log, ถ้าซ้ำใช้ Fallback</li>
+<li>รีเซ็ตวนตั้งแต่เปิด → PSRAM ตั้งผิด: เปลี่ยน PSRAM เป็น Disabled แล้วอัปโหลดใหม่</li>
+</ul>
+<p><strong>เซนเซอร์ไม่ขยับ / ค่าแปลก</strong></p>
+<ul>
+<li>mV ไม่เปลี่ยนเมื่อบังมือ → ขาผิด: PINFIND หาใหม่ → sen.pin0/1</li>
+<li>บังมือแล้ว mV เพิ่ม → sen.topo 1</li>
+<li>ขึ้น adc_saturated → ถอยหลอด / ปิดกระดาษบางทั้งคู่ให้เท่ากัน แล้วคาลิเบรตใหม่</li>
+<li>θ กระโดด → ตรวจสายหลวม, sen.win 20 หรือ 40</li>
+<li>ห้องเปิด/ปิดไฟแล้วมุมเพี้ยน → ตรวจศูนย์ด้วยท่อเล็ง → CAL TH0 ใหม่ (<strong>อย่าวัด AMB ใหม่อย่างเดียว และอย่า Fit ใหม่ด้วย Sweep เก่า</strong> ทดลองแล้วแย่ลงได้ถึง 3°) มีเวลาค่อยทำใหม่ทั้งชุด</li>
+<li>หลอดหรี่/สว่างขึ้นหรือระยะหลอดเปลี่ยนแล้วมุมเพี้ยน → ยังไม่ได้วัด γ สองระดับ หรือวัดตอนตัวดาวเทียมขยับ: วัดใหม่แล้ว Fit</li>
+<li>SEARCH นาน/ไปชนขอบ → หลอดอยู่นอก m1.smin..m1.smax หรือหลอดอยู่หลังเกินที่ตัวขับหมุนถึง (บอร์ดไม่หยุดที่มุมที่หมุนไปไม่ถึง)</li>
+<li>ล็อกช้า/ล็อกไม่ได้ ค่าแกว่ง → <code>RAW 1000</code> ดู <code>th_sd</code> ถ้าสูงกว่าตอนซ้อมมาก: ตรวจสาย/กราวด์/ไฟมอเตอร์ <code>ctl.adapt 1</code> ช่วยอยู่แล้ว</li>
+</ul>
+<p><strong>มอเตอร์</strong></p>
+<ul>
+<li>ไม่หมุน (ไฟ LED บน ULN2003 ไม่กระพริบ) → ขา act.in1..4 ผิด</li>
+<li>LED กระพริบแต่ไม่หมุน → ไฟ 5 V ของมอเตอร์ไม่มา / สายมอเตอร์หลวม</li>
+<li>สั่น/หลุด step → ลด act.vmax (25) หรือ act.acc</li>
+<li>ภารกิจ 1 วิ่งหนีแสง → act.dir −1</li>
+<li>ตำแหน่งไม่ซ้ำ → BACKLASH ใหม่, ตรวจ ctl.appr = 1</li>
+</ul>
+<p><strong>กล้อง / ภาพ</strong></p>
+<ul>
+<li>init fail → cam.model อื่น, ขากล้องใน board_config.h (cam.model 3), M2 INIT หรือ REBOOT</li>
+<li>ภาพเสีย/ขาด → ลอง SNAP ใหม่ (tool ขอชิ้นที่หายซ้ำเอง), ลด cam.res</li>
+<li>ภาพเบลอ → เพิ่ม m2.settle (600), cam.flush 3</li>
+<li>ภาพมืด/สว่างเกิน → M2 UNLOCK ให้ปรับเอง แล้ว LOCK ใหม่ตอนหันเข้าเป้า</li>
+<li><code>not for this chip</code> → cam.model ผิดชิป (ESP32-S3 ใช้ 1/2/3, ESP32-CAM ใช้ 4)</li>
+<li>คลิกเป้าแล้วถ่ายใหม่ เป้าไปอยู่อีกฝั่งของภาพ → ทิศภาพผิด: "ตรวจทิศภาพ" ใหม่ (เคยพลิกภาพหลังตรวจ? โปรแกรมคิดให้แล้ว ถ้ายังผิดให้ตรวจใหม่)</li>
+<li>"ตรวจทิศภาพ" ขึ้น "ไม่แน่ใจ" → หันไปทางที่มีของ/หลอดในภาพ หรือเปิดไฟ แล้วลองใหม่</li>
+</ul>
+<p><strong>ไม่ต่อคอม / วิทยุ</strong></p>
+<ul>
+<li>เปิดเครื่องแล้วไม่เริ่มเอง → <code>m1.auto</code> ยังไม่ SAVE (<code>SAVE m1.auto</code>) หรือมีคนกด STOP ระหว่างรอ</li>
+<li>กดปุ่ม BOOT ไม่มีอะไร → <code>hw.btn -1</code> หรือกล้องใช้ขา 0 (ESP32-CAM) ดู <code>J hk</code> ฟิลด์ <code>btn</code></li>
+<li>วิทยุเงียบ → <code>com.baud</code> ตรงกับวิทยุไหม, TX บอร์ด → RX วิทยุ, เห็น <code>E LINK ON</code> ไหม</li>
+<li>ภาพผ่านวิทยุช้า → <code>cam.res 0</code> (320×240 ≈ 10 s ที่ 9600 baud) หรือ <code>com.limg 0</code> ให้ภาพออก USB อย่างเดียว</li>
+</ul>
+<p><strong>compile ไม่ผ่าน</strong></p>
+<ul>
+<li>error เกี่ยวกับกล้อง → ตรวจว่าใช้ไฟล์ล่าสุด (compile ผ่าน core 3.3.5 แล้ว) ส่ง error ให้ AI; features.h: ENABLE_CAMERA 0 เป็นทางสุดท้าย (ภารกิจ 2 หาย)</li>
+<li>อย่างอื่น → ส่งข้อความ error บรรทัดแรก ๆ ให้ AI (ข้อ 9), ระหว่างนั้นใช้ Fallback.ino</li>
+</ul>
+<p><strong>ทุกอย่างพังและเหลือเวลาน้อย</strong> → อัปโหลด <code>firmware/Fallback/Fallback.ino</code> (แก้ขาบรรทัดบนสุด) → หันตรงหลอดด้วยตา → <code>BAL</code> → <code>M1 START</code></p>
+<hr>
+<h2 id="s72">9. ลูป "วัด → AI → แก้ → ทดสอบ" (ภายใน 10 นาที)</h2>
+<ol>
+<li>(1 นาที) ทำให้ปัญหาเกิดซ้ำ แล้วกด STOP</li>
+<li>(1 นาที) แท็บ "หลักฐาน &amp; AI" → "DIAG + สร้างใหม่" → คัดลอก</li>
+<li>(2 นาที) วางในแชท AI พร้อม: อาการ, คำสั่งที่ส่ง, สิ่งที่คาดไว้, และแนบ <code>firmware/CONTEXT_PACK.md</code> ถ้าเป็นแชทใหม่</li>
+<li>(3 นาที) ทำตามทีละข้อ <strong>เปลี่ยนทีละอย่าง</strong> ส่วนใหญ่เป็น <code>SET ...</code> ไม่ต้องอัปโหลดใหม่</li>
+<li>(3 นาที) ทดสอบซ้ำ ดีขึ้น → SAVE + Export; แย่ลง → LOAD</li>
+</ol>
+<p>ถ้าเกิน 10 นาทีแล้วยังไม่หาย ให้ถอยกลับค่าที่ใช้ได้ล่าสุด แล้วไปทำส่วนอื่นก่อน</p>
+<p>ตัวอย่างคำถามที่ดี: "ภารกิจ 1 ล็อกแล้วแต่เมื่อวัดด้วยท่อเล็งคลาด 1.2° ไปทางซ้ายทุกครั้ง ข้อมูล DIAG ด้านล่าง ควรแก้ค่าไหน"</p>
+<p><strong>ไม่มีอินเทอร์เน็ต</strong>: ใช้มือถือแชร์เน็ต (tethering) ถ้ายังไม่ได้ ใช้ผังข้อ 8 + ตารางแก้ปัญหาใน <code>firmware/README.md</code> ซึ่งครอบคลุมปัญหาที่พบบ่อยทั้งหมด</p>
+<hr>
+<h2 id="s73">10. แบ่งหน้าที่ 3 คน</h2>
+<div class="tw"><table><thead><tr><th>คน</th><th>หน้าที่ระหว่างแข่ง</th><th>ต้องอธิบายกรรมการได้</th></tr></thead><tbody><tr><td>A คุมคีย์บอร์ด</td><td>ส่งคำสั่ง, คุม STOP, ตั้งค่าตามโจทย์</td><td>ขั้นตอนคาลิเบรต, การควบคุม (THEORY 4, 6)</td></tr><tr><td>B ฮาร์ดแวร์/กล้อง</td><td>จัดหลอด/ฐาน/สาย, ของอ้างอิง, ภารกิจ 2</td><td>เซนเซอร์, กล่องกันแสง, กล้อง (THEORY 2, 3, 7)</td></tr><tr><td>C จดบันทึก/เวลา</td><td>จดโจทย์ → ค่าตั้ง, จับเวลา, จดผลทุกครั้ง, ดาวน์โหลดหลักฐาน, เปิดผังแก้ปัญหา</td><td>งบความคลาด, FDIR, ผลทดสอบ (THEORY 5, 8, 10)</td></tr></tbody></table></div>
+<p>พูดกันสั้น ๆ ชัด ๆ: "STOP", "SAVE แล้ว", "HOLD แล้ว", "เริ่มจับเวลา"</p>
+<p class="meta">สร้างจาก PLAYBOOK_TH.md เมื่อ 2026-10-01 · พิมพ์: Ctrl+P (A4)</p>
+</main></body></html>

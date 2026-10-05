@@ -1,0 +1,242 @@
+{
+  "date": "2026-09-24",
+  "context": "Existing firmware C++ on host mocks; not physical hardware",
+  "results": [
+    {
+      "name": "offline_bundle",
+      "matchesSource": true
+    },
+    {
+      "name": "image_missing_after_retries",
+      "retries": 3,
+      "delivered": 0,
+      "thrown": "TypeError: Cannot convert undefined or null to object"
+    },
+    {
+      "name": "unlocked_photo",
+      "metadata": [
+        {
+          "type": "img_meta",
+          "id": 1,
+          "t_ms": 798,
+          "w": 640,
+          "h": 480,
+          "bytes": 24578,
+          "q": 12,
+          "ang": 0,
+          "cam_az_cmd": 0,
+          "tgt": null,
+          "err_cmd": null,
+          "m1": "IDLE",
+          "th": 44.04298,
+          "locked": false,
+          "aec": "auto",
+          "moving": false,
+          "ref": "none"
+        }
+      ],
+      "imageStarted": true
+    },
+    {
+      "name": "out_of_range_photo",
+      "metadata": [
+        {
+          "type": "img_meta",
+          "id": 2,
+          "t_ms": 10213,
+          "w": 640,
+          "h": 480,
+          "bytes": 24578,
+          "q": 12,
+          "ang": 169.9805,
+          "cam_az_cmd": 169.9805,
+          "tgt": 250,
+          "err_cmd": -80.01953,
+          "m1": "IDLE",
+          "th": 13.27717,
+          "locked": true,
+          "aec": "frozen",
+          "moving": false,
+          "ref": "actuator"
+        }
+      ],
+      "events": [
+        "E PROC SNAP START",
+        "E LIMIT 250.00",
+        "E PROC SNAP END"
+      ],
+      "imageStarted": true
+    },
+    {
+      "name": "cpp_calibrated_tracking",
+      "points": 29,
+      "fitRms": 0.0027386606499773124,
+      "holds": [
+        "E M1 HOLD t=3391 it=4 err=0.169"
+      ],
+      "truth": {
+        "t_ms": 93504.76,
+        "body": 24.3834,
+        "theta": 0.6166,
+        "out": 24.3834,
+        "motorDeg": 25.0834,
+        "motor": 284,
+        "rotorIdx": 4,
+        "coil": 0,
+        "lampAz": 25,
+        "targetAz": -40,
+        "camAz": 26.5834,
+        "camErr": 66.5834,
+        "bump": 0,
+        "steps": 6895,
+        "glitches": 0,
+        "missed": 1,
+        "spr": 4076,
+        "backlash": 1.4,
+        "camOff": 2.2,
+        "aec": 0,
+        "agcCtrl": 0,
+        "frames": 18,
+        "txBytes": 71949,
+        "gL": 0.000270126,
+        "gR": 0.000192869
+      }
+    },
+    {
+      "name": "photo_while_tracking",
+      "replies": [
+        "@700 ERR BUSY M1"
+      ],
+      "imageStarted": false
+    },
+    {
+      "name": "cpp_sun_referenced_photo",
+      "metadata": [
+        {
+          "type": "img_meta",
+          "id": 3,
+          "t_ms": 97574,
+          "w": 640,
+          "h": 480,
+          "bytes": 24578,
+          "q": 12,
+          "ang": -41.9529,
+          "cam_az_cmd": -39.7529,
+          "tgt": -39.72649,
+          "err_cmd": -0.02640152,
+          "m1": "IDLE",
+          "th": 52.20395,
+          "locked": true,
+          "aec": "frozen",
+          "moving": false,
+          "ref": "sun",
+          "sun_az": 25.2735,
+          "offset": -65
+        }
+      ],
+      "truth": {
+        "t_ms": 107005.12,
+        "body": -42.666,
+        "theta": 67.666,
+        "out": -42.666,
+        "motorDeg": -43.2777,
+        "motor": -490,
+        "rotorIdx": 6,
+        "coil": 0,
+        "lampAz": 25,
+        "targetAz": -40,
+        "camAz": -40.466,
+        "camErr": -0.466,
+        "bump": 0,
+        "steps": 7670,
+        "glitches": 0,
+        "missed": 2,
+        "spr": 4076,
+        "backlash": 1.4,
+        "camOff": 2.2,
+        "aec": 0,
+        "agcCtrl": 0,
+        "frames": 21,
+        "txBytes": 105788,
+        "gL": 0.000254829,
+        "gR": 0.0000298468
+      },
+      "faults": []
+    },
+    {
+      "name": "cpp_changed_ambient",
+      "holds": [
+        "E M1 HOLD t=3892 it=4 err=0.289"
+      ],
+      "truth": {
+        "t_ms": 132006.04,
+        "body": 24.3834,
+        "theta": 0.6166,
+        "out": 24.3834,
+        "motorDeg": 25.0834,
+        "motor": 284,
+        "rotorIdx": 4,
+        "coil": 0,
+        "lampAz": 25,
+        "targetAz": -40,
+        "camAz": 26.5834,
+        "camErr": 66.5834,
+        "bump": 0,
+        "steps": 8443,
+        "glitches": 0,
+        "missed": 3,
+        "spr": 4076,
+        "backlash": 1.4,
+        "camOff": 2.2,
+        "aec": 0,
+        "agcCtrl": 0,
+        "frames": 21,
+        "txBytes": 105873,
+        "gL": 0.000279828,
+        "gR": 0.000199301
+      }
+    },
+    {
+      "name": "lamp_off_raw",
+      "raw": [
+        {
+          "type": "raw",
+          "mv": [
+            859.4,
+            758.4
+          ],
+          "G": [
+            0.352126,
+            0.298415
+          ],
+          "D": -1,
+          "S": 0.02269,
+          "th": -52.283,
+          "valid": false,
+          "ang": 25.083
+        }
+      ],
+      "uiNumericPassAtOneDegree": false
+    },
+    {
+      "name": "cpp_jpeg_receiver",
+      "received": [
+        {
+          "id": "1",
+          "bytes": 24578,
+          "ok": true
+        },
+        {
+          "id": "2",
+          "bytes": 24578,
+          "ok": true
+        },
+        {
+          "id": "3",
+          "bytes": 24578,
+          "ok": true
+        }
+      ]
+    }
+  ]
+}

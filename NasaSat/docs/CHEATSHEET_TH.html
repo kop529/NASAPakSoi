@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="th" class="cheat"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NasaSat cheat sheet</title><style>
+:root { --bg: #ffffff; --fg: #1d1f23; --muted: #5b616b; --line: #d9dde3; --soft: #f3f5f8; --accent: #1f6fb2; --quote: #eef6ee; --quoteLine: #2f8f5b; --code: #f1f3f6; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #16181c; --fg: #e8eaed; --muted: #a3a9b3; --line: #353a42; --soft: #1f2329; --accent: #7db7ea; --quote: #1c2a22; --quoteLine: #5cc28b; --code: #23272e; } }
+:root[data-theme="dark"] { --bg: #16181c; --fg: #e8eaed; --muted: #a3a9b3; --line: #353a42; --soft: #1f2329; --accent: #7db7ea; --quote: #1c2a22; --quoteLine: #5cc28b; --code: #23272e; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: 'Leelawadee UI', 'Sarabun', 'Noto Sans Thai', Tahoma, sans-serif; line-height: 1.65; font-size: 16px; }
+main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 1.7rem; line-height: 1.3; margin: 0.2em 0 0.6em; }
+h2 { font-size: 1.3rem; margin: 2em 0 0.6em; padding-top: 0.4em; border-top: 2px solid var(--line); }
+h3 { font-size: 1.08rem; margin: 1.5em 0 0.4em; }
+h4 { font-size: 1rem; margin: 1.2em 0 0.3em; }
+p { margin: 0.5em 0; }
+a { color: var(--accent); }
+code { font-family: Consolas, 'Cascadia Mono', monospace; background: var(--code); padding: 0 4px; border-radius: 4px; font-size: 0.92em; }
+pre { background: var(--code); padding: 10px 12px; border-radius: 8px; overflow-x: auto; font-size: 0.9rem; line-height: 1.5; }
+pre code { background: none; padding: 0; font-family: Consolas, 'Cascadia Mono', 'Leelawadee UI', monospace; }
+.tw { overflow-x: auto; margin: 0.7em 0; }
+table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+th { background: var(--soft); }
+blockquote { margin: 1em 0; padding: 10px 14px; background: var(--quote); border-left: 4px solid var(--quoteLine); border-radius: 6px; }
+figure { margin: 1em 0; }
+figure svg, figure img { width: 100%; height: auto; display: block; background: #ffffff; border-radius: 6px; }
+figcaption { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 1.5em 0; }
+ul, ol { padding-left: 1.4em; }
+li { margin: 0.15em 0; }
+li.task { list-style: none; margin-left: -1.2em; }
+.box { display: inline-block; width: 1.1em; }
+.toc { background: var(--soft); border-radius: 8px; padding: 10px 16px; margin: 1em 0 1.5em; }
+.toc ul { margin: 0.3em 0; padding-left: 0; list-style: none; columns: 2; column-gap: 28px; }
+.meta { color: var(--muted); font-size: 0.85rem; }
+@media (max-width: 640px) { .toc ul { columns: 1; } body { font-size: 15px; } }
+@media print {
+  @page { size: A4; margin: 14mm 13mm; }
+  body { font-size: 10.5pt; background: #fff; color: #000; }
+  main { max-width: none; padding: 0; }
+  h2 { break-before: page; border-top: 0; }
+  h2:first-of-type { break-before: auto; }
+  figure, table, pre, blockquote { break-inside: avoid; }
+  tr { break-inside: avoid; }
+  a { color: #000; text-decoration: none; }
+  .toc { break-after: page; }
+}
+.cheat main { max-width: 1100px; }
+.cheat h2 { break-before: auto; border-top: 1px solid var(--line); font-size: 1.02rem; margin: 0.8em 0 0.3em; }
+.cheat .cols { columns: 2; column-gap: 22px; }
+.cheat .cols > * { break-inside: avoid; }
+.cheat table { font-size: 0.86rem; }
+.cheat th, .cheat td { padding: 3px 6px; }
+@media (max-width: 800px) { .cheat .cols { columns: 1; } }
+@media print {
+  html.cheat { font-size: 8.2pt; }
+  html.cheat body { font-size: 8.2pt; line-height: 1.35; }
+  html.cheat h1 { font-size: 12pt; margin: 0 0 3px; }
+  html.cheat h2 { font-size: 9pt; margin: 0.5em 0 0.2em; }
+  html.cheat p { margin: 0.25em 0; }
+  html.cheat .tw { margin: 0.3em 0; }
+  html.cheat th, html.cheat td { padding: 1.5px 4px; }
+  html.cheat .meta { display: none; }
+}
+</style></head>
+<body class="cheat"><main>
+<h1 id="s74">NasaSat cheat sheet (พิมพ์ 1 หน้า พกติดตัว)</h1><div class="cols">
+<p><strong>ต่อบอร์ด</strong>: ปิด Serial Monitor → Chrome เปิด <code>tool/NasaSatLab.html</code> → บอร์ดจริง → เชื่อมต่อ (บอร์ดรีเซ็ตแล้วเว็บต่อใหม่เอง 30 s) · อัปโหลดใหม่ต้องกด "ตัดการเชื่อมต่อ" ก่อน<br><strong>ฉุกเฉิน</strong>: STOP = Space / Esc · <code>REBOOT</code> · ไม่รอดจริง: <code>firmware/Fallback/Fallback.ino</code></p>
+<h2 id="s75">ตั้งค่ากับชุดใหม่</h2>
+<div class="tw"><table><thead><tr><th>ทำ</th><th>คำสั่ง</th></tr></thead><tbody><tr><td>ดูบอร์ด</td><td><code>HWID</code></td></tr><tr><td>หาขา LDR</td><td><code>PINFIND ON</code> บังมือ → <code>SET sen.pin0 N</code> / <code>SET sen.pin1 N</code> → <code>PINFIND OFF</code></td></tr><tr><td>บังมือแล้ว mV เพิ่ม</td><td><code>SET sen.topo 1</code></td></tr><tr><td>ขา ULN2003</td><td><code>SET act.in1 N</code> … <code>act.in4</code> → <code>MOVE 10</code> ต้องหมุน</td></tr><tr><td>ทิศ</td><td><code>MOVE 10</code> แล้ว θ ต้องลด ไม่งั้น <code>SET act.dir -1</code></td></tr><tr><td>กล้อง</td><td><code>SET cam.model 1/2/3/4</code> (4 = ESP32-CAM) → <code>M2 INIT</code> → หน้า ภารกิจ 2 → เตรียมกล้อง: พลิกภาพ → ตรวจทิศภาพ</td></tr><tr><td>เก็บ</td><td><code>SAVE</code> ทั้งหมด หรือ <code>SAVE key1 key2</code> เฉพาะบางค่า (+ Export โปรไฟล์)</td></tr></tbody></table></div>
+<h2 id="s76">คาลิเบรต</h2>
+<p>1 หันเข้าหลอด <code>ZERO</code> · 2 <code>BACKLASH</code> → act.bl (แล้ว <code>SPR</code> → act.spr ถ้าหมุน 360° ได้) · 3 ปิดหลอด → AMB · 4 เปิดหลอด → Sweep −60..60 ทีละ 5 · 5 γ สองระดับ: วัดระดับ 1 → กระดาษบังหน้าหลอด (≥ 2 เท่า) → วัดระดับ 2 · 6 Fit (MAE &lt; 0.3°, γ ขวา/ซ้าย "ใช้แล้ว") · 7 ตรวจ · 8 ส่ง + SAVE · 9 หันตรงหลอดด้วยของอ้างอิง → ตั้งศูนย์ (<code>CAL TH0 0</code> บันทึกเอง)<br>ไฟห้องเปลี่ยน = ตรวจศูนย์ด้วยท่อเล็ง → <code>CAL TH0</code> ใหม่ (ห้ามวัด AMB ใหม่อย่างเดียว)</p>
+<h2 id="s77">ภารกิจ</h2>
+<div class="tw"><table><thead><tr><th></th><th>คำสั่ง</th><th>ดูอะไร</th></tr></thead><tbody><tr><td>ภารกิจ 1</td><td><code>M1 START มุม</code> · <code>M1 STOP</code></td><td><code>E M1 HOLD t= it= err=</code> · ตาราง "ผ่าน"</td></tr><tr><td>ทดสอบตอบสนอง</td><td><code>STEP 10</code> (ตอน HOLD)</td><td>step_result</td></tr><tr><td>boresight (หลังตั้งศูนย์)</td><td>ปุ่ม "ล็อกหลอดแล้ววัด boresight" → ใช้ค่านี้ + SAVE</td><td>cam.off</td></tr><tr><td>ภารกิจ 2</td><td><code>M2 GO SUN offset</code> (แนะนำ) · <code>M2 GO มุม</code> · <code>M2 SNAP</code></td><td>ภาพ + metadata · snap_fail = ไม่ถ่ายพร้อมเหตุผล</td></tr><tr><td>ไม่รู้มุมเป้า</td><td>สแกนรอบตัว → คลิกภาพ → คลิกเป้า → GO / เทียบดวงอาทิตย์</td><td>เป้ากลางภาพ</td></tr><tr><td>แสงกล้อง</td><td><code>M2 LOCK</code> / <code>M2 UNLOCK</code></td><td>locked ใน metadata</td></tr><tr><td>ไม่ต่อคอม</td><td><code>SET m1.auto 5</code> + <code>SAVE m1.auto</code> · ปุ่ม BOOT เริ่ม/หยุด · STOP ยกเลิกตอนรอ</td><td><code>E AUTO ...</code>, <code>E BTN ...</code></td></tr><tr><td>วิทยุ serial</td><td><code>SET com.baud 9600</code> · <code>com.rx</code> · <code>com.tx</code> → <code>SAVE</code></td><td><code>E LINK ON</code>, J hk link.drop</td></tr></tbody></table></div>
+<h2 id="s78">ค่าที่ควรรู้</h2>
+<div class="tw"><table><thead><tr><th>ค่า</th><th>ปกติ</th><th>ปรับเมื่อ</th></tr></thead><tbody><tr><td>ctl.k</td><td>0.85</td><td>แกว่ง → 0.6 · ช้า → 1.0</td></tr><tr><td>ctl.db / ctl.hys / ctl.trim</td><td>0.3° / 1° / 3</td><td>เกณฑ์เข้ม → db = เกณฑ์/2 · trim = แก้ error ค้างขณะล็อก (0 = ปิด)</td></tr><tr><td>ctl.adapt</td><td>1</td><td>noise สูง: เฉลี่ยนานขึ้น/ขยาย db เอง (ดู noise: <code>RAW 1000</code> → th_sd)</td></tr><tr><td>ctl.wait</td><td>150 ms</td><td>ค่ากระโดดหลังหมุน → 250</td></tr><tr><td>act.vmax</td><td>40 °/s</td><td>หลุด step → 25</td></tr><tr><td>act.min / act.max</td><td>−170 / 170</td><td>สายพัน → แคบลง</td></tr><tr><td>m2.tol / m2.settle</td><td>1° / 300 ms</td><td>ภาพเบลอ → settle 600</td></tr><tr><td>cam.res / cam.q</td><td>1 (640×480) / 12</td><td>ส่งช้า → res 0</td></tr><tr><td>cam.hmirror / cam.vflip / cam.dir</td><td>0 / 0 / 0 (ยังไม่ตรวจ)</td><td>ปุ่มพลิก + "ตรวจทิศภาพ" ตั้งให้</td></tr><tr><td>com.hk / hw.vbat / hw.vdiv</td><td>2 s / −1 / 2</td><td>แบต: ขา ADC + อัตราส่วนวงจรแบ่งแรงดัน</td></tr></tbody></table></div>
+<h2 id="s79">แก้ปัญหาเร็ว</h2>
+<div class="tw"><table><thead><tr><th>อาการ</th><th>ทำ</th></tr></thead><tbody><tr><td>เงียบ</td><td>ปิด Serial Monitor, เปลี่ยนสาย, กด RESET</td></tr><tr><td><code>E BOOT BROWNOUT</code></td><td>ไฟไม่พอ: แยกไฟมอเตอร์ / hub มีไฟ</td></tr><tr><td>adc_saturated</td><td>ถอยหลอด / กระดาษบางทั้งคู่ → คาลิเบรตใหม่</td></tr><tr><td>ไม่หมุน</td><td>ขา act.in ผิด / ไฟ 5 V มอเตอร์</td></tr><tr><td>วิ่งหนีแสง</td><td><code>SET act.dir -1</code></td></tr><tr><td>ภาพไม่ขึ้น</td><td>cam.model อื่น → <code>M2 INIT</code> (<code>not for this chip</code> = เลือก preset ผิดชิป)</td></tr><tr><td>คลิกเป้าแล้วพลาดไปอีกฝั่ง</td><td>"ตรวจทิศภาพ" ใหม่</td></tr><tr><td><code>ERR BUSY X</code></td><td>งาน X ค้าง: รอ หรือ STOP</td></tr><tr><td><code>ERR RANGE</code></td><td>ค่าเกินช่วง (ดู min..max ในข้อความ)</td></tr><tr><td><code>ERR PIN</code></td><td>ขานี้ใช้ไม่ได้ (flash/PSRAM/USB หรือไม่ใช่ขา ADC) อ่านเหตุผลท้ายบรรทัด</td></tr></tbody></table></div>
+<p>รหัส ERR: CMD ไม่รู้จักคำสั่ง · ARG อาร์กิวเมนต์ผิด · KEY ไม่มีค่านี้ · VAL ไม่ใช่ตัวเลข · RANGE นอกช่วง · BUSY มีงานอื่น · STATE สถานะไม่ถูก · CAM กล้องไม่พร้อม · LONG บรรทัดยาวเกิน</p></div>
+<p class="meta">สร้างจาก CHEATSHEET_TH.md เมื่อ 2026-10-01 · พิมพ์: Ctrl+P (A4)</p>
+</main></body></html>

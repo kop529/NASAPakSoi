@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NasaSat Lab</title>
+<script>(function(){var t=null;try{t=JSON.parse(localStorage.getItem('nasasat.theme'))}catch(e){}document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')})()</script>
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">NasaSat<span>Lab</span></div>
+  <div class="cells">
+    <div class="cell"><span class="cap">ช่องทาง</span><span id="connPill" class="pill off">ยังไม่เชื่อมต่อ</span></div>
+    <div class="cell"><span class="cap">ภารกิจ 1</span><span id="m1Pill" class="pill off">พัก</span></div>
+    <div class="cell" id="jobChip" hidden><span class="cap">งานที่บอร์ดกำลังทำ</span><span id="jobTxt" class="pill info"></span></div>
+    <div class="cell big" title="มุมแสงที่วัดได้ (θ)"><span class="cap">θ มุมแสง</span><span class="val"><b id="hdrTheta">—</b><i hidden>°</i></span></div>
+    <div class="cell hide-900" title="error ของภารกิจ 1 (แสดงเฉพาะตอน M1 ทำงาน)"><span class="cap">error ภารกิจ 1</span><span class="val"><b id="hdrErr">—</b><i hidden>°</i></span></div>
+    <div class="cell hide-1440" title="มุมของตัวขับ"><span class="cap">มุมตัวขับ</span><span class="val"><b id="hdrAng">—</b><i hidden>°</i></span></div>
+    <div class="cell hide-900"><span class="cap">แสงที่เซนเซอร์</span><span id="hdrValid" class="pill off">—</span></div>
+    <div class="cell hide-1600"><span class="cap">ระบบ</span><span id="hdrHk" class="val sm">—</span></div>
+  </div>
+  <div class="sb-r">
+    <button id="unsavedChip" class="chip warn" hidden title="มีค่าที่แก้แล้วแต่ยังไม่บันทึกลงบอร์ด: คลิกเพื่อ SAVE">ยังไม่ SAVE 0</button>
+    <button id="probChip" class="chip" title="เปิดรายการปัญหา">ปัญหา 0</button>
+    <button id="aiTop" class="quiet hide-1300" title="รวบรวมสถานะแล้วคัดลอกไว้ วางในแชท AI ได้เลย">คัดลอกให้ AI</button>
+    <button id="themeBtn" class="quiet hide-900" title="สลับธีมสว่าง / มืด">ธีม: สว่าง</button>
+    <button id="btnStop" class="stop" title="หยุดทุกอย่าง (Space หรือ Esc)">STOP<small>Space / Esc</small></button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav id="tabs">
+    <div class="nav-h">ลำดับวันแข่ง</div>
+    <button data-tab="connect" class="active"><span class="nn">1</span>เชื่อมต่อ<i class="ng"></i></button>
+    <button data-tab="hw"><span class="nn">2</span>ฮาร์ดแวร์<i class="ng"></i></button>
+    <button data-tab="cal"><span class="nn">3</span>คาลิเบรต<i class="ng"></i></button>
+    <button data-tab="m1"><span class="nn">4</span>ภารกิจ 1<i class="ng"></i></button>
+    <button data-tab="m2"><span class="nn">5</span>ภารกิจ 2<i class="ng"></i></button>
+    <div class="nav-h">เครื่องมือ</div>
+    <button data-tab="live"><span class="nn"></span>ค่าสด</button>
+    <button data-tab="tune"><span class="nn"></span>จูนค่า</button>
+    <button data-tab="ev"><span class="nn"></span>หลักฐาน &amp; AI</button>
+    <div class="nav-foot">
+      <div>Space / Esc = STOP</div>
+      <div id="verLabel"></div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- ============ CONNECT ============ -->
+    <section id="tab-connect" class="tab active">
+      <div class="pagehead">
+        <div><h1>เชื่อมต่อ</h1><p class="lead">เลือกช่องทาง แล้วกดเชื่อมต่อ (ต่อบอร์ดจริงต้องใช้ Chrome หรือ Edge)</p></div>
+        <div class="pageact">
+          <button id="btnDisconnect">ตัดการเชื่อมต่อ</button>
+          <button id="btnConnect" class="primary">เชื่อมต่อ</button>
+        </div>
+      </div>
+      <div class="grid2">
+        <div>
+          <div class="sec">
+            <h2>ช่องทาง</h2>
+            <div class="row mid">
+              <label class="radio"><input type="radio" name="trKind" value="serial" checked> บอร์ดจริง (USB / Web Serial)</label>
+              <label class="radio"><input type="radio" name="trKind" value="sim"> ตัวจำลอง (ไม่ต้องมีบอร์ด)</label>
+            </div>
+            <div class="row serial-only">
+              <label>Baud
+                <select id="selBaud"><option>115200</option><option>230400</option><option>460800</option><option>921600</option></select>
+              </label>
+              <label>DTR/RTS ตอนเปิดพอร์ต
+                <select id="selDtr">
+                  <option value="none">ไม่แตะ (แนะนำสำหรับ USB ในตัว ESP32-S3)</option>
+                  <option value="low">ตั้งเป็น 0 (บอร์ดที่มีชิป USB-UART)</option>
+                  <option value="high">ตั้งเป็น 1</option>
+                </select>
+              </label>
+            </div>
+            <div class="row serial-only"><label class="chk"><input type="checkbox" id="autoRe" checked> ต่อใหม่เองเมื่อบอร์ดรีเซ็ตหรือหลุด (หาพอร์ตเดิม 30 วินาที)</label></div>
+            <p class="note serial-only">ก่อนกด Upload ใน Arduino IDE ต้องกด "ตัดการเชื่อมต่อ" และห้ามเปิด Serial Monitor ของ Arduino พร้อมกัน เพราะพอร์ตใช้ได้ทีละโปรแกรม</p>
+            <p class="note" id="serialSupport"></p>
+          </div>
+          <div class="sec">
+            <h2>ผลการเชื่อมต่อ</h2>
+            <div id="connList"></div>
+            <details><summary>รายละเอียดพอร์ตและบอร์ด (HELLO)</summary>
+              <div id="connInfo" class="kv"></div>
+              <div id="helloInfo" class="kv muted">ยังไม่มีข้อมูล</div>
+            </details>
+          </div>
+        </div>
+        <div>
+          <div class="sec">
+            <h2>คำสั่งด่วน</h2>
+            <div class="row">
+              <button class="chipb" data-cmd="HELLO">HELLO</button>
+              <button class="chipb" data-cmd="CFG LIST">CFG LIST</button>
+              <button class="chipb" data-cmd="DIAG">DIAG</button>
+              <button class="chipb" data-cmd="HWID">HWID</button>
+              <button class="chipb" data-cmd="RAW 300" title="RAW 300">RAW</button>
+              <button class="chipb" data-cmd="STREAM ON">STREAM ON</button>
+              <button class="chipb" data-cmd="STREAM OFF">STREAM OFF</button>
+              <button class="chipb" data-cmd="HELP">HELP</button>
+            </div>
+          </div>
+          <div class="sec">
+            <h2>สุขภาพระบบ</h2>
+            <p class="note">บอร์ดส่งเองทุก com.hk วินาที</p>
+            <div id="hkInfo" class="kv muted">ยังไม่มีข้อมูล</div>
+          </div>
+          <details class="sec">
+            <summary>ขั้นสูง</summary>
+            <div class="row">
+              <button id="btnResetUart" class="quiet serial-only" title="กระตุก RTS เพื่อรีเซ็ตบอร์ดที่มีวงจร auto-reset">Reset บอร์ด (RTS)</button>
+              <button id="btnReboot" class="danger" title="ให้ firmware รีสตาร์ตตัวเอง (กดสองครั้งเพื่อยืนยัน)">รีสตาร์ตบอร์ด<small>REBOOT</small></button>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div class="sec" id="simCard" hidden>
+        <h2>ตัวจำลอง: ตั้งค่าโลกจำลอง</h2>
+        <p class="note">ปรับค่าเหมือนเปลี่ยนสภาพห้องแข่ง ใช้ซ้อมคาลิเบรตและภารกิจโดยไม่ต้องมีบอร์ด ค่า "ความจริง" ด้านล่างมีไว้ตรวจผล บอร์ดจริงไม่มีค่านี้</p>
+        <div class="simgrid">
+          <label>เปิดหลอด <input type="checkbox" id="simLamp" checked></label>
+          <label>มุมหลอด (°) <input type="range" id="simLampAz" min="-180" max="180" step="1" value="25"><span id="simLampAzV">25</span></label>
+          <label>ความสว่างหลอด <input type="range" id="simLampK" min="0.2" max="3" step="0.05" value="1"><span id="simLampKV">1</span></label>
+          <label>แสงห้อง (ambient) <input type="range" id="simAmb" min="0" max="0.4" step="0.005" value="0.03"><span id="simAmbV">0.03</span></label>
+          <label>ไฟกระพริบ 100 Hz <input type="range" id="simFlicker" min="0" max="0.4" step="0.01" value="0.08"><span id="simFlickerV">0.08</span></label>
+          <label>noise ADC (mV) <input type="range" id="simNoise" min="0" max="30" step="0.5" value="4"><span id="simNoiseV">4</span></label>
+          <label>backlash จริง (°) <input type="range" id="simBacklash" min="0" max="5" step="0.1" value="1.4"><span id="simBacklashV">1.4</span></label>
+          <label>มุมเป้าหมายภารกิจ 2 (°) <input type="range" id="simTargetAz" min="-180" max="180" step="1" value="-40"><span id="simTargetAzV">-40</span></label>
+        </div>
+        <div class="row">
+          <button id="btnSimRandom">สุ่มสถานการณ์ใหม่</button>
+          <button id="btnSimBump" title="ดันดาวเทียมให้เบี้ยวไป 15° เหมือนโดนชน">รบกวน: ดันเบี้ยว 15°</button>
+          <button id="btnSimButton" title="เหมือนกดปุ่ม BOOT บนบอร์ดจริง: เริ่ม/หยุดภารกิจ 1 โดยไม่ใช้คอม">กดปุ่ม BOOT บนบอร์ด</button>
+        </div>
+        <div class="kv" id="simTruth"></div>
+      </div>
+    </section>
+
+    <!-- ============ HARDWARE ============ -->
+    <section id="tab-hw" class="tab">
+      <div class="pagehead">
+        <div><h1>ฮาร์ดแวร์</h1><p class="lead">อ่านรายงานชิปและหาขาที่ต่อ LDR ก่อนคาลิเบรต</p></div>
+        <div class="pageact"><button id="btnDiag">รายงานละเอียด<small>DIAG</small></button><button id="btnHwid" class="primary">อ่านรายงานชิป<small>HWID</small></button></div>
+      </div>
+      <div class="grid2">
+        <div class="sec">
+          <h2>รายงานฮาร์ดแวร์ (HWID)</h2>
+          <div id="hwidOut" class="kv muted">กด "อ่าน HWID"</div>
+          <pre id="diagOut" class="pre muted"></pre>
+        </div>
+        <div class="sec">
+          <h2>หาขา LDR (PINFIND)</h2>
+          <p class="note">กดเริ่มสแกน แล้วเอามือบัง LDR ทีละตัว ขาที่แท่งขยับมากคือขาของ LDR ตัวนั้น</p>
+          <details><summary>วิธีใช้และข้อควรระวัง</summary><p class="note">กด "ตั้ง baseline" ก่อนบัง เพื่อให้เห็นค่าที่เปลี่ยน (Δ) ชัดขึ้น ขาที่ใช้กับกล้องหรือ USB อย่าสแกน</p></details>
+          <div class="row">
+            <button id="btnPinStart">เริ่มสแกน<small>PINFIND ON</small></button>
+            <button id="btnPinStop">หยุด<small>PINFIND OFF</small></button>
+            <button id="btnPinBase">ตั้ง baseline</button>
+          </div>
+          <div id="pinBars" class="pinbars"></div>
+          <div class="row mid">
+            <span>ตั้งเป็นขา LDR:</span>
+            <select id="selPinPick"></select>
+            <button id="btnSetPin0">→ ซ้าย<small>sen.pin0</small></button>
+            <button id="btnSetPin1">→ ขวา<small>sen.pin1</small></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CALIBRATE ============ -->
+    <section id="tab-cal" class="tab">
+      <div class="pagehead">
+        <div><h1>คาลิเบรต</h1><p class="lead">ทำตามขั้น 1 → 8 ขั้นที่ 2 และ 8 ห้ามข้าม ขั้นที่ 3 ข้ามได้</p></div>
+      </div>
+      <div class="steps" id="calSteps">
+        <button data-step="1" class="active"><b>01</b><span class="sl">ตั้งค่า</span></button>
+        <button data-step="2"><b>02</b><span class="sl">แสงรอบข้าง</span><small class="nos">ห้ามข้าม</small></button>
+        <button data-step="3"><b>03</b><span class="sl">Balance</span><small>ข้ามได้</small></button>
+        <button data-step="4"><b>04</b><span class="sl">Sweep</span></button>
+        <button data-step="5"><b>05</b><span class="sl">Fit</span></button>
+        <button data-step="6"><b>06</b><span class="sl">ตรวจความแม่น</span></button>
+        <button data-step="7"><b>07</b><span class="sl">ส่งเข้าบอร์ด</span></button>
+        <button data-step="8"><b>08</b><span class="sl">ตั้งศูนย์</span><small class="nos">ห้ามข้าม</small></button>
+      </div>
+
+      <div class="calstep active" data-step="1">
+        <div class="sh">
+          <div><h2>ขั้นที่ 1: ตั้งค่าตัวขับและเซนเซอร์</h2><p class="lead">ทำตัวขับก่อน แล้วบอกบอร์ดว่าใช้ LDR รุ่นไหน ต่อวงจรแบบไหน</p></div>
+          <div class="pageact"><button id="calSendSetup" class="primary">ส่งค่าเข้าบอร์ด<small>SET est.gamma / alpha / sen.topo / vcc</small></button></div>
+        </div>
+        <h3>ตัวขับ (ทำก่อน)</h3>
+        <div class="row">
+          <button data-cmd="ZERO" title="ตั้งตำแหน่งปัจจุบันเป็น 0° ของตัวขับ">ตั้งศูนย์ตัวขับ<small>ZERO</small></button>
+          <button data-cmd="BACKLASH" title="ตัวขับจะหมุนไป-กลับเพื่อวัดระยะฟรีของเฟือง">วัด backlash<small>BACKLASH</small></button>
+        </div>
+        <p class="note">BACKLASH ต้องหันดาวเทียมเข้าหาหลอดก่อน (θ ไม่เกิน ±5°): กด START ภารกิจ 1 รอให้ล็อก แล้วกด STOP แล้วจึงวัด</p>
+        <div id="blOut" class="inline-res"></div>
+        <details id="sprBox"><summary>SPR: วัด step ต่อรอบ (ต้องหมุนได้ 360°)</summary>
+          <p class="note">ต้องหมุนได้ 360°: SET act.max 720 → SPR → MOVE -360 → SET act.max 170</p>
+          <div class="row"><button data-cmd="SPR">วัด step ต่อรอบ<small>SPR</small></button></div>
+          <div id="sprOut" class="inline-res"></div>
+        </details>
+        <h3>เซนเซอร์</h3>
+        <div class="formgrid">
+          <label>รุ่น LDR (ค่า γ)
+            <select id="calLdr">
+              <option value="0.5">GL5516 (γ 0.5)</option>
+              <option value="0.6" selected>GL5528 (γ 0.6)</option>
+              <option value="0.6">GL5537-1 (γ 0.6)</option>
+              <option value="0.7">GL5537-2 (γ 0.7)</option>
+              <option value="0.8">GL5539 (γ 0.8)</option>
+              <option value="0.9">GL5549 (γ 0.9)</option>
+            </select>
+          </label>
+          <label>มุมเอียงของ LDR แต่ละตัวจากแกนกลาง α (°) <input type="number" id="calAlpha" value="30" step="1"></label>
+          <label>วงจร
+            <select id="calTopo">
+              <option value="0">LDR ต่อฝั่ง 3.3V (สว่าง = ค่าสูง)</option>
+              <option value="1">LDR ต่อฝั่ง GND (สว่าง = ค่าต่ำ)</option>
+            </select>
+          </label>
+          <label>แรงดันเลี้ยงวงจร (mV) <input type="number" id="calVcc" value="3300" step="10"></label>
+        </div>
+        <p class="note">ดูทิศวงจรง่าย ๆ: เอามือบัง LDR แล้วค่า mV ลดลง = ต่อฝั่ง 3.3V, ค่าเพิ่มขึ้น = ต่อฝั่ง GND</p>
+        <button class="quiet next" data-next="2">ถัดไป: แสงรอบข้าง →</button>
+      </div>
+
+      <div class="calstep" data-step="2">
+        <div class="sh">
+          <div><h2>ขั้นที่ 2: วัดแสงรอบข้าง (ambient)</h2><p class="lead">ปิดหลอด (หรือบังหลอด) ให้เหลือแต่ไฟห้อง แล้วกดวัด บอร์ดรอให้ LDR นิ่ง 1–4 วินาที</p></div>
+          <div class="pageact"><button id="calAmb" class="primary">วัดแสงรอบข้าง<small>AMB 600</small></button></div>
+        </div>
+        <p><b>ห้ามข้ามถ้าห้องเปิดไฟ</b> ถ้าข้าม มุมจะคลาดราว 5–15°</p>
+        <details><summary>เหตุผลและกรณีไฟห้องเปลี่ยนทีหลัง</summary>
+          <p class="note">ในตัวจำลอง ถ้าไฟห้องสว่างราว 30% ของหลอดแล้วข้ามขั้นนี้ มุมคลาดราว 5–15° (ยิ่งหลอดหรี่หรือสว่างต่างจากตอนคาลิเบรตยิ่งคลาด) แต่ถ้าวัดขั้นนี้ คลาดไม่ถึง 0.3° และโปรแกรมจะหาค่า γ ของ LDR แต่ละตัวให้ด้วย</p>
+          <p class="note">ไฟห้องเปลี่ยนทีหลัง (เปิด/ปิดไฟ ย้ายโต๊ะ): ตรวจศูนย์ด้วยท่อเล็งก่อน ถ้าคลาดเกินเกณฑ์ให้ทำขั้นที่ 8 ใหม่ (30 วินาที) <b>อย่าวัดขั้นนี้ใหม่อย่างเดียว และอย่า Fit ใหม่ด้วยข้อมูล Sweep เก่า</b> เพราะทำให้คลาดเพิ่มได้ถึง 3° ถ้ามีเวลาและไฟเปลี่ยนถาวร ให้ทำใหม่ทั้งชุด: ขั้น 2 → 4 → 5 → 7 → 8</p>
+        </details>
+        <div id="calAmbOut" class="kv"></div>
+        <button class="quiet next" data-next="3">ถัดไป: Balance →</button>
+      </div>
+
+      <div class="calstep" data-step="3">
+        <div class="sh">
+          <div><h2>ขั้นที่ 3: Balance สองฝั่ง (ข้ามได้)</h2><p class="lead">หันดาวเทียมเข้าหาหลอดให้ตรงที่สุด (ใช้ขีดหรือจิ๊กช่วย) แล้วกด BAL บอร์ดจะปรับ gain ให้สองฝั่งเท่ากัน</p></div>
+          <div class="pageact"><button id="calBal" class="primary">Balance<small>BAL 600</small></button></div>
+        </div>
+        <p><b>ข้ามได้</b> ถ้าจะใช้ Sweep อัตโนมัติ เพราะขั้น Fit หาค่านี้เองได้แม่นกว่า</p>
+        <div id="calBalOut" class="kv"></div>
+        <button class="quiet next" data-next="4">ถัดไป: Sweep →</button>
+      </div>
+
+      <div class="calstep" data-step="4">
+        <div class="sh">
+          <div><h2>ขั้นที่ 4: เก็บข้อมูล Sweep</h2><p class="lead">ตัวขับกวาดมุมแล้วบอร์ดวัดแสงทุกจุด เสร็จแล้วโปรแกรม Fit ให้เองเมื่อได้ 6 จุดขึ้นไป</p></div>
+          <div class="pageact sw-auto"><span class="muted" id="swStatus"></span><button id="swStart" class="primary">เริ่ม Sweep<small id="swCmd">SWEEP -60 60 5 300 cal</small></button></div>
+        </div>
+        <div class="row mid">
+          <label class="radio"><input type="radio" name="swMode" value="auto" checked> อัตโนมัติ (ตัวขับหมุนเอง)</label>
+          <label class="radio"><input type="radio" name="swMode" value="manual"> หมุนมือ + กดบันทึก</label>
+        </div>
+        <div class="row">
+          <label>จาก (°) <input type="number" id="swFrom" value="-60" step="1"></label>
+          <label>ถึง (°) <input type="number" id="swTo" value="60" step="1"></label>
+          <label>ทีละ (°) <input type="number" id="swStep" value="5" step="0.5"></label>
+          <label>รอต่อจุด (ms) <input type="number" id="swDwell" value="300" step="50"></label>
+        </div>
+        <div class="sw-manual" hidden>
+          <p class="note">มุมที่กรอก = มุมของตัวดาวเทียมบนสเกล (ศูนย์อยู่ตรงไหนก็ได้ โปรแกรมจะหาทิศหลอดเอง) หมุนให้ได้มุมที่บอก แล้วกดบันทึก</p>
+          <div class="row">
+            <span>มุมถัดไป: <b id="swNext" class="mono">—</b>°</span>
+            <label>มุมที่หมุนจริง <input type="number" id="swAngle" step="0.5"></label>
+            <button id="swRecord" class="primary">บันทึกจุดนี้<small>RAW 400</small></button>
+            <button id="swUndo">ลบจุดล่าสุด</button>
+          </div>
+        </div>
+        <div class="row mid">
+          <button id="swClear" class="danger">ล้างข้อมูล</button>
+          <button id="swExport">Export CSV</button>
+          <label class="filebtn">Import CSV <input type="file" id="swImport" accept=".csv,text/csv"></label>
+          <span class="muted mono" id="swCount">0 จุด</span>
+        </div>
+        <div class="box"><div class="box-h">แสงที่วัดได้ของ LDR แต่ละฝั่งตามมุม</div><canvas class="chart" id="chSweep"></canvas></div>
+        <button class="quiet next" data-next="5">ถัดไป: Fit →</button>
+      </div>
+
+      <div class="calstep" data-step="5">
+        <div class="sh">
+          <div><h2>ขั้นที่ 5: Fit โมเดล</h2><p class="lead">คำนวณพารามิเตอร์จากข้อมูล Sweep (จบขั้น 4 แล้วโปรแกรมกด Fit ให้เอง)</p></div>
+          <div class="pageact"><span id="fitStatus" class="muted"></span><button id="fitRun" class="primary">Fit</button></div>
+        </div>
+        <div id="fitVerdict"></div>
+        <div class="formgrid">
+          <label class="chk"><input type="checkbox" id="fitQ" checked> fit รูปทรงกล่องครอบ (q)</label>
+          <label class="chk"><input type="checkbox" id="fitGamma"> บังคับ fit γ แยกแต่ละ LDR (ปกติทำให้เองเมื่อวัดแสงรอบข้างแล้ว)</label>
+          <label class="chk"><input type="checkbox" id="fitUseAmb" checked> ใช้ค่าแสงรอบข้างจากขั้นที่ 2 (ถ้ามี)</label>
+          <label>ความละเอียดตาราง LUT (°) <input type="number" id="fitLutDx" value="1" step="0.5" min="0.5"></label>
+        </div>
+        <h3>γ สองระดับแสง (แนะนำมาก)</h3>
+        <p class="note">กันมุมเพี้ยนเมื่อหลอดสว่างหรือระยะเปลี่ยน วัดครั้งเดียวต่อคู่ LDR ใช้กับหลอดและห้องไหนก็ได้ ถ้าห้องเปิดไฟให้ทำขั้นที่ 2 ก่อน</p>
+        <details><summary>วิธีวัด (3 ขั้น)</summary>
+          <p class="note">(1) หันดาวเทียมเข้าหาหลอดแล้วอยู่นิ่ง กด "วัดระดับ 1" (2) เอากระดาษขาว 1–2 ชั้นบังหน้า<b>หลอด</b> (ไม่ใช่บัง LDR และห้ามขยับดาวเทียม) ให้แสงลดลงอย่างน้อยครึ่งหนึ่ง กด "วัดระดับ 2" แล้วเอากระดาษออก (3) กด Fit ถ้าไม่ทำขั้นนี้ ในตัวจำลองมุมเพี้ยนราว 0.5° เมื่อหลอดหรี่ลงครึ่งหนึ่ง และถึง 2–14° ถ้ากล่องครอบสองข้างไม่เหมือนกัน</p>
+        </details>
+        <div class="row mid">
+          <button id="grLvl1">วัดระดับ 1 (หลอดปกติ)<small>RAW 1000</small></button>
+          <button id="grLvl2">วัดระดับ 2 (บังหลอดด้วยกระดาษ)<small>RAW 1000</small></button>
+          <label class="chk"><input type="checkbox" id="fitUseRatio" checked> ใช้ค่านี้ตอน Fit</label>
+        </div>
+        <div id="grOut" class="kv"></div>
+        <details><summary>ดูรายละเอียด (ค่าที่ได้ และเทียบวิธีคำนวณมุม)</summary>
+          <div class="grid2">
+            <div><h3>ค่าที่ได้</h3><div id="fitParams" class="kv"></div></div>
+            <div><h3>เทียบวิธีคำนวณมุม (ยิ่งน้อยยิ่งดี)</h3><div id="fitCompare"></div></div>
+          </div>
+        </details>
+        <div class="box"><div class="box-h">ค่าที่วัด (จุด) เทียบโมเดล (เส้นประ): conductance ของแต่ละฝั่ง</div><canvas class="chart" id="chFitG"></canvas></div>
+        <div class="box"><div class="box-h">ความคลาดเคลื่อนของมุม</div><canvas class="chart" id="chFitErr"></canvas></div>
+        <button class="quiet next" data-next="6">ถัดไป: ตรวจความแม่น →</button>
+      </div>
+
+      <div class="calstep" data-step="6">
+        <div class="sh">
+          <div><h2>ขั้นที่ 6: ตรวจความแม่น (validate)</h2><p class="lead">เก็บจุดใหม่ที่ไม่ได้ใช้ fit (มุมกึ่งกลางระหว่างจุดเดิม) แล้ววัดความคลาดเคลื่อน</p></div>
+          <div class="pageact"><button id="valAuto" class="primary">Sweep ตรวจอัตโนมัติ<small>SWEEP … val</small></button></div>
+        </div>
+        <details><summary>ทำไมกวาดย้อนทิศ</summary><p class="note">ปุ่มอัตโนมัติกวาด<b>ย้อนทิศ</b>กับขั้นที่ 4 ถ้า LDR หน่วงหรือเฟืองมีระยะฟรีที่ชดเชยไม่หมด จะเห็นเป็น bias ในผลนี้ (ถ้า bias เกิน 0.2° ให้เพิ่ม "รอต่อจุด" หรือวัด BACKLASH ใหม่)</p></details>
+        <div id="valVerdict"></div>
+        <div class="row mid">
+          <label>มุมที่หมุนจริง <input type="number" id="valAngle" step="0.5"></label>
+          <button id="valRecord">บันทึกจุดตรวจ (หมุนมือ)<small>RAW 400</small></button>
+          <button id="valClear">ล้าง</button>
+        </div>
+        <div id="valOut" class="kv"></div>
+        <div class="box"><div class="box-h">error ของจุดตรวจ</div><canvas class="chart short" id="chVal"></canvas></div>
+        <button class="quiet next" data-next="7">ถัดไป: ส่งเข้าบอร์ด →</button>
+      </div>
+
+      <div class="calstep" data-step="7">
+        <div class="sh">
+          <div><h2>ขั้นที่ 7: ส่งค่าเข้าบอร์ดและบันทึก</h2><p class="lead">ส่งผล Fit เข้าบอร์ดแล้ว SAVE เก็บถาวร</p></div>
+          <div class="pageact"><button id="pushSend" class="primary">ส่งค่า + SAVE<small>SET … / CAL LUT / SAVE</small></button></div>
+        </div>
+        <details><summary>ดูคำสั่งที่จะส่ง</summary><pre id="pushPreview" class="pre"></pre></details>
+        <div class="row mid">
+          <button id="pushExport">Export ผลคาลิเบรต (JSON)</button>
+          <label class="filebtn">Import ผลคาลิเบรต <input type="file" id="pushImport" accept=".json,application/json"></label>
+        </div>
+        <div id="pushOut" class="muted"></div>
+        <button class="quiet next" data-next="8">ถัดไป: ตั้งศูนย์ →</button>
+      </div>
+
+      <div class="calstep" data-step="8">
+        <div class="sh">
+          <div><h2>ขั้นที่ 8: ตั้งศูนย์กับของอ้างอิงจริง</h2><p class="lead">หันหน้าดาวเทียมเข้าหาหลอดด้วยของอ้างอิงภายนอก (ท่อเล็ง เส้นบนโต๊ะ โปรแทรกเตอร์) หยุดภารกิจ 1 ก่อน แล้วกดปุ่ม</p></div>
+          <div class="pageact"><button id="th0Save">บันทึกถาวร<small>SAVE</small></button><button id="th0Run" class="primary">ตั้งศูนย์ตรงนี้<small>CAL TH0</small></button></div>
+        </div>
+        <p><b>อย่าข้ามขั้นนี้</b> Fit รู้แค่ว่าหลอดอยู่ทิศไหนเทียบคู่ LDR ถ้า LDR ติดเอียงไม่เท่ากัน มุมที่อ่านได้จะเยื้องคงที่ และขั้นที่ 6 จับไม่ได้</p>
+        <div class="row">
+          <label>มุมจริงของหลอดเทียบหน้าดาวเทียมตอนนี้ (°) <input type="number" id="th0Ref" value="0" step="0.1"></label>
+        </div>
+        <div id="th0Out" class="kv"></div>
+        <details><summary>เหตุผล และวิธีตรวจซ้ำ</summary>
+          <p class="note">กล่องครอบไม่สมมาตรหรือโมเดลคลาดเล็กน้อยทำให้มุมเยื้องคงที่ (ในตัวจำลองเจอราว 0.2–0.7°) ปุ่มนี้เลื่อน est.th0 ให้มุมที่อ่านได้ตรงกับมุมจริงที่กรอก หรือให้หลอดอยู่กลางภาพกล้องถ้ากรรมการวัดจากหน้ากล้อง</p>
+          <p class="note">ตรวจซ้ำ: หมุนไปมุมอื่นที่วัดด้วยโปรแทรกเตอร์ได้ ทั้งหมุนเข้าจากซ้ายและจากขวา แล้วเทียบ θ กับมุมจริง ถ้าต่างกันเกิน 0.5° ให้ทำขั้นนี้ใหม่</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- ============ MISSION 1 ============ -->
+    <section id="tab-m1" class="tab">
+      <div class="pagehead">
+        <div><h1>ภารกิจ 1: ติดตามแสง</h1><p class="lead">บอร์ดหมุนตัวดาวเทียมให้หันหาหลอด แล้วคงเป้าตามเวลาที่ตั้ง</p></div>
+        <div class="pageact"><button id="m1Stop">หยุด<small>M1 STOP</small></button><button id="m1Start" class="primary">เริ่ม<small>M1 START</small></button></div>
+      </div>
+      <div class="row">
+        <label>มุมแสงที่ต้องการ (°) <input type="number" id="m1Tgt" value="0" step="0.1"></label>
+        <label>เกณฑ์ผ่าน ± (°) <input type="number" id="m1Tol" value="1" step="0.1"></label>
+        <label>ต้องคงเป้าต่อเนื่อง (s) <input type="number" id="m1HoldS" value="3" step="1" min="1"></label>
+      </div>
+      <div class="m1top">
+        <div class="dial" id="dialM1"></div>
+        <div>
+          <div class="stats" id="m1Tiles"></div>
+          <div id="m1Hold" hidden>
+            <div class="note mono" id="m1HoldTxt"></div>
+            <div class="holdbar"><i id="m1HoldFill"></i></div>
+          </div>
+        </div>
+      </div>
+      <div id="m1Banner" class="verdict" hidden></div>
+      <div class="box"><div class="box-h">error (องศา) แถบเขียว = เกณฑ์ผ่าน</div><canvas class="chart" id="chM1"></canvas></div>
+      <div class="sec">
+        <h2>ผลแต่ละรอบ</h2>
+        <p class="note">ผ่าน = ทุก sample ในช่วงคงเป้าต้องเป็น HOLD เห็นแสง ADC ไม่ตัน และ |error| ไม่เกินเกณฑ์</p>
+        <details><summary>เกณฑ์ละเอียด</summary><p class="note">ข้อมูลต้องไม่ขาดช่วงเกิน 0.5 s และได้ sample อย่างน้อย 80% ของที่ควรได้ ตัวเลข error ในตารางเป็นค่าที่บอร์ดประมาณเอง ยังไม่ใช่มุมจริงที่วัดจากภายนอก</p></details>
+        <div class="tablebox"><table class="tbl" id="m1Runs"><thead><tr><th>#</th><th>เริ่ม</th><th>เวลาเข้าเป้า (s)</th><th>รอบปรับ</th><th>error เฉลี่ย (°)</th><th>SD (°)</th><th>|error| สูงสุด (°)</th><th>sample</th><th>ผล</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="sec">
+        <h2>ทดสอบการตอบสนอง (STEP)</h2>
+        <p class="note">ภารกิจ 1 ต้องล็อกแสงอยู่ก่อน คำสั่งนี้ดันตัวดาวเทียมให้เบี้ยวแล้ววัดว่ากลับเข้าเป้าเร็วแค่ไหน</p>
+        <div class="row">
+          <label>เบี้ยวไป (°) <input type="number" id="stepDeg" value="15" step="1"></label>
+          <button id="stepRun">ทดสอบ<small>STEP</small></button>
+        </div>
+        <div id="stepOut" class="kv"></div>
+      </div>
+    </section>
+
+    <!-- ============ MISSION 2 ============ -->
+    <section id="tab-m2" class="tab">
+      <div class="pagehead">
+        <div><h1>ภารกิจ 2: ถ่ายภาพเป้าหมาย</h1><p class="lead">หันไปที่เป้าแล้วถ่าย (GO) หรือถ่ายตรงที่หันอยู่ (SNAP)</p></div>
+        <div class="pageact"><button id="m2Go" class="primary">หันไปที่เป้าแล้วถ่าย<small id="m2GoCmd">M2 GO SUN -65</small></button></div>
+      </div>
+      <div class="row">
+        <div>
+          <div class="note">อ้างอิง</div>
+          <div class="seg" id="m2RefSeg"><button data-ref="sun" class="on">ทิศดวงอาทิตย์</button><button data-ref="act">ศูนย์ตัวขับ</button></div>
+          <select id="m2Ref" hidden><option value="sun">เทียบทิศดวงอาทิตย์ (ทนการโดนชน แนะนำ)</option><option value="act">เทียบศูนย์ของตัวขับ</option></select>
+        </div>
+        <label><span id="m2TgtLbl">offset จากดวงอาทิตย์ (°)</span><input type="number" id="m2Tgt" value="-65" step="0.1"></label>
+        <button id="m2Snap">ถ่ายตอนนี้<small>M2 SNAP</small></button>
+        <span class="spacer"></span>
+        <div>
+          <div class="note">กล้อง</div>
+          <div class="row mid" style="margin:0">
+            <button id="m2Lock" class="small" title="ล็อกค่าแสงกล้องที่ปรับได้ตอนนี้ไว้ให้คงที่">ล็อกแสง<small>M2 LOCK</small></button>
+            <button id="m2Unlock" class="small" title="ให้กล้องปรับแสงเองอีกครั้ง">แสงอัตโนมัติ<small>M2 UNLOCK</small></button>
+            <button id="m2Init" class="small" title="เริ่มกล้องใหม่ (หลังเปลี่ยน cam.model)">เริ่มกล้อง<small>M2 INIT</small></button>
+            <button id="m2Manual" class="small" title="ตั้งแสงกล้องตามค่า cam.aec / cam.agc">แสงตามค่าที่ตั้ง<small>M2 MANUAL</small></button>
+          </div>
+        </div>
+      </div>
+      <div id="m2Status" class="muted"></div>
+      <div id="m2Fail" class="verdict bad" hidden></div>
+      <p class="note">SNAP ถ่ายตรงนั้นได้แม้ภารกิจ 1 ยังล็อกอยู่ ส่วน GO จะหยุดภารกิจ 1 ให้เอง และบอร์ด<b>ไม่ถ่าย</b>ถ้าเป้าอยู่นอกช่วง act.min..act.max หรือหันคลาดเกิน m2.tol</p>
+
+      <div class="cols">
+        <div>
+          <div class="imgbox"><img id="m2Img" alt="" style="cursor:crosshair"><canvas id="m2Overlay"></canvas></div>
+          <div class="note">คลิกที่เป้าในภาพเพื่อหันไปถ่ายตรงนั้น</div>
+          <div id="m2Aim" class="row mid"></div>
+          <div class="row mid">
+            <button id="m2Save">บันทึกภาพ + metadata</button>
+            <button id="m2Bore" title="หาจุดสว่างที่สุด (หลอด) ในภาพนี้ เพื่อวัดว่ากล้องเยื้องจากเซนเซอร์กี่องศา ภาพต้องถ่ายตอนภารกิจ 1 ล็อกหลอด">วัด boresight จากภาพนี้</button>
+          </div>
+          <div id="m2BoreOut" class="muted"></div>
+        </div>
+        <div>
+          <h3 style="margin-top:0">ข้อมูลภาพ</h3>
+          <div id="m2Facts" class="kv muted">ยังไม่มีภาพ</div>
+          <details><summary>metadata ทั้งหมด</summary><div id="m2Meta" class="kv muted">ยังไม่มีภาพ</div></details>
+        </div>
+      </div>
+      <div class="sec"><h2>แกลเลอรี</h2><div id="m2Gallery" class="gallery"></div></div>
+
+      <details class="sec" open>
+        <summary>เตรียมกล้อง (ทำครั้งเดียวหลังติดกล้อง ตามลำดับ)</summary>
+        <div class="row">
+          <button id="m2FlipV" title="สลับ cam.vflip แล้วบันทึกลงบอร์ด">1. ภาพกลับหัว? พลิกบน-ล่าง<small>cam.vflip</small></button>
+          <button id="m2FlipH" title="สลับ cam.hmirror แล้วบันทึกลงบอร์ด">ภาพกลับซ้าย-ขวา? พลิกซ้าย-ขวา<small>cam.hmirror</small></button>
+          <button id="m2Dir" title="ถ่าย → หมุน +8° → ถ่าย แล้วเทียบสองภาพ: ได้ทิศของภาพ (cam.dir) และมุมรับภาพ (cam.hfov)">2. ตรวจทิศภาพ + มุมรับภาพ<small>cam.dir / cam.hfov</small></button>
+          <button id="m2BoreAuto" title="เริ่มภารกิจ 1 รอล็อกหลอด แล้วถ่ายและวัดว่ากล้องเยื้องจากเซนเซอร์กี่องศา (cam.off) ทำหลังคาลิเบรตและตั้งศูนย์ขั้น 8 แล้ว">3. ล็อกหลอดแล้ววัด boresight<small>cam.off (หลังตั้งศูนย์)</small></button>
+        </div>
+        <div class="row mid">
+          <button id="m2PickDir" title="Chrome/Edge: ทุกภาพที่ได้จะถูกบันทึกเป็น .jpg + .json ลงโฟลเดอร์นี้เอง">เลือกโฟลเดอร์บันทึกภาพอัตโนมัติ</button>
+          <span id="m2DirName" class="muted small">ยังไม่ได้เลือกโฟลเดอร์</span>
+        </div>
+        <div id="m2DirOut" class="muted"></div>
+        <p class="note">ทิศภาพต้องตรวจก่อนใช้ boresight และการคลิกบนภาพ ถ้าใช้ค่าผิดด้าน มุมที่ได้จะคลาดเป็นสองเท่า ให้มีของหลายอย่างหรือหลอดอยู่ในภาพตอนตรวจ (ผนังเรียบโปรแกรมจะไม่ยอมสรุป)</p>
+      </details>
+
+      <details class="sec" open>
+        <summary>สแกนรอบตัว (ไม่รู้ว่าเป้าอยู่ไหน)</summary>
+        <div class="row">
+          <label>จาก (°) <input type="number" id="scanFrom" value="-170" step="1"></label>
+          <label>ถึง (°) <input type="number" id="scanTo" value="170" step="1"></label>
+          <label>ทีละ (°) <input type="number" id="scanStep" value="43" step="1"></label>
+          <label class="chk"><input type="checkbox" id="scanSmall" checked> ใช้ภาพเล็ก 320×240 (เร็วกว่า)</label>
+          <button id="scanReset" class="small">ค่าเริ่ม (ทั้งช่วง act.min..act.max)</button>
+          <button id="m2Scan">เริ่มสแกน<small>M2 GO … ทีละมุม</small></button>
+        </div>
+        <p class="note">ถ่ายทุก "ทีละ" องศา (ค่าเริ่ม 70% ของมุมรับภาพ ภาพจึงซ้อนกัน) กด STOP เพื่อหยุด แล้วคลิกภาพในแกลเลอรีที่เห็นเป้า และคลิกที่เป้าในภาพ</p>
+      </details>
+    </section>
+
+    <!-- ============ LIVE ============ -->
+    <section id="tab-live" class="tab">
+      <div class="pagehead">
+        <div><h1>ค่าสด</h1><p class="lead">ดูค่าจากเซนเซอร์และตัวขับตอนนี้ ใช้ตรวจวงจรและทิศก่อนเริ่มภารกิจ</p></div>
+        <div class="pageact">
+          <label>ช่วงเวลากราฟ
+            <select id="selWin"><option value="10">10 วินาที</option><option value="20" selected>20 วินาที</option><option value="60">60 วินาที</option></select>
+          </label>
+          <button id="btnPause">หยุดกราฟชั่วคราว</button>
+          <button id="btnClearCharts">ล้างกราฟ</button>
+        </div>
+      </div>
+      <div class="livetop">
+        <div class="dial" id="dialLive"></div>
+        <div class="stats" id="liveTiles"></div>
+      </div>
+      <div class="box"><div class="box-h">แรงดันจาก LDR (mV)</div><canvas class="chart" id="chMv"></canvas></div>
+      <div class="box"><div class="box-h">D = (ซ้าย − ขวา) / (ซ้าย + ขวา)</div><canvas class="chart short" id="chD"></canvas></div>
+      <div class="box"><div class="box-h">มุม (องศา)</div><canvas class="chart" id="chDeg"></canvas></div>
+      <div class="sec">
+        <h2>ขยับตัวขับด้วยมือ</h2>
+        <div class="row mid">
+          <button data-move="-10" title="MOVE -10">−10°</button><button data-move="-1" title="MOVE -1">−1°</button><button data-move="-0.1" title="MOVE -0.1">−0.1°</button>
+          <button data-move="0.1" title="MOVE 0.1">+0.1°</button><button data-move="1" title="MOVE 1">+1°</button><button data-move="10" title="MOVE 10">+10°</button>
+        </div>
+        <div class="row">
+          <label>ไปที่มุม (°) <input type="number" id="inGoto" value="0" step="0.1"></label>
+          <button id="btnGoto">ไป<small>GOTO</small></button>
+          <button data-cmd="ZERO" title="ตั้งตำแหน่งปัจจุบันเป็น 0°">ตั้งศูนย์<small>ZERO</small></button>
+          <button data-cmd="RELEASE" title="ปล่อยไฟขดลวด stepper">ปล่อยขดลวด<small>RELEASE</small></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ TUNE ============ -->
+    <section id="tab-tune" class="tab">
+      <div class="pagehead">
+        <div><h1>จูนค่า</h1><p class="lead">แก้ค่าแล้วกด Enter หรือคลิกออก ค่าจะเข้าบอร์ดทันที (ยังไม่ถาวร) แถวที่มีแถบสีส้มคือยังไม่ SAVE</p></div>
+        <div class="pageact">
+          <button id="cfgReload">อ่านค่าจากบอร์ด<small>CFG LIST</small></button>
+          <button id="cfgSave" class="primary" title="เก็บค่าทั้งหมดถาวรในบอร์ด">บันทึกถาวร<small>SAVE</small></button>
+        </div>
+      </div>
+      <div class="row mid">
+        <input type="search" id="cfgSearch" placeholder="ค้นหาค่า เช่น ctl หรือ มุม" style="width:260px">
+        <button id="cfgLoad" title="โหลดค่าที่เก็บไว้ในบอร์ดกลับมา">โหลดค่าที่บันทึกไว้<small>LOAD</small></button>
+        <button id="cfgExport">Export โปรไฟล์</button>
+        <label class="filebtn">Import โปรไฟล์ <input type="file" id="cfgImport" accept=".json,application/json"></label>
+      </div>
+      <details><summary>คืนค่าเริ่มต้นทั้งหมด (DEFAULTS)</summary>
+        <div class="row mid">
+          <span class="note">พิมพ์ DEFAULTS ในช่อง เพื่อเปิดปุ่ม (ยังไม่ถาวรจนกว่าจะ SAVE)</span>
+          <input type="text" id="cfgDefConfirm" placeholder="พิมพ์ DEFAULTS" autocomplete="off" spellcheck="false" style="width:160px">
+          <button id="cfgDefaults" class="danger" disabled>คืนค่าเริ่มต้น<small>DEFAULTS</small></button>
+        </div>
+      </details>
+      <div id="cfgGroups"></div>
+    </section>
+
+    <!-- ============ EVIDENCE & AI ============ -->
+    <section id="tab-ev" class="tab">
+      <div class="pagehead">
+        <div><h1>หลักฐาน &amp; AI</h1><p class="lead">รวบรวมสถานะให้ AI ช่วยดู และเก็บหลักฐานไว้โชว์กรรมการ</p></div>
+        <div class="pageact"><button id="aiCopy" class="primary">คัดลอกให้ AI</button></div>
+      </div>
+      <div class="sec">
+        <h2>ส่งข้อมูลให้ AI</h2>
+        <p class="note">รวมสถานะบอร์ด ค่าตั้ง ผลคาลิเบรต สถิติ telemetry คำสั่งที่ส่งล่าสุด และ error ล่าสุด เป็นข้อความสั้น ๆ แล้วคัดลอกไว้</p>
+        <label style="display:flex;flex-direction:column;align-items:stretch;gap:4px;margin:8px 0">อาการ (ใส่ไว้บนสุดของข้อความที่คัดลอก)
+          <textarea id="aiSymptom" rows="3" spellcheck="false" placeholder="อาการ: คาดว่า … แต่ได้ … ลองแล้ว …"></textarea>
+        </label>
+        <div class="row"><button id="aiRefresh">DIAG + สร้างใหม่<small>DIAG</small></button></div>
+        <textarea id="aiText" rows="12" spellcheck="false"></textarea>
+      </div>
+      <div class="sec">
+        <h2>ดาวน์โหลดหลักฐาน</h2>
+        <div class="row">
+          <button id="dlLog">Session log (.txt)</button>
+          <button id="dlTel">Telemetry (.csv)</button>
+          <button id="dlEv">หลักฐานทั้งหมด (.json)</button>
+        </div>
+        <h3>บันทึกหลักฐาน</h3>
+        <div class="tablebox"><table class="tbl" id="evTable"><thead><tr><th>เวลา</th><th>ประเภท</th><th>รายละเอียด</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="sec">
+        <h2>เล่นย้อนหลัง (Replay)</h2>
+        <p class="note">โหลด session log ที่เคยบันทึกไว้ แล้วเล่นให้กราฟและตารางแสดงเหมือนตอนนั้น ใช้ตรวจปัญหาหรือโชว์กรรมการ</p>
+        <div class="row mid">
+          <label class="filebtn">เลือกไฟล์ log <input type="file" id="rpFile" accept=".txt,text/plain"></label>
+          <label class="radio">ความเร็ว <select id="rpSpeed"><option value="1">1×</option><option value="4" selected>4×</option><option value="20">20×</option></select></label>
+          <button id="rpPlay">เล่น</button>
+          <button id="rpStop">หยุด</button>
+          <span id="rpStatus" class="muted"></span>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer id="dock" class="dock min">
+  <div id="conOut" class="con-out"></div>
+  <div class="dock-bar">
+    <button id="conToggle" class="quiet" aria-expanded="false" title="เปิด/ปิดหน้าต่าง Console">Console ▴</button>
+    <span id="conLast" class="con-last"></span>
+    <button id="conErrN" class="chip" title="จำนวน error ใน Console: คลิกเพื่อดูเฉพาะ error">error 0</button>
+    <span class="con-opts">
+      <label><input type="checkbox" id="conShowT"> แสดง telemetry</label>
+      <label><input type="checkbox" id="conShowTx" checked> แสดงคำสั่งที่ส่ง</label>
+      <label><input type="checkbox" id="conErrOnly"> เฉพาะ error</label>
+      <button id="conClear" class="quiet">ล้าง</button>
+    </span>
+    <input id="conInput" type="text" placeholder="พิมพ์คำสั่ง เช่น SET ctl.k 0.8 แล้วกด Enter (↑/↓ = ประวัติ)" autocomplete="off" spellcheck="false">
+    <button id="conSend">ส่ง</button>
+  </div>
+</footer>
+
+<div id="probTray" hidden>
+  <div class="ptray-h"><b>ปัญหา</b><span class="spacer"></span><button id="probAckAll" class="quiet small">รับทราบทั้งหมด</button><button id="probClose" class="quiet small">ปิด</button></div>
+  <div id="probList"></div>
+</div>
+<div id="toasts"></div>
+
+<script>
+/*__JS__*/
+</script>
+</body>
+</html>

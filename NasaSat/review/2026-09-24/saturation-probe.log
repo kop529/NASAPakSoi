@@ -1,0 +1,22 @@
+# NasaSat firmware boot - team NASA Pak Soi
+E BOOT POWERON
+J {"type":"hello","fw":"NasaSat","ver":"1.0.0","board":"ESP32-S3 (HOST TEST) + PSRAM 8MB","proto":1,"caps":["stepper","servo","m1","m2","sweep","pinfind","lut"]}
+TH,ms,m1,ang,th,err,D,S,v0,v1,en,fl
+!READY
+!OK lampK=100
+TH,ms,m1,ang,th,err,D,S,v0,v1,en,fl
+OK on
+E M1 FINE start
+E PROC M1 START
+OK started
+T,20,2,0.000,0.000,0.000,0.00000,192.7152,3100.0,3100.0,0,21
+E M1 FINE
+E M1 HOLD t=809 it=0 err=0.000
+T,1020,3,0.000,0.000,0.000,0.00000,192.7152,3100.0,3100.0,0,21
+T,2020,3,0.000,0.000,0.000,0.00000,192.7152,3100.0,3100.0,0,21
+T,3020,3,0.000,0.000,0.000,0.00000,192.7152,3100.0,3100.0,0,21
+T,4020,3,0.000,0.000,0.000,0.00000,192.7152,3100.0,3100.0,0,21
+
+!DONE t=5000.400 maxloop_ms=1.080 wdt=0
+!TRUTH {"t_ms":5000.400,"body":0.0000,"theta":25.0000,"out":0.0000,"motorDeg":0.0000,"motor":0,"rotorIdx":0,"coil":0,"lampAz":25.000,"targetAz":-40.000,"camAz":2.2000,"camErr":42.2000,"bump":0.000,"steps":0,"glitches":0,"missed":0,"spr":4076.00,"backlash":1.400,"camOff":2.200,"aec":1,"agcCtrl":1,"frames":0,"txBytes":696,"gL":0.00513333,"gR":0.00188304}
+!BYE

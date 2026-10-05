@@ -1,0 +1,7 @@
+# drivers are vendor installers, not our work
+drivers/
+# build outputs / logs
+NasaSat/firmware/host_test/build/
+SunSeek/**/build/
+NasaSat/ai/logs/
+*.tmp

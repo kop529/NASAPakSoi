@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="475.2pt" height="187.2pt" viewBox="0 0 475.2 187.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-09-24T21:18:45.575896</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.1, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 187.2 
+L 475.2 187.2 
+L 475.2 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 46.595 145.6 
+L 230.2875 145.6 
+L 230.2875 22.99875 
+L 46.595 22.99875 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <path d="M 54.944659 145.6 
+L 54.944659 22.99875 
+" clip-path="url(#p85efa19989)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_2">
+      <defs>
+       <path id="maeccc0baf2" d="M 0 0 
+L 0 3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#maeccc0baf2" x="54.944659" y="145.6" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="54.944659" y="159.262813" transform="rotate(-0 54.944659 159.262813)">0</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_3">
+      <path d="M 107.130028 145.6 
+L 107.130028 22.99875 
+" clip-path="url(#p85efa19989)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#maeccc0baf2" x="107.130028" y="145.6" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="107.130028" y="159.262813" transform="rotate(-0 107.130028 159.262813)">200</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_5">
+      <path d="M 159.315398 145.6 
+L 159.315398 22.99875 
+" clip-path="url(#p85efa19989)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#maeccc0baf2" x="159.315398" y="145.6" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="159.315398" y="159.262813" transform="rotate(-0 159.315398 159.262813)">400</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_7">
+      <path d="M 211.500767 145.6 
+L 211.500767 22.99875 
+" clip-path="url(#p85efa19989)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_8">
+      <g>
+       <use xlink:href="#maeccc0baf2" x="211.500767" y="145.6" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_4">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="211.500767" y="159.262813" transform="rotate(-0 211.500767 159.262813)">600</text>
+     </g>
+    </g>
+    <g id="text_5">
+     <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="138.44125" y="173.647969" transform="rotate(-0 138.44125 173.647969)">ตำแหน่งในภาพ x (pixel)</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_9">
+      <path d="M 46.595 120.252821 
+L 230.2875 120.252821 
+" clip-path="url(#p85efa19989)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_10">
+      <defs>
+       <path id="m339ab19b11" d="M 0 0 
+L -3.5 0 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m339ab19b11" x="46.595" y="120.252821" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="39.595" y="123.584227" transform="rotate(-0 39.595 123.584227)">−20</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_11">
+      <path d="M 46.595 84.299375 
+L 230.2875 84.299375 
+" clip-path="url(#p85efa19989)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_12">
+      <g>
+       <use xlink:href="#m339ab19b11" x="46.595" y="84.299375" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_7">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="39.595" y="87.630781" transform="rotate(-0 39.595 87.630781)">0</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_13">
+      <path d="M 46.595 48.345929 
+L 230.2875 48.345929 
+" clip-path="url(#p85efa19989)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_14">
+      <g>
+       <use xlink:href="#m339ab19b11" x="46.595" y="48.345929" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_8">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="39.595" y="51.677336" transform="rotate(-0 39.595 51.677336)">20</text>
+     </g>
+    </g>
+    <g id="text_9">
+     <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="17.621719" y="84.299375" transform="rotate(-90 17.621719 84.299375)">มุมจากแกนกล้อง (°)</text>
+    </g>
+   </g>
+   <g id="line2d_15">
+    <path d="M 54.944659 140.027216 
+L 63.315245 135.347369 
+L 72.104359 130.173572 
+L 80.893474 124.73939 
+L 90.101118 118.780675 
+L 99.727292 112.284721 
+L 110.609053 104.659337 
+L 123.164931 95.576969 
+L 144.509925 79.804101 
+L 162.088154 66.938479 
+L 173.806974 58.631055 
+L 184.270206 51.487663 
+L 193.896379 45.190381 
+L 203.104023 39.440468 
+L 211.893138 34.216434 
+L 220.682253 29.258042 
+L 221.937841 28.571534 
+L 221.937841 28.571534 
+" clip-path="url(#p85efa19989)" style="fill: none; stroke: #3a9bd5; stroke-width: 1.5; stroke-linecap: square"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 46.595 145.6 
+L 46.595 22.99875 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 46.595 145.6 
+L 230.2875 145.6 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 10px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="138.44125" y="16.99875" transform="rotate(-0 138.44125 16.99875)">(ก) 640 px, มุมรับภาพ 62°: f = 533 px</text>
+   </g>
+  </g>
+  <g id="axes_2">
+   <g id="patch_5">
+    <path d="M 281.7875 145.6 
+L 465.48 145.6 
+L 465.48 22.99875 
+L 281.7875 22.99875 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="matplotlib.axis_3">
+    <g id="xtick_5">
+     <g id="line2d_16">
+      <path d="M 290.137159 145.6 
+L 290.137159 22.99875 
+" clip-path="url(#p8701a69ee9)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_17">
+      <g>
+       <use xlink:href="#maeccc0baf2" x="290.137159" y="145.6" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_11">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="290.137159" y="159.262813" transform="rotate(-0 290.137159 159.262813)">0</text>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_18">
+      <path d="M 342.322528 145.6 
+L 342.322528 22.99875 
+" clip-path="url(#p8701a69ee9)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_19">
+      <g>
+       <use xlink:href="#maeccc0baf2" x="342.322528" y="145.6" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_12">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="342.322528" y="159.262813" transform="rotate(-0 342.322528 159.262813)">200</text>
+     </g>
+    </g>
+    <g id="xtick_7">
+     <g id="line2d_20">
+      <path d="M 394.507898 145.6 
+L 394.507898 22.99875 
+" clip-path="url(#p8701a69ee9)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_21">
+      <g>
+       <use xlink:href="#maeccc0baf2" x="394.507898" y="145.6" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_13">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="394.507898" y="159.262813" transform="rotate(-0 394.507898 159.262813)">400</text>
+     </g>
+    </g>
+    <g id="xtick_8">
+     <g id="line2d_22">
+      <path d="M 446.693267 145.6 
+L 446.693267 22.99875 
+" clip-path="url(#p8701a69ee9)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_23">
+      <g>
+       <use xlink:href="#maeccc0baf2" x="446.693267" y="145.6" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_14">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="446.693267" y="159.262813" transform="rotate(-0 446.693267 159.262813)">600</text>
+     </g>
+    </g>
+    <g id="text_15">
+     <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="373.63375" y="173.647969" transform="rotate(-0 373.63375 173.647969)">ตำแหน่งในภาพ x (pixel)</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_4">
+    <g id="ytick_4">
+     <g id="line2d_24">
+      <path d="M 281.7875 136.052945 
+L 465.48 136.052945 
+" clip-path="url(#p8701a69ee9)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_25">
+      <g>
+       <use xlink:href="#m339ab19b11" x="281.7875" y="136.052945" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_16">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="274.7875" y="139.384351" transform="rotate(-0 274.7875 139.384351)">0.08</text>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_26">
+      <path d="M 281.7875 97.08727 
+L 465.48 97.08727 
+" clip-path="url(#p8701a69ee9)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_27">
+      <g>
+       <use xlink:href="#m339ab19b11" x="281.7875" y="97.08727" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_17">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="274.7875" y="100.418677" transform="rotate(-0 274.7875 100.418677)">0.09</text>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_28">
+      <path d="M 281.7875 58.121596 
+L 465.48 58.121596 
+" clip-path="url(#p8701a69ee9)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_29">
+      <g>
+       <use xlink:href="#m339ab19b11" x="281.7875" y="58.121596" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_18">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="274.7875" y="61.453002" transform="rotate(-0 274.7875 61.453002)">0.10</text>
+     </g>
+    </g>
+    <g id="text_19">
+     <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="252.210937" y="84.299375" transform="rotate(-90 252.210937 84.299375)">องศาต่อ 1 pixel</text>
+    </g>
+   </g>
+   <g id="line2d_30">
+    <path d="M 290.137159 139.516572 
+L 308.133918 104.528499 
+L 315.248916 91.230514 
+L 321.108326 80.749541 
+L 326.130677 72.217399 
+L 330.734499 64.844679 
+L 334.919792 58.576007 
+L 338.686555 53.332651 
+L 342.03479 49.020339 
+L 345.383024 45.062398 
+L 348.312729 41.908806 
+L 351.242434 39.059989 
+L 354.172139 36.529858 
+L 356.683314 34.624415 
+L 359.19449 32.969484 
+L 361.705666 31.571305 
+L 364.216841 30.435209 
+L 366.728017 29.565567 
+L 369.239193 28.96575 
+L 371.331839 28.673736 
+L 373.424485 28.571534 
+L 375.517132 28.659423 
+L 377.609778 28.937163 
+L 379.702425 29.404 
+L 382.2136 30.211998 
+L 384.724776 31.287313 
+L 387.235952 32.6258 
+L 389.747127 34.222345 
+L 392.258303 36.070911 
+L 395.188008 38.536845 
+L 398.117713 41.324051 
+L 401.047418 44.418864 
+L 404.395652 48.313366 
+L 407.743886 52.566473 
+L 411.51065 57.748536 
+L 415.277413 63.315313 
+L 419.462706 69.905127 
+L 424.066528 77.584125 
+L 429.088879 86.394645 
+L 434.948289 97.128998 
+L 442.063287 110.637294 
+L 452.945048 131.829472 
+L 457.130341 140.027216 
+L 457.130341 140.027216 
+" clip-path="url(#p8701a69ee9)" style="fill: none; stroke: #1e9e7e; stroke-width: 1.5; stroke-linecap: square"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 281.7875 145.6 
+L 281.7875 22.99875 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 281.7875 145.6 
+L 465.48 145.6 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 10px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="373.63375" y="16.99875" transform="rotate(-0 373.63375 16.99875)">(ข) กลางภาพ 1 px = 0.108°</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p85efa19989">
+   <rect x="46.595" y="22.99875" width="183.6925" height="122.60125"/>
+  </clipPath>
+  <clipPath id="p8701a69ee9">
+   <rect x="281.7875" y="22.99875" width="183.6925" height="122.60125"/>
+  </clipPath>
+ </defs>
+</svg>

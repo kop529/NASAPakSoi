@@ -1,0 +1,647 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="475.2pt" height="194.4pt" viewBox="0 0 475.2 194.4" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-09-24T21:18:44.706344</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.1, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 194.4 
+L 475.2 194.4 
+L 475.2 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 42.77 153.88 
+L 230.73 153.88 
+L 230.73 25.125 
+L 42.77 25.125 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 74.096667 153.88 
+L 199.403333 153.88 
+L 199.403333 25.125 
+L 74.096667 25.125 
+z
+" clip-path="url(#p2d77d2fdd2)" style="fill: #1e9e7e; opacity: 0.08"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <path d="M 84.538889 153.88 
+L 84.538889 25.125 
+" clip-path="url(#p2d77d2fdd2)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_2">
+      <defs>
+       <path id="mb9139b37cb" d="M 0 0 
+L 0 3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#mb9139b37cb" x="84.538889" y="153.88" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="84.538889" y="167.542813" transform="rotate(-0 84.538889 167.542813)">−50</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_3">
+      <path d="M 136.75 153.88 
+L 136.75 25.125 
+" clip-path="url(#p2d77d2fdd2)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#mb9139b37cb" x="136.75" y="153.88" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="136.75" y="167.542813" transform="rotate(-0 136.75 167.542813)">0</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_5">
+      <path d="M 188.961111 153.88 
+L 188.961111 25.125 
+" clip-path="url(#p2d77d2fdd2)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#mb9139b37cb" x="188.961111" y="153.88" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="188.961111" y="167.542813" transform="rotate(-0 188.961111 167.542813)">50</text>
+     </g>
+    </g>
+    <g id="text_4">
+     <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="136.75" y="180.451406" transform="rotate(-0 136.75 180.451406)">มุมแสง θ จากแกนดาวเทียม (°)</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_7">
+      <path d="M 42.77 153.88 
+L 230.73 153.88 
+" clip-path="url(#p2d77d2fdd2)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_8">
+      <defs>
+       <path id="m2583338183" d="M 0 0 
+L -3.5 0 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m2583338183" x="42.77" y="153.88" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_5">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="35.77" y="157.211406" transform="rotate(-0 35.77 157.211406)">0.0</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_9">
+      <path d="M 42.77 135.219855 
+L 230.73 135.219855 
+" clip-path="url(#p2d77d2fdd2)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_10">
+      <g>
+       <use xlink:href="#m2583338183" x="42.77" y="135.219855" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="35.77" y="138.551261" transform="rotate(-0 35.77 138.551261)">0.2</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_11">
+      <path d="M 42.77 116.55971 
+L 230.73 116.55971 
+" clip-path="url(#p2d77d2fdd2)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_12">
+      <g>
+       <use xlink:href="#m2583338183" x="42.77" y="116.55971" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_7">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="35.77" y="119.891116" transform="rotate(-0 35.77 119.891116)">0.4</text>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_13">
+      <path d="M 42.77 97.899565 
+L 230.73 97.899565 
+" clip-path="url(#p2d77d2fdd2)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_14">
+      <g>
+       <use xlink:href="#m2583338183" x="42.77" y="97.899565" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_8">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="35.77" y="101.230971" transform="rotate(-0 35.77 101.230971)">0.6</text>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_15">
+      <path d="M 42.77 79.23942 
+L 230.73 79.23942 
+" clip-path="url(#p2d77d2fdd2)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_16">
+      <g>
+       <use xlink:href="#m2583338183" x="42.77" y="79.23942" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_9">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="35.77" y="82.570827" transform="rotate(-0 35.77 82.570827)">0.8</text>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_17">
+      <path d="M 42.77 60.579275 
+L 230.73 60.579275 
+" clip-path="url(#p2d77d2fdd2)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_18">
+      <g>
+       <use xlink:href="#m2583338183" x="42.77" y="60.579275" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_10">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="35.77" y="63.910682" transform="rotate(-0 35.77 63.910682)">1.0</text>
+     </g>
+    </g>
+    <g id="ytick_7">
+     <g id="line2d_19">
+      <path d="M 42.77 41.91913 
+L 230.73 41.91913 
+" clip-path="url(#p2d77d2fdd2)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_20">
+      <g>
+       <use xlink:href="#m2583338183" x="42.77" y="41.91913" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_11">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="35.77" y="45.250537" transform="rotate(-0 35.77 45.250537)">1.2</text>
+     </g>
+    </g>
+    <g id="text_12">
+     <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="18.045" y="89.5025" transform="rotate(-90 18.045 89.5025)">แสงที่รับได้ (สัดส่วน)</text>
+    </g>
+   </g>
+   <g id="line2d_21">
+    <path d="M 42.77 153.88 
+L 74.096667 153.88 
+L 88.193667 132.099378 
+L 95.764278 120.824389 
+L 102.029611 111.885489 
+L 107.511778 104.438149 
+L 112.471833 98.055881 
+L 117.170833 92.362558 
+L 121.608778 87.333216 
+L 125.785667 82.933572 
+L 129.7015 79.122439 
+L 133.356278 75.853896 
+L 137.011056 72.876421 
+L 140.404778 70.381976 
+L 143.7985 68.156114 
+L 147.192222 66.205998 
+L 150.324889 64.656073 
+L 153.457556 63.350706 
+L 156.590222 62.293472 
+L 159.722889 61.487272 
+L 162.5945 60.970679 
+L 165.466111 60.668077 
+L 168.337722 60.580164 
+L 171.209333 60.707141 
+L 174.080944 61.048716 
+L 176.952556 61.604103 
+L 179.824167 62.372023 
+L 182.956833 63.450054 
+L 186.0895 64.775947 
+L 189.222167 66.346069 
+L 192.354833 68.156114 
+L 195.748556 70.381976 
+L 199.142278 72.876421 
+L 202.797056 75.853896 
+L 206.451833 79.122439 
+L 210.367667 82.933572 
+L 214.2835 87.04851 
+L 218.460389 91.752758 
+L 222.898333 97.082118 
+L 227.597333 103.064783 
+L 230.73 107.229638 
+L 230.73 107.229638 
+" clip-path="url(#p2d77d2fdd2)" style="fill: none; stroke: #3a9bd5; stroke-width: 1.5; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_22">
+    <path d="M 42.77 107.229638 
+L 47.991111 100.364903 
+L 52.690111 94.533441 
+L 57.128056 89.361331 
+L 61.304944 84.817112 
+L 65.220778 80.862092 
+L 69.136611 77.219745 
+L 72.791389 74.116103 
+L 76.446167 71.310012 
+L 79.839889 68.979954 
+L 83.233611 66.92299 
+L 86.366278 65.272383 
+L 89.498944 63.864644 
+L 92.631611 62.70363 
+L 95.764278 61.792524 
+L 98.635889 61.179026 
+L 101.5075 60.779039 
+L 104.379111 60.593486 
+L 107.250722 60.622792 
+L 110.122333 60.86689 
+L 112.993944 61.325219 
+L 115.865556 61.996723 
+L 118.998222 62.970567 
+L 122.130889 64.193587 
+L 125.263556 65.662432 
+L 128.396222 67.373074 
+L 131.789944 69.49368 
+L 135.183667 71.885727 
+L 138.577389 74.541521 
+L 142.232167 77.686751 
+L 145.886944 81.116213 
+L 149.802778 85.09149 
+L 153.979667 89.656019 
+L 158.417611 94.848134 
+L 163.116611 100.698889 
+L 168.076667 107.229638 
+L 173.558833 114.818743 
+L 179.824167 123.889465 
+L 187.133722 134.880077 
+L 197.575944 151.030735 
+L 199.403333 153.88 
+L 230.73 153.88 
+L 230.73 153.88 
+" clip-path="url(#p2d77d2fdd2)" style="fill: none; stroke-dasharray: 5.55,2.4; stroke-dashoffset: 0; stroke: #c07f00; stroke-width: 1.5"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 42.77 153.88 
+L 42.77 25.125 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 42.77 153.88 
+L 230.73 153.88 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 8px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; fill: #1e9e7e" transform="translate(108.17625 139.100957)">ทั้งสองตัวเห็นหลอด</text>
+    <text style="font-size: 8px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; fill: #1e9e7e" transform="translate(114.723125 148.281957)">|θ| &lt; 90° − α</text>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 10px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="136.75" y="19.125" transform="rotate(-0 136.75 19.125)">(ก) กฎโคไซน์ของ LDR สองตัว (α = 30°)</text>
+   </g>
+   <g id="legend_1">
+    <g id="line2d_23">
+     <path d="M 50.236016 34.157188 
+L 57.236016 34.157188 
+L 64.236016 34.157188 
+" style="fill: none; stroke: #3a9bd5; stroke-width: 1.5; stroke-linecap: square"/>
+    </g>
+    <g id="text_15">
+     <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: start" x="69.836016" y="36.607188" transform="rotate(-0 69.836016 36.607188)">LDR ซ้าย  cos(θ − α)</text>
+    </g>
+    <g id="line2d_24">
+     <path d="M 144.009766 34.157188 
+L 151.009766 34.157188 
+L 158.009766 34.157188 
+" style="fill: none; stroke-dasharray: 5.55,2.4; stroke-dashoffset: 0; stroke: #c07f00; stroke-width: 1.5"/>
+    </g>
+    <g id="text_16">
+     <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: start" x="163.609766" y="36.607188" transform="rotate(-0 163.609766 36.607188)">LDR ขวา  cos(θ + α)</text>
+    </g>
+   </g>
+  </g>
+  <g id="axes_2">
+   <g id="patch_6">
+    <path d="M 277.52 153.88 
+L 465.48 153.88 
+L 465.48 25.125 
+L 277.52 25.125 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="matplotlib.axis_3">
+    <g id="xtick_4">
+     <g id="line2d_25">
+      <path d="M 319.288889 153.88 
+L 319.288889 25.125 
+" clip-path="url(#p9368d5f8f3)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_26">
+      <g>
+       <use xlink:href="#mb9139b37cb" x="319.288889" y="153.88" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_17">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="319.288889" y="167.542813" transform="rotate(-0 319.288889 167.542813)">−50</text>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_27">
+      <path d="M 371.5 153.88 
+L 371.5 25.125 
+" clip-path="url(#p9368d5f8f3)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_28">
+      <g>
+       <use xlink:href="#mb9139b37cb" x="371.5" y="153.88" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_18">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="371.5" y="167.542813" transform="rotate(-0 371.5 167.542813)">0</text>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_29">
+      <path d="M 423.711111 153.88 
+L 423.711111 25.125 
+" clip-path="url(#p9368d5f8f3)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_30">
+      <g>
+       <use xlink:href="#mb9139b37cb" x="423.711111" y="153.88" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_19">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="423.711111" y="167.542813" transform="rotate(-0 423.711111 167.542813)">50</text>
+     </g>
+    </g>
+    <g id="text_20">
+     <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="371.5" y="180.451406" transform="rotate(-0 371.5 180.451406)">มุมแสง θ (°)</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_4">
+    <g id="ytick_8">
+     <g id="line2d_31">
+      <path d="M 277.52 153.88 
+L 465.48 153.88 
+" clip-path="url(#p9368d5f8f3)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_32">
+      <g>
+       <use xlink:href="#m2583338183" x="277.52" y="153.88" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_21">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="270.52" y="157.211406" transform="rotate(-0 270.52 157.211406)">−3</text>
+     </g>
+    </g>
+    <g id="ytick_9">
+     <g id="line2d_33">
+      <path d="M 277.52 132.420833 
+L 465.48 132.420833 
+" clip-path="url(#p9368d5f8f3)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_34">
+      <g>
+       <use xlink:href="#m2583338183" x="277.52" y="132.420833" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_22">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="270.52" y="135.75224" transform="rotate(-0 270.52 135.75224)">−2</text>
+     </g>
+    </g>
+    <g id="ytick_10">
+     <g id="line2d_35">
+      <path d="M 277.52 110.961667 
+L 465.48 110.961667 
+" clip-path="url(#p9368d5f8f3)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_36">
+      <g>
+       <use xlink:href="#m2583338183" x="277.52" y="110.961667" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_23">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="270.52" y="114.293073" transform="rotate(-0 270.52 114.293073)">−1</text>
+     </g>
+    </g>
+    <g id="ytick_11">
+     <g id="line2d_37">
+      <path d="M 277.52 89.5025 
+L 465.48 89.5025 
+" clip-path="url(#p9368d5f8f3)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_38">
+      <g>
+       <use xlink:href="#m2583338183" x="277.52" y="89.5025" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_24">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="270.52" y="92.833906" transform="rotate(-0 270.52 92.833906)">0</text>
+     </g>
+    </g>
+    <g id="ytick_12">
+     <g id="line2d_39">
+      <path d="M 277.52 68.043333 
+L 465.48 68.043333 
+" clip-path="url(#p9368d5f8f3)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_40">
+      <g>
+       <use xlink:href="#m2583338183" x="277.52" y="68.043333" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_25">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="270.52" y="71.37474" transform="rotate(-0 270.52 71.37474)">1</text>
+     </g>
+    </g>
+    <g id="ytick_13">
+     <g id="line2d_41">
+      <path d="M 277.52 46.584167 
+L 465.48 46.584167 
+" clip-path="url(#p9368d5f8f3)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_42">
+      <g>
+       <use xlink:href="#m2583338183" x="277.52" y="46.584167" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_26">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="270.52" y="49.915573" transform="rotate(-0 270.52 49.915573)">2</text>
+     </g>
+    </g>
+    <g id="ytick_14">
+     <g id="line2d_43">
+      <path d="M 277.52 25.125 
+L 465.48 25.125 
+" clip-path="url(#p9368d5f8f3)" style="fill: none; stroke: #dddddd; stroke-width: 0.6; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_44">
+      <g>
+       <use xlink:href="#m2583338183" x="277.52" y="25.125" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_27">
+      <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: end" x="270.52" y="28.456406" transform="rotate(-0 270.52 28.456406)">3</text>
+     </g>
+    </g>
+    <g id="text_28">
+     <text style="font-size: 9px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="253.441875" y="89.5025" transform="rotate(-90 253.441875 89.5025)">D = (eL − eR)/(eL + eR)</text>
+    </g>
+   </g>
+   <g id="line2d_45">
+    <path d="M 293.705444 110.236209 
+L 295.265235 108.317151 
+L 297.214973 106.334248 
+L 299.164712 104.696828 
+L 301.504397 103.069192 
+L 303.844083 101.716669 
+L 306.573717 100.397536 
+L 309.693298 99.144035 
+L 313.202827 97.972321 
+L 317.492251 96.788592 
+L 322.56157 95.639726 
+L 328.410785 94.547644 
+L 335.81979 93.405652 
+L 345.178534 92.209058 
+L 357.656859 90.857167 
+L 402.890786 86.174534 
+L 411.469634 84.965206 
+L 418.488691 83.752785 
+L 423.947959 82.594604 
+L 428.62733 81.37912 
+L 432.526807 80.140563 
+L 435.646388 78.943241 
+L 438.376021 77.690381 
+L 441.105655 76.178189 
+L 443.445341 74.602278 
+L 445.395079 73.022651 
+L 447.344817 71.117422 
+L 448.904608 69.281506 
+L 449.294556 68.768791 
+L 449.294556 68.768791 
+" clip-path="url(#p9368d5f8f3)" style="fill: none; stroke-dasharray: 1.5,2.475; stroke-dashoffset: 0; stroke: #c45e99; stroke-width: 1.5"/>
+   </g>
+   <g id="line2d_46">
+    <path d="M 309.368778 110.535622 
+L 311.860255 108.663973 
+L 314.663168 106.826954 
+L 317.777515 105.048846 
+L 321.203296 103.343138 
+L 325.251947 101.58842 
+L 329.612033 99.940578 
+L 334.906423 98.191832 
+L 340.823682 96.477103 
+L 347.98668 94.638826 
+L 357.018287 92.561335 
+L 371.032848 89.599239 
+L 389.09606 85.749895 
+L 398.127667 83.593033 
+L 404.97923 81.742234 
+L 410.896489 79.917141 
+L 415.879444 78.149656 
+L 420.23953 76.366416 
+L 423.976747 74.603479 
+L 427.402528 72.73765 
+L 430.516875 70.771616 
+L 433.319788 68.717548 
+L 433.631222 68.469378 
+L 433.631222 68.469378 
+" clip-path="url(#p9368d5f8f3)" style="fill: none; stroke: #3a9bd5; stroke-width: 1.5; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_47">
+    <path d="M 325.032111 110.590364 
+L 328.525937 108.258259 
+L 332.485607 105.886824 
+L 336.91112 103.504399 
+L 341.802477 101.124724 
+L 347.625521 98.551061 
+L 354.380251 95.816134 
+L 363.231278 92.487286 
+L 391.647731 81.989925 
+L 398.16954 79.248561 
+L 403.759662 76.662768 
+L 408.651019 74.151878 
+L 412.84361 71.754518 
+L 416.570358 69.378011 
+L 417.967889 68.414636 
+L 417.967889 68.414636 
+" clip-path="url(#p9368d5f8f3)" style="fill: none; stroke-dasharray: 5.55,2.4; stroke-dashoffset: 0; stroke: #c07f00; stroke-width: 1.5"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 277.52 153.88 
+L 277.52 25.125 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 277.52 153.88 
+L 465.48 153.88 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_29">
+    <text style="font-size: 10px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: middle" x="371.5" y="19.125" transform="rotate(-0 371.5 19.125)">(ข) D = tan θ · tan α</text>
+   </g>
+   <g id="legend_2">
+    <g id="line2d_48">
+     <path d="M 283.82 34.157188 
+L 290.82 34.157188 
+L 297.82 34.157188 
+" style="fill: none; stroke-dasharray: 1.5,2.475; stroke-dashoffset: 0; stroke: #c45e99; stroke-width: 1.5"/>
+    </g>
+    <g id="text_30">
+     <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: start" x="303.42" y="36.607188" transform="rotate(-0 303.42 36.607188)">α = 15°  ความชันที่ 0° = 0.0047 /°</text>
+    </g>
+    <g id="line2d_49">
+     <path d="M 283.82 44.449375 
+L 290.82 44.449375 
+L 297.82 44.449375 
+" style="fill: none; stroke: #3a9bd5; stroke-width: 1.5; stroke-linecap: square"/>
+    </g>
+    <g id="text_31">
+     <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: start" x="303.42" y="46.899375" transform="rotate(-0 303.42 46.899375)">α = 30°  ความชันที่ 0° = 0.0101 /°</text>
+    </g>
+    <g id="line2d_50">
+     <path d="M 283.82 54.741563 
+L 290.82 54.741563 
+L 297.82 54.741563 
+" style="fill: none; stroke-dasharray: 5.55,2.4; stroke-dashoffset: 0; stroke: #c07f00; stroke-width: 1.5"/>
+    </g>
+    <g id="text_32">
+     <text style="font-size: 7px; font-family: 'Leelawadee UI', 'Tahoma', 'DejaVu Sans'; text-anchor: start" x="303.42" y="57.191563" transform="rotate(-0 303.42 57.191563)">α = 45°  ความชันที่ 0° = 0.0175 /°</text>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p2d77d2fdd2">
+   <rect x="42.77" y="25.125" width="187.96" height="128.755"/>
+  </clipPath>
+  <clipPath id="p9368d5f8f3">
+   <rect x="277.52" y="25.125" width="187.96" height="128.755"/>
+  </clipPath>
+ </defs>
+</svg>

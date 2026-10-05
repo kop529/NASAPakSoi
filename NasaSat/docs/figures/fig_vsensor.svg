@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 300" width="680" height="300" font-family="'Leelawadee UI', Tahoma, sans-serif" font-size="12">
+  <title>เรขาคณิตของเซนเซอร์แสงแบบตัว V</title>
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b8860b"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="680" height="300" fill="#fafafa"/>
+  <!-- satellite body -->
+  <rect x="250" y="226" width="140" height="44" rx="6" fill="#e9eef5" stroke="#8aa0b8"/>
+  <text x="320" y="253" text-anchor="middle" fill="#445" font-size="11">ตัวดาวเทียม (หมุนรอบแกนตั้ง)</text>
+  <!-- axes: origin O = (320,220); angle from vertical, CCW positive; r = 150 -->
+  <line x1="320" y1="220" x2="320" y2="62" stroke="#333" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <text x="326" y="58" fill="#333">แกนดาวเทียม (θ = 0)</text>
+  <line x1="320" y1="220" x2="245" y2="90.1" stroke="#3A9BD5" stroke-width="1.6"/>
+  <text x="170" y="86" fill="#3A9BD5">แกน LDR ซ้าย (+α)</text>
+  <line x1="320" y1="220" x2="395" y2="90.1" stroke="#C07F00" stroke-width="1.6"/>
+  <text x="400" y="86" fill="#C07F00">แกน LDR ขวา (−α)</text>
+  <!-- LDR tubes (baffles) -->
+  <g transform="rotate(-30 297.5 181)">
+    <rect x="288.5" y="165" width="18" height="32" fill="#222"/>
+    <rect x="291.5" y="165" width="12" height="26" fill="#555"/>
+    <circle cx="297.5" cy="189" r="4" fill="#e0b000"/>
+  </g>
+  <g transform="rotate(30 342.5 181)">
+    <rect x="333.5" y="165" width="18" height="32" fill="#222"/>
+    <rect x="336.5" y="165" width="12" height="26" fill="#555"/>
+    <circle cx="342.5" cy="189" r="4" fill="#e0b000"/>
+  </g>
+  <!-- lamp at theta = +20 deg, r = 175 : (260.1, 55.6) -->
+  <g>
+    <circle cx="262" cy="48" r="13" fill="#f5c542" stroke="#d9a400"/>
+    <g stroke="#d9a400" stroke-width="1.5">
+      <line x1="262" y1="28" x2="262" y2="22"/><line x1="262" y1="68" x2="262" y2="74"/>
+      <line x1="242" y1="48" x2="236" y2="48"/><line x1="282" y1="48" x2="288" y2="48"/>
+      <line x1="248" y1="34" x2="244" y2="30"/><line x1="276" y1="62" x2="280" y2="66"/>
+      <line x1="276" y1="34" x2="280" y2="30"/><line x1="248" y1="62" x2="244" y2="66"/>
+    </g>
+    <text x="206" y="30" fill="#8a6d00">หลอด/ดวงอาทิตย์</text>
+  </g>
+  <line x1="266.8" y1="66.3" x2="316" y2="208" stroke="#b8860b" stroke-width="1.6" marker-end="url(#ar2)"/>
+  <!-- alpha arc r=60 from 0 to 30 -->
+  <path d="M320,160 A60,60 0 0 0 290,168.04" fill="none" stroke="#3A9BD5" stroke-width="1.2"/>
+  <text x="296" y="152" fill="#3A9BD5" font-weight="bold">α</text>
+  <!-- theta arc r=100 from 0 to 20 -->
+  <path d="M320,120 A100,100 0 0 0 285.8,126.03" fill="none" stroke="#b8860b" stroke-width="1.2"/>
+  <text x="300" y="112" fill="#b8860b" font-weight="bold">θ</text>
+  <!-- equations -->
+  <g font-size="12.5" fill="#222">
+    <text x="452" y="140">แสงที่ LDR ซ้ายรับ  e<tspan baseline-shift="sub" font-size="9">L</tspan> = A·cos(θ − α)</text>
+    <text x="452" y="162">แสงที่ LDR ขวารับ  e<tspan baseline-shift="sub" font-size="9">R</tspan> = A·cos(θ + α)</text>
+    <text x="452" y="190" font-weight="bold">D = (e<tspan baseline-shift="sub" font-size="9">L</tspan> − e<tspan baseline-shift="sub" font-size="9">R</tspan>)/(e<tspan baseline-shift="sub" font-size="9">L</tspan> + e<tspan baseline-shift="sub" font-size="9">R</tspan>) = tan θ · tan α</text>
+    <text x="452" y="214" font-weight="bold">θ = atan(D / tan α)</text>
+    <text x="452" y="238" fill="#555" font-size="11">A (ความสว่างหลอด) ตัดกันหายเอง</text>
+  </g>
+  <text x="14" y="288" fill="#555" font-size="11">มองจากด้านบน: θ บวก = แสงมาทางฝั่ง LDR ซ้าย · ในภาพ θ = 20°, α = 30°</text>
+</svg>
