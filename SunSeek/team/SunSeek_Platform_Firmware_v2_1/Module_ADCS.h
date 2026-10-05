@@ -155,8 +155,16 @@ inline void adcsUpdate(){
 
   // IMPORTANT: preserve the verified T04/T05 reaction and momentum laws.
   if(rwGetMode()==RW_MODE_REACTION){
+    float cu=TP.adcsSign*u;
+    // TEAM NasaPakSoi F4: below rw.minStable the wheel does not turn, so the PD stalls short of the target
+    // (|Kp*e| < minStable). With adcs.dzc=1 any command outside the deadband is lifted past the deadzone:
+    // minStart from rest (wheel command 0), minStable while it already turns. Inside the deadband u=0 -> 0.
+    if(TP.adcsDzc&&cu!=0.0f){
+      float lo=(rwGetMotorCommand()==0)?TP.rwMinStart:TP.rwMinStable;
+      cu=(cu>0?1.0f:-1.0f)*(lo+fabsf(cu));
+    }
     int c=(int)roundf(constrain(
-      TP.adcsSign*u,
+      cu,
       -TP.adcsMax,
       TP.adcsMax));
     rwSetReactionCommand(c);

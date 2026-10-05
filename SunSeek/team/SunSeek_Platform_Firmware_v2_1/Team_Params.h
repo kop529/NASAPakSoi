@@ -41,6 +41,8 @@ struct TeamParams {
   // reaction wheel characterization from T01
   float rwMinStart = RW_MIN_START_PERCENT;
   float rwMinStable = RW_MIN_START_PERCENT;
+  // F4: wheel deadzone compensation in REACTION mode (0 = organizer law, 1 = command starts at rw.minStart/minStable)
+  int adcsDzc = 0;
   // team telemetry over USB, 0 = off
   int tmHz = 0;
 };
@@ -87,6 +89,7 @@ static TeamParamDef _tpDefs[] = {
   {"imu.rsign",   TPT_SIGN,   &TP.imuRsign,      0, -1, 1},
   {"rw.minStart", TPT_FLOAT,  &TP.rwMinStart,    0, 0, 100},
   {"rw.minStable",TPT_FLOAT,  &TP.rwMinStable,   0, 0, 100},
+  {"adcs.dzc",    TPT_INT,    &TP.adcsDzc,       0, 0, 1},
   {"team.tm",     TPT_INT,    &TP.tmHz,          0, 0, 20},
 };
 static const int TEAM_PARAM_COUNT = sizeof(_tpDefs) / sizeof(_tpDefs[0]);

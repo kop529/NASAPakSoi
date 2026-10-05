@@ -47,7 +47,7 @@ function Ask([string]$q) {
 function Note([string]$q) { $a = Read-Host "   ? $q"; Log "? $q -> $a"; return $a }
 function Wait-Stop { [void](Send 'STOP' 300); Write-Host '   (รอล้อหยุดสนิท 3 วินาที)'; [void](Listen 3000) }
 
-$R = [ordered]@{}
+$R = New-Object 'System.Collections.Generic.Dictionary[string,string]'  # [ordered] picks the Int32 indexer in PS 5.1
 try {
   # ---------- 0. เริ่ม: บอร์ดตอบไหม, โหมดถูกไหม
   [void](Listen 500)
