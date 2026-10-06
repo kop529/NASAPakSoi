@@ -327,5 +327,25 @@ console.log('closed loop F4 (REACTION, drag 0.15/s, lamp +30 deg, 30 s)');
   check('integral term ends inside the 2 deg deadband, organizer PD does not (stick 0)', res['0/+ ki 0.5'].wob <= 2 && res['0/organizer PD'].wob > 3);
 }
 
+// organizer v3.0 profile momentum (T04): the merged team firmware must still run it
+console.log('v3.0 momentum profile (MOM_PROFILE_*, MOMENTUM AUTO)');
+{
+  const prof = ['MOM_PROFILE_BIAS,40', 'MOM_PROFILE_CW,20,80,300', 'MOM_PROFILE_CCW,-20,0,300', 'MOM_PROFILE_RECOVERY,2,100', 'MOM_PROFILE_TRIGGER,5'];
+  const out = run(['#SET drag 0.15', '#SET rateSign -1', '#SET lamp 20', '#WAIT 300', ...CAL, 'ADCS_STRATEGY,MOMENTUM', 'ADCS_MODE,AUTO',
+    ...prof, 'MOM_PROFILE_STATUS', 'ADCS_MODE,AUTO', ...Array.from({ length: 20 }, () => ['#WAIT 1000', '#STATE']).flat(), 'STOP', '#WAIT 50', '#STATE']);
+  const s = states(out);
+  check('AUTO refused without a profile', !!find(out, /PROFILE_NOT_READY/));
+  check('profile ACKs', prof.every((c) => !!find(out, new RegExp('^ACK,' + c.split(',')[0] + ','))));
+  check('MOM_PROFILE,READY,1', !!find(out, /^TM,MOM_PROFILE,READY,1,BIAS,40/));
+  check('AUTO starts with a profile', all(out, /^ACK,ADCS_MODE,AUTO$/).length === 1);
+  check('maneuvers run (EVT,RW_MANEUVER_COMPLETE)', all(out, /^EVT,RW_MANEUVER_COMPLETE,/).length >= 1);
+  // Not a pointing check: a profile only works once it is characterized on the real rig (T04 workbook). In this
+  // world the AUTO-entry spin-up to the bias kicks the body away, and each assist is undone by the recovery
+  // (cmd 22..38 % pumping) -> the body drifts off the lamp. That is the organizer's strategy, not our code.
+  const end = s[s.length - 2];
+  console.log(`       uncharacterized profile: sun ${end.sun.toFixed(1)} deg after 20 s (info)`);
+  check('STOP -> wheel 0', s[s.length - 1].cmd === 0);
+}
+
 console.log(`\n${passes} passed, ${fails} failed`);
 process.exitCode = fails ? 1 : 0;
