@@ -1,0 +1,33 @@
+/* shared tokens + parts for every inner slide (cover.html / team.html keep their own copy of the same tokens) */
+:root {
+  --bg: #0A0C09; --surface: #141812; --text: #F1F3EE; --muted: #A3AA9C; --line: #2C3328; --lime: #A9B92A;
+  --head: 'Kanit', sans-serif; --body: 'IBM Plex Sans Thai', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #000; height: 100%; }
+body { display: grid; place-items: center; overflow: hidden; }
+.slide { position: relative; width: 1920px; height: 1080px; background: var(--bg); color: var(--text); font-family: var(--body); overflow: hidden; transform-origin: center; }
+.logo { position: absolute; right: 112px; top: 72px; width: 150px; }
+.head { position: absolute; left: 112px; top: 72px; width: 1420px; }
+.eyebrow { font-family: var(--head); font-weight: 500; font-size: 26px; color: var(--lime); }
+h2 { margin-top: 10px; font-family: var(--head); font-weight: 600; font-size: 60px; line-height: 1.15; }
+h2 em { font-style: normal; color: var(--lime); }
+.source { position: absolute; left: 112px; bottom: 44px; font-size: 20px; color: var(--muted); }
+.page { position: absolute; right: 112px; bottom: 44px; font-size: 22px; color: var(--muted); }
+
+/* L06 sentence + chart: chart left, 3-4 short notes right */
+.chart { position: absolute; left: 112px; top: 300px; width: 1200px; }
+.chart img { display: block; width: 100%; }
+.notes { position: absolute; left: 1372px; top: 320px; width: 436px; display: grid; gap: 30px; }
+.notes p { font-size: 26px; line-height: 1.45; padding-left: 20px; border-left: 3px solid var(--line); }
+.notes b { font-family: var(--head); font-weight: 500; color: var(--text); }
+.notes .key { border-left-color: var(--lime); }
+
+/* L07 expected / found strip */
+.vs { position: absolute; left: 112px; top: 268px; width: 1696px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.vs div { padding: 18px 24px; background: var(--surface); font-size: 26px; line-height: 1.4; }
+.vs span { display: block; font-family: var(--head); font-weight: 500; font-size: 22px; color: var(--muted); margin-bottom: 4px; }
+.vs .found { box-shadow: inset 4px 0 0 var(--lime); }
+.vs .found span { color: var(--lime); }
+.has-vs .chart { top: 420px; width: 1160px; }
+.has-vs .notes { top: 440px; }

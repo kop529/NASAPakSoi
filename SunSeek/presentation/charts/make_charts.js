@@ -23,7 +23,7 @@ const load = (f) => {
 const a = load('cdump_20261006_2013.txt');  // kd 1
 const b = load('cdump_20261006_2030.txt');  // kd 2 + HOLD 1.5/3
 
-const W = 1600, ML = 120, MR = 60, MT = 70, MB = 90;
+const W = 1600, ML = 130, MR = 60, MT = 70, MB = 90;
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const ticks = (lo, hi, n) => {
   const step0 = (hi - lo) / n, p = 10 ** Math.floor(Math.log10(step0));
@@ -35,7 +35,7 @@ const ticks = (lo, hi, n) => {
 // panels stacked on one shared x axis (small multiples, one y scale each - never a dual axis)
 function chart({ name, H = 800, x: [x0, x1], xLabel, panels, legend }) {
   const mt = legend ? 110 : MT;  // room for the legend row
-  const gap = 50, ph = (H - mt - MB - gap * (panels.length - 1)) / panels.length;
+  const gap = 90, ph = (H - mt - MB - gap * (panels.length - 1)) / panels.length;
   const X = (v) => ML + (v - x0) / (x1 - x0) * (W - ML - MR);
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="'IBM Plex Sans Thai',sans-serif">`;
   svg += `<rect width="${W}" height="${H}" fill="${C.bg}"/>`;
@@ -43,8 +43,8 @@ function chart({ name, H = 800, x: [x0, x1], xLabel, panels, legend }) {
     let lx = ML;
     for (const [label, color] of legend) {
       svg += `<line x1="${lx}" y1="30" x2="${lx + 36}" y2="30" stroke="${color}" stroke-width="4" stroke-linecap="round"/>`;
-      svg += `<text x="${lx + 48}" y="38" font-size="24" fill="${C.text}">${esc(label)}</text>`;
-      lx += 48 + label.length * 13 + 60;
+      svg += `<text x="${lx + 48}" y="38" font-size="29" fill="${C.text}">${esc(label)}</text>`;
+      lx += 48 + label.length * 16 + 60;
     }
   }
   panels.forEach((p, k) => {
@@ -53,9 +53,9 @@ function chart({ name, H = 800, x: [x0, x1], xLabel, panels, legend }) {
     const Y = (v) => bot - (v - y0) / (y1 - y0) * ph;
     for (const v of ticks(y0, y1, 4)) {
       svg += `<line x1="${ML}" x2="${W - MR}" y1="${Y(v)}" y2="${Y(v)}" stroke="${C.grid}" stroke-width="${v === 0 ? 2 : 1}"/>`;
-      svg += `<text x="${ML - 14}" y="${Y(v) + 8}" font-size="22" fill="${C.muted}" text-anchor="end">${v}</text>`;
+      svg += `<text x="${ML - 14}" y="${Y(v) + 8}" font-size="27" fill="${C.muted}" text-anchor="end">${v}</text>`;
     }
-    svg += `<text x="${ML}" y="${top - 14}" font-size="22" fill="${C.muted}">${esc(p.yLabel)}</text>`;
+    svg += `<text x="${ML}" y="${top - 14}" font-size="27" fill="${C.muted}">${esc(p.yLabel)}</text>`;
     for (const band of p.bands || []) svg += `<rect x="${X(band[0])}" y="${top}" width="${X(band[1]) - X(band[0])}" height="${ph}" fill="${C.text}" opacity="0.05"/>`;
     svg += `<clipPath id="c${name}${k}"><rect x="${ML}" y="${top}" width="${W - ML - MR}" height="${ph}"/></clipPath><g clip-path="url(#c${name}${k})">`;
     for (const s of p.series) {
@@ -64,10 +64,10 @@ function chart({ name, H = 800, x: [x0, x1], xLabel, panels, legend }) {
     }
     for (const m of p.marks || []) svg += `<circle cx="${X(m[0])}" cy="${Y(m[1])}" r="8" fill="${m[2]}" stroke="${C.bg}" stroke-width="2"/>`;
     svg += '</g>';
-    for (const n of p.notes || []) svg += `<text x="${X(n[0])}" y="${Y(n[1])}" font-size="22" fill="${C.text}" text-anchor="${n[3] || 'start'}">${esc(n[2])}</text>`;
+    for (const n of p.notes || []) svg += `<text x="${X(n[0])}" y="${Y(n[1])}" font-size="27" fill="${C.text}" text-anchor="${n[3] || 'start'}">${esc(n[2])}</text>`;
     if (k === panels.length - 1) {
-      for (const v of ticks(x0, x1, 8)) svg += `<text x="${X(v)}" y="${bot + 34}" font-size="22" fill="${C.muted}" text-anchor="middle">${v}</text>`;
-      svg += `<text x="${(ML + W - MR) / 2}" y="${bot + 74}" font-size="22" fill="${C.muted}" text-anchor="middle">${esc(xLabel)}</text>`;
+      for (const v of ticks(x0, x1, 8)) svg += `<text x="${X(v)}" y="${bot + 34}" font-size="27" fill="${C.muted}" text-anchor="middle">${v}</text>`;
+      svg += `<text x="${(ML + W - MR) / 2}" y="${bot + 80}" font-size="27" fill="${C.muted}" text-anchor="middle">${esc(xLabel)}</text>`;
     }
   });
   svg += '</svg>';
