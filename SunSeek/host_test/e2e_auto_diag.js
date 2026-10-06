@@ -25,7 +25,7 @@ module.exports = ({ run, check, find, all, kv, states, CAL }) => {
   console.log('AUTO after 3 turns in MANUAL (15:36 replay, GS on BLE): adcs.wrap + EVT,TEAM_AUTO + TEAM_CSTREAM + recorder');
   {
     const replay = (wrap, tail = []) => {
-      const out = run(['#SET drag 0', '#SET rateSign -1', '#SET lamp -18.4', '#WAIT 300', ...CAL, ...BOARD, `TEAM_SET,adcs.wrap,${wrap}`, '#BLE 1',
+      const out = run(['#SET drag 0', '#SET rateSign -1', '#SET lamp -18.4', '#WAIT 300', ...CAL, ...BOARD, `TEAM_SET,adcs.wrap,${wrap}`, `TEAM_SET,est.wrap,${wrap}`, '#BLE 1',
         '#SET bodyRate 240', '#WAIT 4500', '#SET bodyRate 0', '#SET body 0', ...RIG, '#WAIT 3000',
         'TEAM_CSTREAM,10', 'ADCS_STRATEGY,REACTION', 'ADCS_MODE,AUTO', ...Array.from({ length: 300 }, () => ['#WAIT 100', '#STATE']).flat(), 'STOP', '#WAIT 1000', ...tail]);
       const s = states(out);

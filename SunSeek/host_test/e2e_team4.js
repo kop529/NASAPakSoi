@@ -60,6 +60,18 @@ module.exports = ({ run, check, find, all, kv, states, CAL }) => {
     const long = run(['#SET lamp 0', '#WAIT 300', ...CAL, ...BOARD, 'ADCS_STRATEGY,REACTION', 'ADCS_MODE,AUTO', '#WAIT 1000', '#SET i2cDown 500', '#WAIT 1000', 'STOP', '#WAIT 10']);
     check('a long outage (500 ms) still ends in FAULT', !!find(long, /^EVT,TEAM_ADCS_MISS,FAULT,6$/) && !!find(long, /^EVT,TEAM_AUTO,FAULT/));
   }
+  console.log('team-5: BLE writes are queued and run in loop() (7 Oct: GS PREPARE burst lost ACK,ADCS_PREPARE + EVT,ADCS_READY)');
+  {
+    const out = run(['#SET lamp 0', '#WAIT 300', '#BLE 1', 'TM_STREAM,ADCS,ON', '#WAIT 200', '#BLEW ADCS_STRATEGY,REACTION', '#BLEW ADCS_TUNE,4.000,2.000,40.0',
+      '#BLEW SET_TARGET,0.0', '#BLEW ADCS_PREPARE', '#WAIT 100']);
+    const want = [/^ACK,ADCS_STRATEGY/, /^ACK,ADCS_TUNE/, /^ACK,SET_TARGET/, /^ACK,ADCS_PREPARE$/, /^EVT,ADCS_READY$/];
+    check('GS PREPARE burst over BLE: every reply comes back, in order', want.every((re) => !!find(out, re)) &&
+      want.map((re) => out.findIndex((l) => re.test(l))).every((v, i, a) => !i || v > a[i - 1]));
+    const st = run(['#SET drag 0', '#SET lamp 0', '#WAIT 300', ...CAL, '#SET bodyRate 240', '#WAIT 3500', '#SET bodyRate 0', '#SET body -20', '#WAIT 6000', '#STATE', 'ESTIMATOR_STATUS', '#WAIT 20']);
+    const sun = states(st)[0].sun;
+    const est = +((find(st, /EST_ANGLE,/) || '').match(/EST_ANGLE,(-?[\d.]+)/) || [0, NaN])[1];
+    check('SUN estimate stays in +-180 after 2+ turns by hand (est.wrap 1)', Math.abs(est) <= 180 && Math.abs(est - sun) < 2, `EST_ANGLE ${est} sun ${sun.toFixed(2)}`);
+  }
   console.log('team-4: compass - MAG_CAL_STOP now applies the hard-iron offset (organizer: only reported, #define offsets 0)');
   {
     const at = [0, 90, 180, 270];

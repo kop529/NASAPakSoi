@@ -37,7 +37,7 @@ module.exports = ({ run, check, find, kv, states, CAL }) => {
 
   const trial = (seed, wrap) => {
     const h = history(seed);
-    const out = run(['#SET rateSign -1', '#SET lamp -18.4', '#WAIT 300', ...CAL, ...BOARD, `TEAM_SET,adcs.wrap,${wrap}`, '#BLE 1', 'ADCS_STRATEGY,REACTION',
+    const out = run(['#SET rateSign -1', '#SET lamp -18.4', '#WAIT 300', ...CAL, ...BOARD, `TEAM_SET,adcs.wrap,${wrap}`, `TEAM_SET,est.wrap,${wrap}`, '#BLE 1', 'ADCS_STRATEGY,REACTION',
       ...h.lines, ...RIG, '#STATE', 'ADCS_MODE,AUTO', ...Array.from({ length: 250 }, () => ['#WAIT 100', '#STATE']).flat(), 'STOP', '#WAIT 10']);
     const s = states(out);
     const s0 = s[0];

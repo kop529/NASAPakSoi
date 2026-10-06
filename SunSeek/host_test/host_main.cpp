@@ -197,6 +197,8 @@ int main() {
       if (!ss.fail() && world.set(k, v)) std::cout << "#OK " << k << "\n"; else std::cout << "#BADSET " << line << "\n";
       continue;
     }
+    // #BLEW <line>: a write from the BLE central (the GS) -> the firmware write callback path (team-5 queue)
+    if (line.rfind("#BLEW ", 0) == 0) { const std::string s = line.substr(6) + "\n"; ttcBleRxBytes(s.c_str(), s.size()); continue; }
     if (line == "#STATE") { std::cout << world.state() << "\n"; continue; }
     // a BLE central (the Ground Station) connected: every sendTelemetry() then also notifies and waits delay(3)
     if (line.rfind("#BLE ", 0) == 0) { _ttcConnected = line.substr(5) == "1"; std::cout << "#OK ble\n"; continue; }

@@ -18,7 +18,7 @@
 #include "Config_Sensor.h"
 #include "Team_SunModel.h"
 
-#define TEAM_FW_VERSION "NasaPakSoi-team-4"
+#define TEAM_FW_VERSION "NasaPakSoi-team-5"
 #define TEAM_NVS_NAMESPACE "nps"
 
 struct TeamParams {
@@ -44,6 +44,8 @@ struct TeamParams {
   // F6 (team-4): failed sensor reads in AUTO tolerated in a row before FAULT, keeping the last wheel command (0 = organizer:
   // FAULT at once -> rwStop -> the wheel coasts and gives its stored momentum (16-20 % in hold) to the body)
   int adcsMiss = 5;
+  // team-5: SUN estimate wrapped to +-180 (1) or unbounded like the organizer (0)
+  int estWrap = 1;
   // reaction wheel characterization from T01
   float rwMinStart = RW_MIN_START_PERCENT;
   float rwMinStable = RW_MIN_START_PERCENT;
@@ -131,6 +133,7 @@ static TeamParamDef _tpDefs[] = {
   {"imu.gbz",     TPT_FLOAT,  &TP.imuGbz,        0, -50, 50},
   {"imu.rsign",   TPT_SIGN,   &TP.imuRsign,      0, -1, 1},
   {"adcs.miss",   TPT_INT,    &TP.adcsMiss,      0, 0, 25},
+  {"est.wrap",    TPT_INT,    &TP.estWrap,       0, 0, 1},
   {"mag.ox",      TPT_FLOAT,  &TP.magOx,         0, -20000, 20000},
   {"mag.oy",      TPT_FLOAT,  &TP.magOy,         0, -20000, 20000},
   {"mag.oz",      TPT_FLOAT,  &TP.magOz,         0, -20000, 20000},

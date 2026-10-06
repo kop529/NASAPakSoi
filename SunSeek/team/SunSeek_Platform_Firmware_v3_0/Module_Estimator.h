@@ -44,7 +44,9 @@ static uint16_t _estMaHead = 0;
 inline float estimatorWrap180(float x) { while (x > 180.0f) x -= 360.0f; while (x <= -180.0f) x += 360.0f; return x; }
 inline float estimatorWrap360(float x) { while (x >= 360.0f) x -= 360.0f; while (x < 0.0f) x += 360.0f; return x; }
 inline float estimatorAngleDiff(float target, float current) { return estimatorWrap180(target-current); }
-inline float estimatorNormalize(float x, EstimatorReference ref) { return ref==EST_REF_MAG ? estimatorWrap360(x) : x; }
+// TEAM NasaPakSoi team-5 (est.wrap 1): the SUN estimate stays in +-180 (organizer: unbounded -> whole turns kept, GS showed
+// EST -330.98 / Error +330.98 with the body still at the lamp). est.wrap 0 = organizer behaviour.
+inline float estimatorNormalize(float x, EstimatorReference ref) { return ref==EST_REF_MAG ? estimatorWrap360(x) : (TP.estWrap ? estimatorWrap180(x) : x); }
 
 inline const char* estimatorFilterTypeText() {
   if (_est.filterType==EST_FILTER_MOVING_AVERAGE) return "MOVING_AVERAGE";

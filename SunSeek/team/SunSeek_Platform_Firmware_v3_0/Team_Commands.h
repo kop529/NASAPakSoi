@@ -92,7 +92,7 @@ inline void teamMagCalApply() {
 }
 
 inline bool _teamNeedsManual(const String& key) {
-  return key.startsWith("mag.") || key == "sun.model" || key == "adcs.sign" || key == "imu.rsign" || key == "adcs.wrap" || key == "cam.off";
+  return key.startsWith("mag.") || key == "est.wrap" || key == "sun.model" || key == "adcs.sign" || key == "imu.rsign" || key == "adcs.wrap" || key == "cam.off";
 }
 
 inline String teamTelemetryLine() {
