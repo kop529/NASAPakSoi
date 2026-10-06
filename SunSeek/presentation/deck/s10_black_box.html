@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>NasaPakSoi · กล่องดำ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<section class="slide ">
+  <img class="logo" src="img/tysc_logo_lime.png" alt="Thailand Young Satellite Challenge">
+  <div class="head">
+    <div class="eyebrow">เครื่องมือที่ทีมสร้าง</div>
+    <h2>เราให้ยาน<em>จดกล่องดำเอง</em> แล้วเปิดดูทีหลัง</h2>
+  </div>
+  <pre class="log">TM,TEAM_CR_AUTO,ON,TGT,0.00,EST,45.10,ANG,45.10,
+  LIT,1,ERR,-45.10,KP,4,KD,2,KI,1,…,SYNC,1
+TM,TEAM_CR_HEAD,N,2400,DIV,2,
+  COLS,i;t;tgt;ang;est;err;gz;u;I;K;rw;fl
+TM,TEAM_CR,0,1450216,0.0,45.1,45.1,-45.1,0.0,-181.3,-0.9,0.0,-2,17
+TM,TEAM_CR,1,1450266,0.0,45.2,45.1,-45.1,0.2,-181.8,-0.9,0.0,-27,17
+TM,TEAM_CR,2,1450306,0.0,45.2,45.1,-45.1,0.2,-181.7,-0.9,0.0,-47,17
+⋮
+TM,TEAM_CR,2399,1556608,0.0,-2.5,-4.9,4.9,0.4,33.9,15.3,0.0,34,1
+EVT,TEAM_CDUMP,END,2400</pre>
+  <p class="logcap">ข้อความจริงจากบอร์ด รอบ 20:30 · 25 แถว/วิ · 96 วิ · เก็บใน RAM · ดึงด้วย <b>TEAM_CDUMP</b></p>
+  <table class="found-table">
+    <tr><th>เห็นในกล่องดำ</th><th>นำไปสู่</th></tr>
+    <tr><td>เข้า AUTO แล้วมุมประมาณ = มุมแสง</td><td>ยืนยันว่าแก้บั๊ก 3 รอบได้จริง</td></tr>
+    <tr><td>เตะใกล้เป้าแล้วไถล 3–4.5°</td><td>HOLD + ห้ามเตะใน HOLD</td></tr>
+    <tr><td>มุมประมาณช้ากว่า gyro 3.7°</td><td>ตัวกรอง 10 ค่า → 1 ค่า</td></tr>
+    <tr><td>แถวห่าง 40 ms แต่บางครั้ง 97 ms</td><td>ลูปถูก Serial บล็อก → ใส่บัฟเฟอร์</td></tr>
+    <tr><td>gyro ลอย 0.12 °/วิ ตอนยานนิ่ง</td><td>ตั้งศูนย์ gyro ก่อนทุกภารกิจ</td></tr>
+  </table>
+  <div class="source">log ของ GS มีแค่มุมกับคำสั่งล้อ — ค่าที่ตัวคุม "คิด" อยู่ในกล่องดำเท่านั้น</div>
+  <div class="page">10</div>
+</section>
+<script>
+  const s = document.querySelector('.slide');
+  const fit = () => { s.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; };
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>

@@ -7,7 +7,7 @@ const page = (n, title, cls, body) => `<!doctype html>
 <meta charset="utf-8">
 <title>NasaPakSoi · ${title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="base.css">
 </head>
 <body>
@@ -63,5 +63,44 @@ const slides = [
     <p class="key"><b>แก้:</b> ใกล้เป้าแล้วเลิกเตะ (HOLD, team-3) และห้ามเตะใน HOLD เลย (team-4)</p>
   </div>
   <div class="source">ข้อมูล: กล่องดำ รอบ 20:13 · จุดชมพู = ตอนที่ kick</div>`],
+  [8, 's08_three_turns', 'หมุน 3 รอบ', 'has-vs', `  <div class="head">
+    <div class="eyebrow">สิ่งที่ไม่เป็นไปตามคาด · 6 ต.ค. 15:36</div>
+    <h2>เป้าห่างแค่ 18° แต่ยาน<em>หมุนไปเกือบ 3 รอบ</em>ก่อนเข้าเป้า</h2>
+  </div>
+  <div class="vs">
+    <div><span>คาดไว้</span>เริ่มที่ −18° ล้อหมุนนิดเดียว หันเข้าเป้าในไม่กี่วินาที</div>
+    <div class="found"><span>เจอจริง</span>ล้อถูกสั่ง −40% ค้าง 6 วิ ยานหมุนไปราว 1,000° แล้วค่อยกลับมาเข้าเป้า</div>
+  </div>
+  <figure class="chart" style="width:960px"><img src="../charts/c6_three_turns.png" alt="มุมที่ยานหมุนสะสมจาก log 15:36 ลงไปเกือบ −1080 องศา ขณะคำสั่งล้อค้างที่ −40%"></figure>
+  <div class="notes" style="left:1150px;width:658px">
+    <p><b>เบาะแส:</b> ยานหมุน 200 °/วิ แต่เบรก (kd) ไม่ทำงาน → error ที่ตัวคุมเห็นต้องใหญ่กว่า 18° มาก</p>
+    <p><b>สาเหตุ:</b> มุมประมาณในโค้ดผู้จัดจำทุกรอบที่ยานเคยหมุนตอนเราทดสอบ (เกินไป 3 × 360°)</p>
+    <p class="key"><b>แก้:</b> คิด error ทางสั้น ±180° + ตั้งมุมใหม่ตอนเข้า AUTO (team-3) ยืนยันบนแท่นแล้ว</p>
+  </div>
+  <div class="source">ข้อมูล: log ของ GS 15:36 · GS ประทับเวลาเป็นวินาที ตัวเลขสะสมคลาดได้ ~6%</div>`],
+  [10, 's10_black_box', 'กล่องดำ', '', `  <div class="head">
+    <div class="eyebrow">เครื่องมือที่ทีมสร้าง</div>
+    <h2>เราให้ยาน<em>จดกล่องดำเอง</em> แล้วเปิดดูทีหลัง</h2>
+  </div>
+  <pre class="log">TM,TEAM_CR_AUTO,ON,TGT,0.00,EST,45.10,ANG,45.10,
+  LIT,1,ERR,-45.10,KP,4,KD,2,KI,1,…,SYNC,1
+TM,TEAM_CR_HEAD,N,2400,DIV,2,
+  COLS,i;t;tgt;ang;est;err;gz;u;I;K;rw;fl
+TM,TEAM_CR,0,1450216,0.0,45.1,45.1,-45.1,0.0,-181.3,-0.9,0.0,-2,17
+TM,TEAM_CR,1,1450266,0.0,45.2,45.1,-45.1,0.2,-181.8,-0.9,0.0,-27,17
+TM,TEAM_CR,2,1450306,0.0,45.2,45.1,-45.1,0.2,-181.7,-0.9,0.0,-47,17
+⋮
+TM,TEAM_CR,2399,1556608,0.0,-2.5,-4.9,4.9,0.4,33.9,15.3,0.0,34,1
+EVT,TEAM_CDUMP,END,2400</pre>
+  <p class="logcap">ข้อความจริงจากบอร์ด รอบ 20:30 · 25 แถว/วิ · 96 วิ · เก็บใน RAM · ดึงด้วย <b>TEAM_CDUMP</b></p>
+  <table class="found-table">
+    <tr><th>เห็นในกล่องดำ</th><th>นำไปสู่</th></tr>
+    <tr><td>เข้า AUTO แล้วมุมประมาณ = มุมแสง</td><td>ยืนยันว่าแก้บั๊ก 3 รอบได้จริง</td></tr>
+    <tr><td>เตะใกล้เป้าแล้วไถล 3–4.5°</td><td>HOLD + ห้ามเตะใน HOLD</td></tr>
+    <tr><td>มุมประมาณช้ากว่า gyro 3.7°</td><td>ตัวกรอง 10 ค่า → 1 ค่า</td></tr>
+    <tr><td>แถวห่าง 40 ms แต่บางครั้ง 97 ms</td><td>ลูปถูก Serial บล็อก → ใส่บัฟเฟอร์</td></tr>
+    <tr><td>gyro ลอย 0.12 °/วิ ตอนยานนิ่ง</td><td>ตั้งศูนย์ gyro ก่อนทุกภารกิจ</td></tr>
+  </table>
+  <div class="source">log ของ GS มีแค่มุมกับคำสั่งล้อ — ค่าที่ตัวคุม "คิด" อยู่ในกล่องดำเท่านั้น</div>`],
 ];
 for (const [n, file, title, cls, body] of slides) { fs.writeFileSync(D + file + '.html', page(n, title, cls, body)); console.log(file); }

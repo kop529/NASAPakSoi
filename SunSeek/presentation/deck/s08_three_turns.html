@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>NasaPakSoi · หมุน 3 รอบ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<section class="slide has-vs">
+  <img class="logo" src="img/tysc_logo_lime.png" alt="Thailand Young Satellite Challenge">
+  <div class="head">
+    <div class="eyebrow">สิ่งที่ไม่เป็นไปตามคาด · 6 ต.ค. 15:36</div>
+    <h2>เป้าห่างแค่ 18° แต่ยาน<em>หมุนไปเกือบ 3 รอบ</em>ก่อนเข้าเป้า</h2>
+  </div>
+  <div class="vs">
+    <div><span>คาดไว้</span>เริ่มที่ −18° ล้อหมุนนิดเดียว หันเข้าเป้าในไม่กี่วินาที</div>
+    <div class="found"><span>เจอจริง</span>ล้อถูกสั่ง −40% ค้าง 6 วิ ยานหมุนไปราว 1,000° แล้วค่อยกลับมาเข้าเป้า</div>
+  </div>
+  <figure class="chart" style="width:960px"><img src="../charts/c6_three_turns.png" alt="มุมที่ยานหมุนสะสมจาก log 15:36 ลงไปเกือบ −1080 องศา ขณะคำสั่งล้อค้างที่ −40%"></figure>
+  <div class="notes" style="left:1150px;width:658px">
+    <p><b>เบาะแส:</b> ยานหมุน 200 °/วิ แต่เบรก (kd) ไม่ทำงาน → error ที่ตัวคุมเห็นต้องใหญ่กว่า 18° มาก</p>
+    <p><b>สาเหตุ:</b> มุมประมาณในโค้ดผู้จัดจำทุกรอบที่ยานเคยหมุนตอนเราทดสอบ (เกินไป 3 × 360°)</p>
+    <p class="key"><b>แก้:</b> คิด error ทางสั้น ±180° + ตั้งมุมใหม่ตอนเข้า AUTO (team-3) ยืนยันบนแท่นแล้ว</p>
+  </div>
+  <div class="source">ข้อมูล: log ของ GS 15:36 · GS ประทับเวลาเป็นวินาที ตัวเลขสะสมคลาดได้ ~6%</div>
+  <div class="page">08</div>
+</section>
+<script>
+  const s = document.querySelector('.slide');
+  const fit = () => { s.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; };
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>

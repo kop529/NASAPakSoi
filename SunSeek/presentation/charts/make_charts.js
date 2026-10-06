@@ -133,3 +133,35 @@ chart({ name: 'c1_two_runs', x: [0, 60], xLabel: 'เวลาหลังกด
       notes: [[59, gp[gp.length - 1][1] + 0.6, `gyro ${(gp[gp.length - 1][1] - r[0].ang).toFixed(1)}° ใน ${(e.s - 4).toFixed(0)} วิ`, 'end'], [59, e.ang - 0.9, `แสง ${(e.ang - r[0].ang).toFixed(1)}°`, 'end']] }] });
   console.log(`   c5 gyro change ${(gp[gp.length - 1][1] - r[0].ang).toFixed(2)} sun change ${(e.ang - r[0].ang).toFixed(2)} over ${(e.s - 4).toFixed(1)} s`);
 }
+
+// 6 (slide 8): 15:36 GS log - the body turned ~3 times before AUTO pointed (GS stamps whole seconds -> rows spread evenly)
+{
+  const lines = fs.readFileSync(path.join(LOGS, 'gs_20261006_1536_newww.csv'), 'utf8').split(/\r?\n/).filter(Boolean);
+  const head = lines[0].split(',');
+  const rows = lines.slice(1).map((l) => { const t = l.split(','); const o = {}; head.forEach((k, i) => { o[k] = i ? +t[i] : t[i]; }); return o; });
+  const sec = (r) => { const [h, m, s] = r.timestamp.slice(11).split(':').map(Number); return h * 3600 + m * 60 + s; };
+  const s0 = sec(rows[0]), per = {};
+  rows.forEach((r) => { per[sec(r)] = (per[sec(r)] || 0) + 1; });
+  const seen = {};
+  let turn = 0, rate = 0, t0 = null;
+  const ang = [], cmd = [];
+  rows.forEach((r, i) => {
+    const k = sec(r); seen[k] = (seen[k] || 0) + 1;
+    const t = k - s0 + (seen[k] - 1) / per[k];
+    if (i) {
+      const p = rows[i - 1];
+      // two GYRO_Z sources (gs_log_split.js): GYRO line = raw (body rate = -raw, imu.rsign -1), ADCS line = body rate
+      if (r.gyro_z_dps !== p.gyro_z_dps) rate = (r.gyro_x_dps !== p.gyro_x_dps || r.gyro_y_dps !== p.gyro_y_dps) ? -r.gyro_z_dps : r.gyro_z_dps;
+      turn += rate / per[k];
+    }
+    if (t0 === null && r.rw_cmd !== 0) t0 = t;
+    ang.push([t, turn]); cmd.push([t, r.rw_cmd]);
+  });
+  const sh = (a) => a.map(([t, v]) => [t - t0, v]);
+  const mn = Math.min(...ang.map((x) => x[1]));
+  chart({ name: 'c6_three_turns', H: 900, x: [-2, 30], xLabel: 'เวลาหลังกด AUTO (วินาที) · 6 ต.ค. 15:36 จาก log ของ GS',
+    panels: [{ y: [-1200, 100], yLabel: 'ยานหมุนไปสะสม (องศา) · อินทิเกรตอัตราหมุนจาก gyro', series: [...[-360, -720, -1080].map((v) => ({ pts: [[-2, v], [30, v]], color: '#4A5345', w: 2 })), { pts: sh(ang), color: C.blue }],
+      notes: [[-1.7, -360 - 60, '1 รอบ'], [-1.7, -720 - 60, '2 รอบ'], [-1.7, -1080 - 60, '3 รอบ']] },
+    { y: [-60, 60], yLabel: 'คำสั่งล้อ (%)', series: [{ pts: sh(cmd), color: C.pink }] }] });
+  console.log(`   c6 AUTO at ${t0.toFixed(1)} s after log start, min turned ${mn.toFixed(0)} deg, rows ${rows.length}`);
+}

@@ -31,3 +31,13 @@ h2 em { font-style: normal; color: var(--lime); }
 .vs .found span { color: var(--lime); }
 .has-vs .chart { top: 420px; width: 1160px; }
 .has-vs .notes { top: 440px; }
+
+/* L11 real board lines + findings table */
+.log { position: absolute; left: 112px; top: 270px; width: 900px; padding: 28px 32px; background: var(--surface); border-left: 4px solid var(--lime);
+       font-family: 'IBM Plex Mono', monospace; font-size: 19px; line-height: 1.6; color: var(--text); white-space: pre; overflow: hidden; }
+.logcap { position: absolute; left: 112px; top: 652px; width: 900px; font-size: 22px; color: var(--muted); }
+.logcap b { color: var(--text); font-weight: 500; }
+.found-table { position: absolute; left: 1080px; top: 270px; width: 728px; border-collapse: collapse; font-size: 25px; }
+.found-table th { text-align: left; font-family: var(--head); font-weight: 500; font-size: 22px; color: var(--muted); padding: 0 0 14px; }
+.found-table td { padding: 16px 16px 16px 0; border-top: 1px solid var(--line); vertical-align: top; line-height: 1.35; }
+.found-table td:last-child { color: var(--lime); padding-right: 0; }
