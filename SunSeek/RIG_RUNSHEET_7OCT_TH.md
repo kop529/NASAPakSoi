@@ -1,0 +1,58 @@
+# ใบทดสอบบนแท่น คืน 7 ต.ค. (freeze 22:00) — team-4
+
+เขียนไว้ก่อนต่อบอร์ด (7 ต.ค. กลางวัน) ทำทีละขั้น ถ้าขั้นไหนไม่เป็นตาม "ต้องเห็น" → หยุด แล้วส่ง log ให้ Claude
+ทุกรอบ AUTO: จบแล้ว **STOP → TEAM_CDUMP ก่อนเข้า AUTO รอบใหม่** (กล่องดำเก็บแค่รอบล่าสุด, ปิดเครื่องหาย)
+
+## 0. ก่อนอัป (บอร์ดยังเป็น team-3)
+| สั่ง | ต้องเห็น | ทำไม |
+|---|---|---|
+| เสียบ USB, `TEAM_INFO` | `NasaPakSoi-team-3`, `UNSAVED,0` | ค่าที่เซฟไว้ (kd 2, lock 1.5/3, max 60) อยู่ใน flash ไม่หายตอนอัป |
+| (ถ้าอยากเทียบ) `ESTIMATOR_MA_WINDOW,10` แล้ว step ±45° 1–2 รอบ + `TEAM_CDUMP` | — | ไว้เทียบกับ MA 1 หลังอัป |
+
+## 1. อัป team-4 (พิมพ์ "อัปได้" ให้ Claude)
+| สั่ง | ต้องเห็น |
+|---|---|
+| `TEAM_INFO` | `NasaPakSoi-team-4`, `UNSAVED,0`, kd 2 ยังอยู่ (`TEAM_GET,adcs.kd` → 2) |
+| `ESTIMATOR_STATUS` | `EST_MA_WINDOW,1`, `EST_FUSION,ON` |
+
+## 2. โปรไฟล์ใน GS (ทำครั้งเดียว ไม่ต้องใช้แท่น)
+GS กด PREPARE จะส่งโปรไฟล์ estimator ทับทุกครั้ง — ถ้าโปรไฟล์ไม่ระบุ MA จะได้ **10** (แกะจาก GS: `ma_window` ค่าเริ่ม 10, ช่วง 1–500) และเครื่องนี้ยังไม่มีไฟล์โปรไฟล์เซฟไว้
+1. แท็บ Engineering → estimator: Filter ON, Moving average, **window 1**, Fusion ON, gyro weight 0.98 → SAVE AS ชื่อ `NasaPakSoi`
+2. แท็บ Operation → เลือกโปรไฟล์ `NasaPakSoi`; ช่อง kp **4**, kd **2**
+3. กด PREPARE แล้วส่ง `ESTIMATOR_STATUS` → ต้องเห็น `EST_MA_WINDOW,1` และ `EST_FUSION,ON` (ถ้าไม่ใช่ → GS ใช้ค่าอื่น จดไว้)
+4. กด RUN → ดูบรรทัด `EVT,TEAM_AUTO,ON` ต้องมี `KP,4` `KD,2` `MAX,60`
+
+## 3. step ±45° (MA 1 + kick ใน HOLD ถูกปิด)
+`TEAM_GYRO_ZERO` (ยานนิ่ง 2 วิ) → หันยานไป +45° → `ADCS_STRATEGY,REACTION` `ADCS_REFERENCE,SUN` `SET_TARGET,0` `ADCS_MODE,AUTO` → รอ 30 วิ → `STOP` → `TEAM_CDUMP` ; ทำซ้ำที่ −45° (รวม 3 รอบต่อข้าง ถ้ามีเวลา)
+| ดู | ต้องเห็น | เทียบ |
+|---|---|---|
+| เลยเป้า | ≤ 1–2° | team-3 kd 2: 0.3° ไม่เลย (รอบ 20:30) |
+| ระยะห่างแถวในกล่องดำ | p95 ใกล้ 40–45 ms | team-3: p95 60–69, สูงสุด 97 |
+| ใน HOLD | ไม่มี `EVT,TEAM_KICK` | 20:13: kick แล้วไถล 3–4.5° |
+
+## 4. ผลักด้วยมือ (ระหว่าง AUTO ข้อ 3)
+| ทำ | ต้องเห็น |
+|---|---|
+| ผลักเบา ~2° แล้วปล่อย | ไม่มี `EVT,TEAM_KICK`; ยานค่อย ๆ กลับ หรือค้างไม่เกิน 3° |
+| ผลัก ~5° | `EVT,TEAM_HOLD,OFF` → (kick ได้) → กลับเข้าเป้า → `HOLD,ON` |
+
+## 5. STOP 20 รอบ (กันล้อหมุนต่อหลัง STOP)
+`TEAM_CSTREAM,5` → ทำ 20 รอบ: GS RUN (หรือ `ADCS_MODE,AUTO`) รอ 2–3 วิ → STOP → ดู RW ใน `TM,TEAM_C`
+- ต้องเห็น: RW = 0 ภายใน 1 วิ **ทุกรอบ**; ถ้ามีรอบที่ล้อยังหมุน → จดเวลา + ส่ง log
+- จบแล้ว `TEAM_CSTREAM,0`
+
+## 6. หลอดอยู่นอกระยะเซนเซอร์ (ค้นหาหลอด)
+1. `TEAM_SUN` ตอนหลอดอยู่ **ด้านหน้า / ขอบ ~55° / ข้างหลัง** → จดค่า S ทั้ง 3
+2. `TEAM_SET,sun.minS,<ระหว่าง S ข้างหลัง กับ S ขอบ>` ; `TEAM_SET,adcs.srate,20`
+3. วางหลอดที่ 90° แล้ว AUTO → ต้องเห็น `EVT,TEAM_SUN_SEARCH,START` → `FOUND` → `EVT,TEAM_HOLD,ON` ; ทำซ้ำที่ 180°
+4. ถ้าไม่ดี: `TEAM_SET,adcs.srate,0` (กลับแบบเดิม)
+
+## 7. มุมกล้องจริง (สำหรับ cam.off ภารกิจ 2)
+1. เซนเซอร์ชี้หลอด (มุม SUN ≈ 0) → อ่านมุม gyro เก็บไว้
+2. เปิด Live View, หมุนยานด้วยมือจนหลอดอยู่บนเส้น BORESIGHT → อ่านมุม gyro อีกครั้ง
+3. ผลต่าง = มุมกล้อง (อาจไม่ใช่ 90 พอดี) จดทั้งเครื่องหมายและค่า — ยังไม่ต้องตั้ง cam.off จนกว่ารู้กติกาว่ามุมเป้าวัดจากอะไร
+
+## 8. ปิดท้าย
+- ค่าที่ดีแล้ว: `TEAM_SAVE` (**ต้องอยู่ MANUAL** — team-4 ปฏิเสธใน AUTO) → `ACK,TEAM_SAVE,<n>` → `TEAM_INFO` `UNSAVED,0`
+- เก็บ log: CDUMP ทุกรอบ → `SunSeek/setup_logs/cdump_20261007_<เวลา>.txt`
+- ห้ามลืม: `STOP`/`RW_STOP` ก่อนจับยานทุกครั้ง (`ADCS_MODE,MANUAL` อย่างเดียวล้อยังค้างคำสั่ง)
