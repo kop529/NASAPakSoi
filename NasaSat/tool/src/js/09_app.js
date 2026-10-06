@@ -541,6 +541,80 @@
     } finally { await ssStreamOff(); }
   }
 
+  // ---- calibration sweep with the gyro as the ruler (no angle marks, USB): point at the lamp, hold still, turn by hand, hold still.
+  // NS.ss.gyroSweep turns the TM,TEAM_T rows into the same points a mark sweep gives; the fit and the verdict box are the usual ones.
+  const gy = { on: false, phase: '', t0: 0, timer: null, rows: 0 };
+  const gyScale = () => { const v = +$('#gyScale').value; return v > 0.5 && v < 2 ? v : 1; };
+  const gyButtons = () => { $('#gyStart').disabled = gy.on; $('#gyFinish').disabled = !gy.on || gy.phase === 'still1'; };
+  async function gyCancel(why) {
+    if (!gy.on) return;
+    gy.on = false; gy.phase = '';
+    clearInterval(gy.timer);
+    gyButtons();
+    NS.kv($('#gyStatus'), { 'ผล': why || 'ยกเลิก' });
+    try { await ssStreamOff(); } catch (_) { /* link gone */ }
+  }
+  function gyTick() {
+    const rows = S.ss.rec || [];
+    const sec = (performance.now() - gy.t0) / 1000;
+    if (sec > 90) { gyFinish(); return; } // a recording must end: 90 s is already a very slow sweep
+    if (gy.phase === 'still0' && sec > 1.6) gy.phase = 'sweep';
+    if (sec > 3.5 && !rows.length) { gyCancel('ไม่ได้รับ TM,TEAM_T เลย: ต้องต่อ USB และใช้เฟิร์มแวร์ทีม (TEAM_STREAM ส่งทาง USB เท่านั้น)'); return; }
+    const lv = NS.ss.gyroSweep(rows, { live: true, scale: gyScale() });
+    const T = { still0: 'นิ่ง ๆ ก่อน อย่าขยับ 1.5 วินาที (วัด bias ของ gyro)', sweep: 'หมุนช้า ๆ ผ่านหลอดไปทั้งสองข้างประมาณ ±70° แล้วกด "จบ"', still1: 'วางนิ่ง 1.5 วินาที…' };
+    const o = { 'ตอนนี้': T[gy.phase] || '', 'บันทึก': `${rows.length} บรรทัด · ${sec.toFixed(0)} s` };
+    if (!lv.error && lv.info) Object.assign(o, { 'มุมอ้างอิงจาก gyro': `${NS.fmt(lv.info.endAng, 1)}° (กวาดแล้ว ${NS.fmt(lv.info.lo, 0)}° ถึง ${NS.fmt(lv.info.hi, 0)}°)`, 'ความเร็วหมุนสูงสุด': `${NS.fmt(lv.info.maxRate, 0)}°/s ${lv.info.maxRate > 25 ? '(ช้าลงหน่อย)' : ''}` });
+    NS.kv($('#gyStatus'), o);
+  }
+  async function gyStart() {
+    if (!isSs() || !S.tr || !S.connected) { NS.toast('ต้องเชื่อมต่อในโหมด SunSeek ก่อน', 'warn'); return; }
+    if (S.tr.kind === 'ble') { NS.toast('วิธีนี้ต้องต่อ USB: TEAM_STREAM ส่งทาง USB เท่านั้น (บลูทูธรับ TM,TEAM_T ไม่ได้)', 'bad', 8000); return; }
+    if (gy.on) return;
+    try {
+      await ssSendAll(['STOP']); // MANUAL and the wheel stopped: the only turning is the hand's
+      S.ss.rec = [];
+      await ssSendAll(['TEAM_STREAM,20']);
+    } catch (e) { NS.toast(e.message, 'bad', 8000); await ssStreamOff().catch(() => {}); return; }
+    gy.on = true; gy.phase = 'still0'; gy.t0 = performance.now();
+    gyButtons();
+    clearInterval(gy.timer);
+    gy.timer = setInterval(gyTick, 250);
+    gyTick();
+  }
+  async function gyFinish() {
+    if (!gy.on || gy.phase === 'still1') return;
+    gy.phase = 'still1'; gyButtons();
+    await NS.sleep(1700);
+    if (!gy.on) return; // cancelled meanwhile
+    clearInterval(gy.timer);
+    const rows = S.ss.rec || [];
+    gy.on = false; gy.phase = ''; gyButtons();
+    await ssStreamOff().catch(() => {});
+    const r = NS.ss.gyroSweep(rows, { scale: gyScale() });
+    if (r.error) { NS.kv($('#gyStatus'), { 'ไม่สำเร็จ': r.error, ...(r.warnings && r.warnings.length ? { 'คำเตือน': r.warnings.join(' · ') } : {}) }); NS.toast(r.error, 'bad', 8000); return; }
+    const had = S.cal.pts.length;
+    S.cal.pts = r.pts.map((p) => ({ ...mkPt(p.ang, p.mvL, p.mvR), ...(p.sat ? { sat: true } : {}) }));
+    S.cal.angSign = 1; S.cal.manualIdx = 0;
+    renderSweep();
+    const i = r.info;
+    NS.kv($('#gyStatus'), {
+      'จุดที่ได้': `${r.pts.length} จุด (ทุก 1°) จาก ${i.n} บรรทัด ${NS.fmt(i.dur, 0)} วินาที${had ? ` · แทนที่จุดเดิม ${had} จุด` : ''}`,
+      'มุมที่กวาด': `${NS.fmt(i.lo, 1)}° ถึง ${NS.fmt(i.hi, 1)}° (กว้าง ${NS.fmt(i.span, 0)}°) · จบที่ ${NS.fmt(i.endAng, 1)}°`,
+      'ความเร็วหมุน': `สูงสุด ${NS.fmt(i.maxRate, 0)}°/s · ปกติ ${NS.fmt(i.rateMed, 0)}°/s`,
+      'bias ของ gyro ต้น / ท้าย': `${NS.fmt(i.b0, 3)} / ${NS.fmt(i.b1, 3)} °/s`,
+      'gyro กับเซนเซอร์แสง': `สหสัมพันธ์ ${NS.fmt(i.corr, 2)} (ควรใกล้ +1)`,
+      ...(r.warnings.length ? { 'คำเตือน': r.warnings.join(' · ') } : {}),
+    });
+    addEvidence('gyro_sweep', `sweep ด้วย gyro: ${r.pts.length} จุด กวาด ${NS.fmt(i.lo, 0)}°..${NS.fmt(i.hi, 0)}° สูงสุด ${NS.fmt(i.maxRate, 0)}°/s bias ${NS.fmt(i.b0, 3)}→${NS.fmt(i.b1, 3)}`, { info: i, warnings: r.warnings });
+    runFit(); // the usual Fit: its verdict box is shown here too
+    const v = $('#fitVerdict');
+    const box = $('#gyVerdict');
+    box.className = v.className;
+    box.replaceChildren(...[...v.childNodes].map((n) => n.cloneNode(true)));
+  }
+  NS.bus.on('stop', () => gyCancel('หยุดโดย STOP: ไม่ได้ใช้ข้อมูลรอบนี้'));
+  NS.bus.on('link', (st) => { if (st !== 'open') gyCancel('การเชื่อมต่อหลุดระหว่างบันทึก'); });
+
   async function ssHandshake() { // our HELLO / CFG LIST do not exist there; PING and STATUS only read (their lines fill the status card)
     await S.ss.client.send('PING');
     await S.ss.client.send('STATUS');
@@ -1826,6 +1900,9 @@
         markStep(8);
       } catch (e) { NS.toast(e.message, 'bad'); }
     });
+    // sweep with the gyro as the ruler
+    $('#gyStart').addEventListener('click', gyStart);
+    $('#gyFinish').addEventListener('click', gyFinish);
     // sign checks (W3)
     $('#sgRead').addEventListener('click', () => signRead().catch(() => {}));
     $('#sgGyro').addEventListener('click', signGyro);

@@ -322,6 +322,100 @@ NS.ss.kickSign = (rows, tKick, cmdSign = 1) => {
   return { delta, rate, verdict: Math.sign(delta) * cmdSign };
 };
 
+// ---- calibration sweep by gyro (no angle marks): the satellite is pointed at the lamp, held still, turned slowly by hand over
+// +-70 deg and held still again. TM,TEAM_T rows {T ms, MVL, MVR, GZ, SAT, LIT, ANG}; GZ = body rate in deg/s, sign-corrected so that
+// d(SUN_ANGLE)/dt = +GZ. The reference angle of the fit ("ang": how far the satellite body was turned; the lamp at theta = phi - ang)
+// is therefore ang = -scale * integral(GZ - bias) dt, 0 at the start (the lamp). The gyro bias is read while the satellite is still
+// (first and last stillMs) and interpolated between the two, so a slow drift does not turn into degrees over a 30 s sweep.
+// returns { pts: [{ang, mvL, mvR, n, sat?}] (bins of `bin` deg, same shape the mark sweep gives), info, warnings } or { error }.
+// o: { stillMs 1500, scale 1, bin 1, maxStillSd 0.6, live (no end-still window needed, no point list, for the readout while recording) }
+NS.ss.gyroSweep = (rowsIn, o = {}) => {
+  const fin = Number.isFinite;
+  const stillMs = o.stillMs > 0 ? o.stillMs : 1500;
+  const scale = o.scale > 0 ? o.scale : 1;
+  const bin = o.bin > 0 ? o.bin : 1;
+  const maxSd = o.maxStillSd > 0 ? o.maxStillSd : 0.6;
+  const rows = (rowsIn || []).filter((r) => r && fin(r.T) && fin(r.GZ) && fin(r.MVL) && fin(r.MVR)).sort((a, b) => a.T - b.T).filter((r, i, a) => i === 0 || r.T > a[i - 1].T);
+  const warnings = [];
+  if (rows.length < 10) return { error: `ข้อมูล TM,TEAM_T น้อยเกินไป (${rows.length} บรรทัด): ต้องใช้ USB และเฟิร์มแวร์ทีม (TEAM_STREAM)` };
+  const T0 = rows[0].T;
+  const T1 = rows[rows.length - 1].T;
+  const win = (a, b) => rows.filter((r) => r.T >= a && r.T <= b);
+  // the bias is read from the first and last 80 % of the still time (a hand needs a moment to start / stop) and a few samples that
+  // are not still (rate more than 1 deg/s from the median) are left out of it
+  const sw = 0.8 * stillMs;
+  const w0 = win(T0, T0 + sw);
+  const w1 = o.live ? [] : win(T1 - sw, T1);
+  const still = (w) => {
+    if (!w.length) return { n: 0, mean: NaN, sd: NaN, t: NaN };
+    const med = NS.median(w.map((r) => r.GZ));
+    const k = w.filter((r) => Math.abs(r.GZ - med) <= 1);
+    const g = k.map((r) => r.GZ);
+    return { n: k.length >= 0.75 * w.length ? k.length : 0, mean: NS.mean(g), sd: g.length > 1 ? NS.std(g) : NaN, t: (k[0].T + k[k.length - 1].T) / 2 };
+  };
+  const s0 = still(w0);
+  const s1 = still(w1);
+  const ok0 = s0.n >= 5 && s0.sd <= maxSd && T1 - T0 > stillMs;
+  const ok1 = !o.live && s1.n >= 5 && s1.sd <= maxSd && T1 - T0 > 2 * stillMs;
+  if (!o.live && (T1 - T0) < 2 * stillMs + 3000) return { error: 'บันทึกสั้นเกินไป: ต้องนิ่งตอนเริ่ม 1.5 วินาที หมุน แล้วนิ่งตอนจบ 1.5 วินาที (รวมอย่างน้อย 6 วินาที)' };
+  if (!o.live) {
+    if (!ok0) warnings.push(`ช่วงนิ่งตอนเริ่มไม่นิ่งจริง (SD ${NS.fmt(s0.sd, 2)}°/s): อ่าน bias ของ gyro ไม่ได้ ใช้ imu.gbz ของบอร์ดอย่างเดียว มุมอาจเลื่อนตามเวลา`);
+    if (!ok1) warnings.push(`ช่วงนิ่งตอนจบไม่นิ่งจริง (SD ${NS.fmt(s1.sd, 2)}°/s): ใช้ bias ตอนเริ่มค่าเดียวตลอดการหมุน`);
+    if (ok0 && ok1 && Math.abs(s1.mean - s0.mean) > 0.8) warnings.push(`bias ของ gyro ต่างกัน ${NS.fmt(s1.mean - s0.mean, 2)}°/s ระหว่างต้นกับท้าย: gyro ยังไม่อุ่นหรือโดนสั่น (TEAM_GYRO_ZERO ก่อนเริ่มช่วยได้)`);
+  }
+  const bias = (T) => {
+    if (ok0 && ok1) return s0.mean + ((s1.mean - s0.mean) * (T - s0.t)) / (s1.t - s0.t);
+    return ok0 ? s0.mean : ok1 ? s1.mean : 0;
+  };
+  const th = [0];
+  let gaps = 0;
+  let maxRate = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const dt = (rows[i].T - rows[i - 1].T) / 1000;
+    if (dt > 0.5) gaps++;
+    const g0 = rows[i - 1].GZ - bias(rows[i - 1].T);
+    const g1 = rows[i].GZ - bias(rows[i].T);
+    th.push(th[i - 1] + 0.5 * (g0 + g1) * dt);
+    maxRate = Math.max(maxRate, Math.abs(g1));
+  }
+  const ang = th.map((v) => -scale * v);
+  const lo = Math.min(...ang);
+  const hi = Math.max(...ang);
+  // does the gyro angle follow the sun-sensor angle? (a wrong imu.rsign turns it the other way round)
+  const pairs = rows.map((r, i) => [th[i], r.ANG, r]).filter(([, a, r]) => fin(a) && r.LIT !== 0 && r.SAT !== 1 && Math.abs(a) < 80);
+  let corr = NaN;
+  if (pairs.length > 20) {
+    const mx = NS.mean(pairs.map((p) => p[0]));
+    const my = NS.mean(pairs.map((p) => p[1]));
+    const sxy = NS.sum(pairs.map((p) => (p[0] - mx) * (p[1] - my)));
+    const sxx = NS.sum(pairs.map((p) => (p[0] - mx) ** 2));
+    const syy = NS.sum(pairs.map((p) => (p[1] - my) ** 2));
+    corr = sxx > 0 && syy > 0 ? sxy / Math.sqrt(sxx * syy) : NaN;
+  }
+  const info = { n: rows.length, dur: (T1 - T0) / 1000, lo, hi, span: hi - lo, endAng: ang[ang.length - 1], maxRate, b0: ok0 ? s0.mean : NaN, b1: ok1 ? s1.mean : NaN, sd0: s0.sd, sd1: s1.sd, gaps, corr, scale, hz: rows.length / Math.max(0.001, (T1 - T0) / 1000) };
+  if (o.live) return { info, warnings, pts: [] };
+  if (gaps) warnings.push(`ข้อมูลขาดหาย ${gaps} ช่วง (เกิน 0.5 วินาที): มุมที่ integrate ได้อาจคลาด ตรวจสาย USB แล้วทำใหม่`);
+  if (info.span < 100) warnings.push(`หมุนได้กว้างแค่ ${NS.fmt(info.span, 0)}° (${NS.fmt(lo, 0)}° ถึง ${NS.fmt(hi, 0)}°): หมุนให้ได้ประมาณ ±70° รอบหลอดเพื่อให้ Fit ได้ช่วงที่แม่น`);
+  else if (lo > -30 || hi < 30) warnings.push(`หมุนไปข้างเดียวของหลอด (${NS.fmt(lo, 0)}° ถึง ${NS.fmt(hi, 0)}°): ควรผ่านหลอดไปทั้งสองข้าง`);
+  const rateMed = NS.median(rows.map((r, i) => (i ? Math.abs((th[i] - th[i - 1]) / Math.max(1e-3, (r.T - rows[i - 1].T) / 1000)) : 0)).filter((v) => v > 2));
+  info.rateMed = rateMed;
+  if (maxRate > 40) warnings.push(`หมุนเร็วถึง ${NS.fmt(maxRate, 0)}°/s: ตัวต้านทานแสง (LDR) ตามไม่ทัน ทำให้มุมเอียง หมุนช้า ๆ ไม่เกินราว 15°/s`);
+  else if (fin(rateMed) && rateMed > 25) warnings.push(`หมุนค่อนข้างเร็ว (ปกติ ${NS.fmt(rateMed, 0)}°/s): ช้าลงเพื่อให้ LDR ตามทัน (ราว 15°/s หรือต่ำกว่า)`);
+  if (fin(corr) && corr < 0.5) warnings.push(corr < -0.5 ? `มุมจาก gyro ตรงข้ามกับมุมของเซนเซอร์แสง (สหสัมพันธ์ ${NS.fmt(corr, 2)}): imu.rsign น่าจะผิดทิศ ทำ "ตรวจทิศ" ข้อ 1 ก่อน` : `มุมจาก gyro แทบไม่สัมพันธ์กับมุมของเซนเซอร์แสง (สหสัมพันธ์ ${NS.fmt(corr, 2)}): ตรวจว่าหันเข้าหาหลอดตลอดและ gyro ทำงาน`);
+  const bins = new Map();
+  rows.forEach((r, i) => {
+    const k = Math.round(ang[i] / bin);
+    let b = bins.get(k);
+    if (!b) { b = { a: 0, l: 0, r: 0, n: 0, sat: false }; bins.set(k, b); }
+    b.a += ang[i]; b.l += r.MVL; b.r += r.MVR; b.n++;
+    if (r.SAT === 1) b.sat = true;
+  });
+  const pts = [...bins.values()].map((b) => ({ ang: +(b.a / b.n).toFixed(3), mvL: +(b.l / b.n).toFixed(2), mvR: +(b.r / b.n).toFixed(2), n: b.n, ...(b.sat ? { sat: true } : {}) })).sort((a, b) => a.ang - b.ang);
+  info.nBins = pts.length;
+  if (pts.length < 6) return { error: `ได้แค่ ${pts.length} จุดที่มุมต่างกัน: หมุนให้กว้างขึ้น`, info, warnings };
+  return { pts, info, warnings };
+};
+
 // Short Thai fix for an ERR code of the organizer firmware (single codes, so "ERR ADCS_PREPARE GYRO_NOT_READY" works too).
 // Takes a text that contains the code (an ERR line, a toast); '' when it knows nothing.
 NS.ss.errHelp = (() => {

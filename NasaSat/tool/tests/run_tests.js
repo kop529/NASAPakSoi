@@ -1217,6 +1217,78 @@ console.log('simulator end-to-end (virtual firmware + physics)');
     const mm = rm.length ? A.gsMetrics(rm[0], { tgt: 0 }) : null;
     check('GS excerpt of the earlier log (15:32, wheel driven but the angle stuck near -19.5°): one run, never inside ±2°, not wrong-way, small gyro', rm.length === 1 && mm.tEnter === null && mm.tSettle === null && mm.wrong === false && mm.maxGZ < 10 && mm.ssMean > 15, JSON.stringify(mm && { e: mm.tEnter, w: mm.wrong, g: mm.maxGZ, s: mm.ssMean }));
   }
+  // ---- calibration sweep by gyro, no angle marks (NS.ss.gyroSweep) ----
+  console.log('calibration by hand-turned gyro sweep (no marks)');
+  {
+    // the satellite starts at the lamp, is held 1.5 s, turned by hand 0 -> +70 -> -70 -> 0 at 10 deg/s, held 2 s. TM,TEAM_T at 20 Hz:
+    // GZ = d(theta)/dt + gyro bias (+ noise), theta = lamp angle seen from the satellite = what the sun sensor measures
+    const thetaAt = (t) => { // seconds
+      if (t < 1.5) return 0;
+      const u = (t - 1.5) * 10;
+      if (u < 70) return u;
+      if (u < 210) return 70 - (u - 70);
+      if (u < 280) return -70 + (u - 210);
+      return 0;
+    };
+    const mkRows = (o = {}) => {
+      const out = [];
+      const dur = 1.5 + 28 + 2;
+      const hz = o.hz || 20;
+      for (let i = 0; i <= dur * hz; i++) {
+        const t = i / hz;
+        const th = thetaAt(t);
+        const rate = (thetaAt(t + 0.01) - thetaAt(t - 0.01)) / 0.02;
+        const bias = (o.b0 ?? 0.15) + ((o.b1 ?? 0.25) - (o.b0 ?? 0.15)) * (t / dur);
+        const s = sample(th, 1, 0.03, 2);
+        out.push({ T: Math.round(t * 1000), MVL: s.mvL, MVR: s.mvR, GZ: (o.gsign ?? 1) * rate + bias + 0.1 * gauss(), SAT: 0, LIT: 1, ANG: 0.3 * th, SEQ: i });
+      }
+      return out;
+    };
+    const rows = mkRows();
+    const g = NS.ss.gyroSweep(rows);
+    check('gyroSweep: gives points, no error, ~25 s sweep of 140° at ~10°/s, bins of 1°', !g.error && g.pts.length > 120 && g.pts.length < 160 && g.info.span > 135 && g.info.span < 145 && Math.abs(g.info.maxRate - 10) < 3, `${g.error || ''} n=${g.pts && g.pts.length} span ${g.info && g.info.span}`);
+    check('gyroSweep: gyro bias read while still (0.15 at the start, 0.25 at the end) and interpolated', Math.abs(g.info.b0 - 0.15) < 0.12 && Math.abs(g.info.b1 - 0.25) < 0.12 && g.info.sd0 < 0.4 && g.warnings.length === 0, g.warnings.join(' | '));
+    // the reference angle against the truth: the body was turned -theta, i.e. from -70 to +70 and back to 0
+    check('gyroSweep: reference angle reaches -70 and +70 within 1.2° and comes back to 0 within 1° (bias drift removed; gyro noise integrates to ~0.1°, bias estimate to ~0.4°)', Math.abs(g.info.lo + 70) < 1.2 && Math.abs(g.info.hi - 70) < 1.2 && Math.abs(g.info.endAng) < 1, `lo ${g.info.lo.toFixed(2)} hi ${g.info.hi.toFixed(2)} end ${g.info.endAng.toFixed(2)}`);
+    const noBias = NS.ss.gyroSweep(rows, { maxStillSd: 1e-9 });
+    check('gyroSweep: without the still windows the 0.2 dps drift would put the end ~5° off (so the correction is needed)', !noBias.error && Math.abs(noBias.info.endAng) > 3 && Math.abs(g.info.endAng) < 1, `with ${g.info.endAng.toFixed(2)} without ${noBias.info.endAng.toFixed(2)}`);
+    check('gyroSweep: the gyro angle follows the sun-sensor angle (correlation near +1)', g.info.corr > 0.95);
+
+    // through the usual fit: same points -> NS.fit.calibrate (positiveAlpha, as the SunSeek flow does) -> pass / fail inputs
+    const toPts = (list) => list.map((p) => ({ ang: p.ang, mvL: p.mvL, mvR: p.mvR, GL: NS.est.toG(p.mvL, 3300, 0), GR: NS.est.toG(p.mvR, 3300, 0), ...(p.sat ? { sat: true } : {}) }));
+    const amb0 = sample(0, 0, 0.03, 0);
+    const c = NS.fit.calibrate(toPts(g.pts), { gamma: 0.6, alpha0: 30, fitQ: true, amb: { GL: amb0.GL, GR: amb0.GR }, vcc: 3300, topo: 0, lutDx: 1, positiveAlpha: true });
+    const valG = []; for (let a = -40; a <= 40; a += 5) valG.push({ ang: a, ...sample(-a) }); // truth: theta = phi - ang with the lamp at phi = 0
+    const mG = NS.fit.metrics(NS.fit.errors(valG, c.est, c.phi).map((e) => e.err));
+    check('fit on the gyro-sweep points: no sign flip, alpha ~30°, lamp direction ~0, validation MAE under 0.5° (gyro reference = limit of the method)', !c.flipped && Math.abs(c.r.P.alpha - 30.8) < 4 && Math.abs(c.phi) < 1.5 && mG.mae < 0.5, `flipped ${c.flipped} alpha ${c.r.P.alpha.toFixed(2)} phi ${c.phi.toFixed(2)} MAE ${mG.mae.toFixed(3)}`);
+    const cn = NS.fit.calibrate(toPts(noBias.pts), { gamma: 0.6, alpha0: 30, fitQ: true, amb: { GL: amb0.GL, GR: amb0.GR }, vcc: 3300, topo: 0, lutDx: 1, positiveAlpha: true });
+    const mN = NS.fit.metrics(NS.fit.errors(valG, cn.est, cn.phi).map((e) => e.err));
+    check('the same fit without the bias correction is clearly worse', mN.mae > 2 * mG.mae, `with ${mG.mae.toFixed(3)} without ${mN.mae.toFixed(3)}`);
+    const verdict = NS.rules.fitVerdict({ maeLut: c.mLut.mae, maxLut: c.mLut.max, gL: c.r.P.gL, gR: c.r.P.gR, ambSource: c.r.ambSource, nSat: c.nSat, gRatioUsed: false, rangeLo: c.rng.lo, rangeHi: c.rng.hi });
+    check('the usual verdict box is computed from it (MAE, range, no saturated points)', !!verdict.title && verdict.items.length === 7 && c.nSat === 0 && c.rng.hi - c.rng.lo > 50, `${verdict.title} range ${c.rng.lo.toFixed(0)}..${c.rng.hi.toFixed(0)}`);
+
+    // the gyro turning the wrong way round (imu.rsign wrong) is told, and the fit flips the marks the way it does for reversed marks
+    const wrong = NS.ss.gyroSweep(mkRows({ gsign: -1 }));
+    check('gyroSweep: gyro opposite to the sun angle -> negative correlation and a warning naming imu.rsign', wrong.info.corr < -0.9 && wrong.warnings.some((w) => /imu\.rsign/.test(w)), wrong.warnings.join(' | '));
+    check('gyroSweep: scale factor multiplies the angles (1.02 -> 2 % wider)', (() => { const s2 = NS.ss.gyroSweep(rows, { scale: 1.02 }); return Math.abs(s2.info.span / g.info.span - 1.02) < 0.001; })());
+
+    // warnings and refusals
+    check('gyroSweep: too few rows / too short / nothing usable -> { error }', !!NS.ss.gyroSweep([]).error && !!NS.ss.gyroSweep(rows.slice(0, 5)).error && !!NS.ss.gyroSweep(rows.filter((r) => r.T < 4000)).error && !!NS.ss.gyroSweep(null).error && !!NS.ss.gyroSweep([{ T: 1 }, { T: 2 }]).error);
+    const half = mkRows().map((r) => ({ ...r }));
+    const narrow = NS.ss.gyroSweep(half.filter((r) => r.T < 1500 + 3500 || r.T > 30000));
+    check('gyroSweep: a sweep that stays within ~35° warns that it is narrow', narrow.warnings.some((w) => /กว้างแค่|ข้างเดียว/.test(w)), narrow.error || narrow.warnings.join(' | '));
+    const fast = NS.ss.gyroSweep(mkRows().map((r) => ({ ...r, GZ: r.GZ * 5 })));
+    check('gyroSweep: turning at 50°/s or more warns that the LDR cannot follow', fast.warnings.some((w) => /LDR/.test(w)) || !!fast.error);
+    const holes = NS.ss.gyroSweep(rows.filter((r) => !(r.T > 10000 && r.T < 11500)));
+    check('gyroSweep: a hole of 1.5 s in the data is reported (the integral is no longer trustworthy)', holes.info.gaps === 1 && holes.warnings.some((w) => /ขาดหาย/.test(w)));
+    const shaky = NS.ss.gyroSweep(rows.map((r) => (r.T < 1500 ? { ...r, GZ: r.GZ + 3 * Math.sin(r.T) } : r)));
+    check('gyroSweep: moving during the first 1.5 s: warned, the bias is not taken from it', shaky.warnings.some((w) => /นิ่งตอนเริ่ม/.test(w)) && Number.isNaN(shaky.info.b0));
+    const sat = NS.ss.gyroSweep(rows.map((r) => (Math.abs(thetaAt(r.T / 1000) - 30) < 0.3 ? { ...r, SAT: 1 } : r)));
+    check('gyroSweep: a bin with a clipped sample is flagged sat (the fit leaves it out, the verdict counts it)', sat.pts.some((p) => p.sat) && sat.pts.filter((p) => p.sat).length < 6 && !g.pts.some((p) => p.sat));
+    const live = NS.ss.gyroSweep(rows.filter((r) => r.T < 6000), { live: true });
+    check('gyroSweep live mode: readout while recording (angle so far, rate, no verdict) and no error on a short recording', !live.error && live.pts.length === 0 && Math.abs(live.info.endAng + thetaAt(5.95)) < 1 && live.info.n > 100 && Math.abs(live.info.hz - 20) < 1);
+    check('gyroSweep: the points have the shape the mark sweep uses (ang, mvL, mvR), sorted by angle, mean of each bin', g.pts.every((p, i) => Number.isFinite(p.ang) && p.mvL > 0 && p.mvR > 0 && p.n >= 1 && (i === 0 || p.ang >= g.pts[i - 1].ang)));
+  }
   console.log(`\n${passes} passed, ${fails} failed`);
   process.exit(fails ? 1 : 0);
 })();

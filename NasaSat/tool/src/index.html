@@ -212,7 +212,7 @@
       <div class="pagehead">
         <div><h1>คาลิเบรต</h1><p class="lead">ทำตามขั้น 1 → 8 ขั้นที่ 2 และ 8 ห้ามข้าม ขั้นที่ 3 ข้ามได้</p></div>
       </div>
-      <div class="ss-note ss-only" hidden><span class="pill warn">โหมด SunSeek</span>ใช้กับเฟิร์มแวร์ทีม (TEAM_*) ผ่าน USB · ไม่มีตัวขับ: หมุนดาวเทียมด้วยมือตามขีดบนแท่น แล้วกดบันทึก · ขั้น 7 เปลี่ยนบอร์ดไปใช้โมเดลทีม (sun.model 1) · กลับไปสูตรกรรมการ: TEAM_SET,sun.model,0</div>
+      <div class="ss-note ss-only" hidden><span class="pill warn">โหมด SunSeek</span>ใช้กับเฟิร์มแวร์ทีม (TEAM_*) ผ่าน USB · ไม่มีตัวขับ: หมุนดาวเทียมด้วยมือตามขีดบนแท่น แล้วกดบันทึก (หรือไม่มีขีด: ใช้ gyro เป็นไม้บรรทัดที่ขั้น 4) · ขั้น 7 เปลี่ยนบอร์ดไปใช้โมเดลทีม (sun.model 1) · กลับไปสูตรกรรมการ: TEAM_SET,sun.model,0</div>
       <div class="steps" id="calSteps">
         <button data-step="1" class="active"><b>01</b><span class="sl">ตั้งค่า</span></button>
         <button data-step="2"><b>02</b><span class="sl">แสงรอบข้าง</span><small class="nos">ห้ามข้าม</small></button>
@@ -315,6 +315,17 @@
             <button id="swRecord" class="primary">บันทึกจุดนี้<small>RAW 400</small></button>
             <button id="swUndo">ลบจุดล่าสุด</button>
           </div>
+        </div>
+        <div class="sec ss-only" id="gySec" hidden>
+          <h3>หรือ: หมุนด้วยมือโดยไม่ต้องมีขีดมุม (ใช้ gyro เป็นไม้บรรทัด)</h3>
+          <p class="note">ต่อ USB (TEAM_STREAM ส่งทาง USB เท่านั้น) · ล้อหยุด: (1) หันตรงหลอดแล้ววางนิ่ง กด "ศูนย์ตรงนี้" แล้วอย่าขยับ 1.5 วินาที (2) หมุนช้า ๆ ผ่านหลอดไปทั้งสองข้างประมาณ ±70° ไม่เกิน 15°/s (3) กด "จบ" แล้ววางนิ่งอีก 1.5 วินาที โปรแกรม integrate gyro เป็นมุมอ้างอิง (หัก bias ของ gyro ที่อ่านตอนนิ่งต้นกับท้าย) ใส่จุดเข้าตาราง Sweep แล้ว Fit ให้เองพร้อมกล่องตัดสิน ความแม่นของมุมอ้างอิงประมาณ ±1° (สเกลของ gyro อาจคลาด 1–3% ถ้ารู้ค่าจริงใส่ในช่องตัวคูณ)</p>
+          <div class="row mid">
+            <button id="gyStart" class="primary">ศูนย์ตรงนี้ · เริ่มบันทึก<small>TEAM_STREAM,20</small></button>
+            <button id="gyFinish" disabled>จบ (วางนิ่ง 1.5 วินาที)</button>
+            <label>ตัวคูณมุมจาก gyro <input type="number" id="gyScale" value="1" min="0.5" max="2" step="0.001" style="width:100px"></label>
+          </div>
+          <div id="gyStatus" class="kv muted">ยังไม่เริ่ม</div>
+          <div id="gyVerdict"></div>
         </div>
         <div class="row mid">
           <button id="swClear" class="danger">ล้างข้อมูล</button>
