@@ -23,6 +23,7 @@
     run.rows.push({ ...row, t: (row.T - run.T0) / 1000 });
   }
   NS.bus.on('ss:line', (p) => {
+    if (A.dump && A.dump.reader.feed(p)) { A.dump.last = performance.now(); return; } // a TEAM_CDUMP is coming in (about 100 lines a second)
     const row = NS.adcs.parseC(p);
     if (row) {
       A.lastRow = row; A.lastAt = Date.now();
@@ -36,6 +37,7 @@
     }
     if (p.kind === 'ack') {
       if (p.ack.cmd === 'TEAM_CSTREAM') A.streamHz = +p.ack.args[0] || 0;
+      else if (p.ack.cmd === 'TEAM_CREC') { const a = p.ack.args; $('#adCrecOut').textContent = `ตัวหาร ${a[0]}${+a[0] > 0 ? ` (${NS.fmt(50 / +a[0], 1)} Hz)` : ' (ปิด)'} · บอร์ดเก็บรอบล่าสุดไว้ ${a[2] ?? '?'} ตัวอย่าง${a[4] === '1' ? ' (เต็ม: รอบยาวเกินหน่วยความจำ ส่วนต้นหายไป)' : ''}`; }
       else if (p.ack.cmd === 'TEAM_SET' && p.ack.args.length >= 2 && Number.isFinite(+p.ack.args[1])) { A.params[p.ack.args[0]] = +p.ack.args[1]; refreshParamRow(p.ack.args[0]); }
       return;
     }
@@ -51,7 +53,7 @@
     if (ev && A.rec) {
       const t = A.rec.rows.length ? A.rec.rows[A.rec.rows.length - 1].t : 0;
       A.rec.events.push({ ...ev, t });
-      if (ev.type === 'auto' && ev.on && !A.rec.auto) A.rec.auto = ev;
+      if (ev.type === 'auto') { if (ev.state === 'ON') { if (!A.rec.auto) A.rec.auto = ev; } else if (!A.rec.end) A.rec.end = ev; } // ON = entry, OFF / FAULT = the board ended the run
     }
   });
   NS.bus.on('stop', () => { if (A.busy) A.abort = true; });
@@ -82,7 +84,7 @@
       el('div', { class: 'key' }, key, el('span', { class: 'tag', text: 'ยังไม่ SAVE' })),
       el('div', { class: 'val' }, inp, el('span', { class: 'u', text: info ? info.unit : '' })),
       el('div', { class: 'def', text: info ? `${info.min}..${info.max}` : '' }),
-      el('div', { class: 'desc', text: info ? info.text : '' }));
+      el('div', { class: 'desc', text: info ? info.text + (info.manual ? ' · แก้ได้เฉพาะ MANUAL (บอร์ดไม่รับตอน AUTO)' : '') : '' }));
   }
   function refreshParamRow(key) {
     const row = $(`.cfg-row[data-p="${CSS.escape(key)}"]`);
@@ -147,6 +149,8 @@
     $('#adLive').disabled = b;
     $('#adRead').disabled = b;
     $('#adSave').disabled = b;
+    $('#adDump').disabled = b;
+    $('#adCrecSet').disabled = b;
     for (const e of document.querySelectorAll('#adParams input')) e.disabled = b;
   }
   async function waitFor(sec) {
@@ -225,6 +229,61 @@
     setBusy(false);
     renderTable();
   }
+  // ---- the board's flight recorder: the last AUTO run (also one started from the Ground Station), pulled in MANUAL
+  async function pullDump() {
+    if (A.busy) return;
+    if (!ready()) { NS.toast('ยังไม่ได้เชื่อมต่อ (ถ้า Ground Station ต่ออยู่ ให้ตัดการเชื่อมต่อ GS ก่อน)', 'warn'); return; }
+    const step = Math.max(1, Math.min(50, Math.round(num('#adDumpStep', 1))));
+    const d = (A.dump = { reader: new NS.adcs.DumpReader(), last: performance.now() });
+    setBusy(true);
+    A.abort = false;
+    const out = $('#adDumpOut');
+    out.textContent = 'ขอข้อมูล…';
+    let err = null;
+    try {
+      const r = await cmd(step > 1 ? `TEAM_CDUMP,${step}` : 'TEAM_CDUMP', 4000);
+      if (!r.ok) throw new Error(/TEAM_REQUIRES_MANUAL/.test((r.reply && r.reply.raw) || '') ? 'บอร์ดอยู่ในโหมด AUTO: กด STOP ก่อน แล้วดึงอีกครั้ง (ดึงได้เฉพาะ MANUAL)' : `TEAM_CDUMP: ${why(r)}`);
+      d.last = performance.now();
+      while (!d.reader.ended && !A.abort) {
+        if (!S.connected) throw new Error('การเชื่อมต่อหลุดระหว่างดึงข้อมูล');
+        if (performance.now() - d.last > 4000) { err = new Error('ข้อมูลหยุดไหลเกิน 4 วินาทีก่อนบอร์ดบอกว่าจบ: ได้ข้อมูลไม่ครบ'); break; }
+        await NS.sleep(80);
+        out.textContent = `รับแล้ว ${d.reader.rows.length} / ${d.reader.expect || '?'} บรรทัด`;
+      }
+      if (A.abort) err = new Error('หยุดโดยผู้ใช้ (STOP): ได้ข้อมูลไม่ครบ');
+    } catch (e) { err = e; }
+    A.dump = null;
+    A.abort = false;
+    const rd = d.reader;
+    const n = rd.rows.length;
+    setBusy(false);
+    if (n < 5) {
+      const msg = err ? err.message : rd.ended ? 'บอร์ดไม่มีรอบ AUTO ที่บันทึกไว้ (เพิ่งรีสตาร์ต หรือยังไม่เคยเข้า AUTO หรือ TEAM_CREC,0)' : 'ได้ข้อมูลน้อยเกินไป';
+      out.textContent = msg;
+      NS.toast(msg, 'bad', 8000);
+      return;
+    }
+    const notes = [];
+    if (err) notes.push(err.message);
+    if (Number.isFinite(rd.endLines) && n < rd.endLines) notes.push(`ได้ ${n} จาก ${rd.endLines} บรรทัด (บรรทัดหาย)`);
+    if (rd.head) notes.push(`บันทึกทุก ${rd.head.DIV} สเต็ป (${NS.fmt(50 / rd.head.DIV, 0)} Hz)${step > 1 ? ` ข้ามทุก ${step}` : ''} รวม ${rd.head.N} ตัวอย่าง`);
+    if (!rd.auto) notes.push('ไม่มีบรรทัดสรุปตอนเข้า AUTO (TEAM_CR_AUTO): ไม่ทราบค่าที่ใช้');
+    const run = { id: A.nextId++, source: 'recorder', dump: true, wall: Date.now(), rows: rd.rows, events: [], params: NS.adcs.paramsFromAuto(rd.auto), auto: rd.auto, end: null, mode: 'dump', note: notes.join(' · ') };
+    A.runs.push(run);
+    A.view = run;
+    A.sel = run.id;
+    out.textContent = `ได้ ${n} บรรทัด (${NS.fmt(rd.rows[n - 1].t, 1)} วินาที) ${err ? '· ไม่ครบ' : '· ครบ'} · อยู่ในตารางแล้ว คลิกแถวดูกราฟ`;
+    renderTable();
+    const it = items().find((x) => x.run === run);
+    if (it && it.m.ok) NS.app.addEvidence('adcs_dump', `ดึงรอบ AUTO จากบอร์ด #${it.id}: ${NS.adcs.paramText(run.params)} · เข้า ±${it.m.tol}° ${NS.fmt(it.m.tEnter, 1)} s · นิ่ง ${NS.fmt(it.m.tSettle, 1)} s · overshoot ${NS.fmt(it.m.overshoot, 1)}°${it.m.wrong ? ' · ผิดทิศ' : ''}`, { id: run.id, auto: run.auto, m: it.m });
+    NS.toast(err ? `ดึงได้บางส่วน: ${err.message}` : 'ดึงรอบล่าสุดจากบอร์ดแล้ว: ดูผลในตารางด้านล่าง', err ? 'warn' : 'good', 6000);
+  }
+  async function setCrec() {
+    if (!ready()) { NS.toast('ยังไม่ได้เชื่อมต่อ', 'warn'); return; }
+    const n = Math.round(num('#adCrec', 2));
+    const r = await cmd(`TEAM_CREC,${n}`);
+    if (!r.ok) NS.toast(`TEAM_CREC: ${why(r)}`, 'bad', 7000);
+  }
   async function toggleLive() {
     if (A.busy) return;
     if (!ready()) { NS.toast('ยังไม่ได้เชื่อมต่อ', 'warn'); return; }
@@ -243,7 +302,7 @@
       if (run.gs) { out.push({ run, id: String(run.id), seg: run.label, m: NS.adcs.gsMetrics(run, { tgt: run.tgt, satLevel: run.satLevel, tol, hold }) }); continue; }
       const segs = NS.adcs.segments(run.rows);
       if (!segs.length) { out.push({ run, id: String(run.id), seg: 'ไม่มีช่วง AUTO', m: { ok: false } }); continue; }
-      segs.forEach((sg, i) => out.push({ run, id: segs.length > 1 ? `${run.id}.${i + 1}` : String(run.id), seg: NS.adcs.segLabel(segs, i), first: i === 0, m: NS.adcs.metrics(sg.rows, { tol, hold, src, tgt: sg.tgt, satLevel: satOf(run), events: run.events }) }));
+      segs.forEach((sg, i) => out.push({ run, id: segs.length > 1 ? `${run.id}.${i + 1}` : String(run.id), seg: NS.adcs.segLabel(segs, i), first: i === 0, m: NS.adcs.metrics(sg.rows, { tol, hold, src, tgt: sg.tgt, satLevel: satOf(run), events: run.dump ? undefined : run.events }) }));
     }
     return out;
   }
@@ -258,7 +317,7 @@
       td(it.id);
       td(it.run.gs ? it.run.clock : NS.clock(it.run.wall).slice(0, 8));
       td(it.seg);
-      if (!m.ok) { td(it.run.note || 'ข้อมูลไม่พอ'); for (let k = 0; k < 8; k++) td(''); tr.append(el('td')); }
+      if (!m.ok) { td(it.run.note || 'ข้อมูลไม่พอ'); for (let k = 0; k < 9; k++) td(''); tr.append(el('td')); }
       else {
         td(`${f1(m.tgt)}° จาก ${f1(m.a0)}°`, 'num');
         tr.append(el('td', { class: 'num' + (m.tEnter === null ? ' bad' : ''), text: m.tEnter === null ? 'ไม่เข้า' : `${f1(m.tEnter)} s` }));
@@ -268,10 +327,11 @@
         td(m.maxGZ === null ? '—' : f1(m.maxGZ, 0), 'num');
         td(m.tSat === null ? '—' : `${f1(m.tSat)} s`, 'num');
         td(m.kicks === null ? '—' : String(m.kicks), 'num');
+        td(m.ratchets === null || m.ratchets === undefined ? '—' : String(m.ratchets), 'num');
         tr.append(el('td', { class: m.wrong ? 'bad' : '', text: m.wrong ? `ผิดทิศ ${f1(m.wrongDev)}°` : '—' }));
         const pc = el('td', { class: 'ad-params' });
         if (it.run.gs) pc.append(el('div', { text: `log GS · ${it.run.note || ''}` }));
-        else if (it.first) { pc.append(el('div', { text: NS.adcs.paramText(it.run.params) })); if (it.run.auto) pc.append(el('div', { class: 'muted', title: 'EVT,TEAM_AUTO: ค่าที่ตัวควบคุมมีตอนเข้า AUTO', text: 'AUTO: ' + NS.adcs.autoText(it.run.auto) })); if (it.run.note) pc.append(el('div', { class: 'muted', text: it.run.note })); }
+        else if (it.first) { pc.append(el('div', { text: NS.adcs.paramText(it.run.params) })); if (it.run.auto) pc.append(el('div', { class: 'muted', title: 'EVT,TEAM_AUTO: ค่าที่ตัวควบคุมมีตอนเข้า AUTO', text: 'AUTO: ' + NS.adcs.autoText(it.run.auto) })); if (it.run.end) pc.append(el('div', { class: 'muted', title: 'EVT,TEAM_AUTO,OFF / FAULT', text: NS.adcs.endText(it.run.end) })); if (it.run.dump) pc.append(el('div', { class: 'muted', text: 'ดึงจาก flight recorder' })); if (it.run.note) pc.append(el('div', { class: 'muted', text: it.run.note })); }
         else pc.append(el('div', { class: 'muted', text: '″' }));
         pc.title = Object.entries(it.run.params || {}).map(([k, v]) => `${k} = ${v}`).join('\n');
         tr.append(pc);
@@ -283,7 +343,7 @@
     $('#adExport').disabled = !its.length;
     $('#adRaw').disabled = !A.view;
   }
-  const csvItems = () => items().map((it) => ({ id: it.id, source: it.run.source, wall: it.run.wall, seg: it.seg, m: it.m, params: it.run.params, auto: it.run.auto, note: it.run.note }));
+  const csvItems = () => items().map((it) => ({ id: it.id, source: it.run.source, wall: it.run.wall, seg: it.seg, m: it.m, params: it.run.params, auto: it.run.auto, end: it.run.end, note: it.run.note }));
   function rawCsv(run) {
     const cols = ['t', 'T', 'M', 'TGT', 'ANG', 'EST', 'ERR', 'GZ', 'U', 'I', 'K', 'RW', 'LIT', 'H', 'SR'];
     return [cols.join(','), ...run.rows.map((r) => cols.map((c) => (NS.isNum(r[c]) ? +r[c].toFixed(4) : '')).join(','))].join('\n');
@@ -368,7 +428,8 @@
         $('#adLive').firstChild.nodeValue = A.streamHz > 0 && !A.busy ? 'หยุดดูสด' : 'ดูสด';
         $('#adLive small').textContent = A.streamHz > 0 && !A.busy ? 'TEAM_CSTREAM,0' : 'TEAM_CSTREAM,10';
         const st = $('#adStatus');
-        const txt = A.busy ? (A.rec ? `${A.phase} ${NS.fmt((performance.now() - A.t0rec) / 1000, 1)} / ${NS.fmt(A.planDur, 0)} s · ${A.rec.rows.length} บรรทัด · กด STOP ได้ตลอด` : A.phase) : (ready() ? (A.streamHz > 0 ? `สตรีม TEAM_C ${A.streamHz} Hz เปิดอยู่` : 'พร้อม') : 'ยังไม่ได้เชื่อมต่อแบบ SunSeek');
+        const dr = A.dump ? A.dump.reader : null;
+        const txt = dr ? `ดึงข้อมูลจากบอร์ด ${dr.rows.length} / ${dr.expect || '?'} บรรทัด${dr.expect ? ` (${Math.min(100, Math.round((dr.rows.length / dr.expect) * 100))}%)` : ''} · กด STOP เพื่อเลิก` : A.busy ? (A.rec ? `${A.phase} ${NS.fmt((performance.now() - A.t0rec) / 1000, 1)} / ${NS.fmt(A.planDur, 0)} s · ${A.rec.rows.length} บรรทัด · กด STOP ได้ตลอด` : A.phase) : (ready() ? (A.streamHz > 0 ? `สตรีม TEAM_C ${A.streamHz} Hz เปิดอยู่` : 'พร้อม') : 'ยังไม่ได้เชื่อมต่อแบบ SunSeek');
         if (st.textContent !== txt) st.textContent = txt;
       }
       for (const c of charts) if (c.c.offsetParent !== null) c.draw();
@@ -392,6 +453,8 @@
     for (const id of ['#adTol', '#adHold', '#adSrc']) $(id).addEventListener('change', () => { viewSig = ''; renderTable(); });
     $('#adRun').addEventListener('click', runTest);
     $('#adLive').addEventListener('click', toggleLive);
+    $('#adDump').addEventListener('click', pullDump);
+    $('#adCrecSet').addEventListener('click', setCrec);
     $('#adRead').addEventListener('click', async () => { if (!ready()) { NS.toast('ยังไม่ได้เชื่อมต่อ', 'warn'); return; } try { await readParams(); NS.toast(`อ่านค่าแล้ว ${A.paramOrder.length} ค่า`, 'good'); } catch (e) { NS.toast(e.message, 'bad', 7000); } });
     $('#adSave').addEventListener('click', saveParams);
     $('#adStop').addEventListener('click', () => $('#btnStop').click());

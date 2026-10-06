@@ -1289,6 +1289,103 @@ console.log('simulator end-to-end (virtual firmware + physics)');
     check('gyroSweep live mode: readout while recording (angle so far, rate, no verdict) and no error on a short recording', !live.error && live.pts.length === 0 && Math.abs(live.info.endAng + thetaAt(5.95)) < 1 && live.info.n > 100 && Math.abs(live.info.hz - 20) < 1);
     check('gyroSweep: the points have the shape the mark sweep uses (ang, mvL, mvR), sorted by angle, mean of each bin', g.pts.every((p, i) => Number.isFinite(p.ang) && p.mvL > 0 && p.mvR > 0 && p.n >= 1 && (i === 0 || p.ang >= g.pts[i - 1].ang)));
   }
+  // ---- firmware team-3 additions: flight recorder dump, new events and params ----
+  console.log('adcs tuning: flight recorder dump (TEAM_CDUMP), TEAM_RATCHET, AUTO OFF / FAULT, SAT');
+  {
+    const P = NS.ss.parse;
+    const A = NS.adcs;
+    const on = 'EVT,TEAM_AUTO,ON,TGT,10.00,EST,-24.90,ANG,-25.10,LIT,1,ERR,35.00,KP,2,KD,0.5,KI,0.02,SIGN,1,RSIGN,-1,MAX,80,DB,0.5,WRAP,1,SYNC,1,STRAT,REACTION';
+    const e1 = A.parseEvt(P(on));
+    check('parseEvt TEAM_AUTO,ON (team-3): state ON plus the new keys ERR, DB, WRAP, SYNC and the text STRAT', e1.type === 'auto' && e1.state === 'ON' && e1.on === true && e1.ERR === 35 && e1.DB === 0.5 && e1.WRAP === 1 && e1.SYNC === 1 && e1.STRAT === 'REACTION' && e1.KP === 2 && e1.MAX === 80);
+    const off = A.parseEvt(P('EVT,TEAM_AUTO,OFF,ERR,0.42,EST,0.11,ANG,0.2,I,3.1'));
+    const flt = A.parseEvt(P('EVT,TEAM_AUTO,FAULT,ERR,-3.5,EST,12,ANG,11.5,I,-8'));
+    check('parseEvt TEAM_AUTO,OFF / FAULT: the end of the run (not an AUTO entry), with ERR, EST, ANG, I', off.state === 'OFF' && !off.on && off.ERR === 0.42 && off.I === 3.1 && flt.state === 'FAULT' && !flt.on && flt.ANG === 11.5);
+    const rat = A.parseEvt(P('EVT,TEAM_RATCHET,-1,ERR,-7.25'));
+    check('parseEvt TEAM_RATCHET,<+-1>,ERR,<e>', rat.type === 'ratchet' && rat.dir === -1 && rat.ERR === -7.25 && A.parseEvt(P('EVT,TEAM_RATCHET,1,ERR,3')).dir === 1);
+    const end = A.parseEvt(P('EVT,TEAM_CDUMP,END,750'));
+    check('parseEvt EVT,TEAM_CDUMP,END,<lines>', end.type === 'cdump' && end.what === 'END' && end.lines === 750);
+    check('endText / autoText: end of run in Thai, new AUTO keys listed', A.endText(off) === 'จบ AUTO · error 0.42 · EST 0.11 · ANG 0.2 · I 3.1' && A.endText(flt).startsWith('FAULT') && A.endText(null) === '' && /DB 0.5 · WRAP 1 · SYNC 1 · STRAT REACTION$/.test(A.autoText(e1)));
+    const cs = A.parseC(P('TM,TEAM_C,T,5000,M,1,TGT,10,ANG,3,EST,3.1,ERR,6.9,GZ,4,U,13,I,0,K,0,RW,80,LIT,1,H,0,SR,0,SAT,1'));
+    check('parseC: the new SAT field (+1 wheel at +max, -1 at -max, 0)', cs.SAT === 1 && A.parseC(P('TM,TEAM_C,T,5000,M,1,ANG,3,SAT,-1')).SAT === -1 && Object.keys(cs.extra).length === 0);
+
+    // metrics: SAT flag beats the |RW| threshold, ratchets are counted like kicks
+    const mkc = (f, dur = 20, hz = 20, extra = (t) => ({})) => { const r = []; for (let i = 0; i <= dur * hz; i++) { const t = i / hz; r.push({ t, TGT: 10, ANG: f(t), EST: f(t), LIT: 1, M: 1, RW: 20, ...extra(t) }); } return r; };
+    const satRows = mkc((t) => 10 * (1 - Math.exp(-t)), 20, 20, (t) => ({ SAT: t >= 2 && t < 4.5 ? 1 : t >= 7 && t < 8 ? -1 : 0, RW: 20 }));
+    check('metrics: saturated time from the board SAT flag (2.5 s at +max and 1 s at -max = 3.5 s) even when RW alone says nothing', Math.abs(A.metrics(satRows, { satLevel: 99 }).tSat - 3.5) < 0.06);
+    check('metrics: rows without SAT still use |RW| >= satLevel', A.metrics(mkc(() => 5, 4, 20, (t) => ({ RW: t < 1 ? 80 : 10 })), { satLevel: 79 }).tSat > 0.9);
+    const evR = [{ t: 3, type: 'ratchet' }, { t: 3.5, type: 'ratchet' }, { t: 4, type: 'kick' }, { t: 99, type: 'ratchet' }];
+    const mr = A.metrics(mkc((t) => 10 * (1 - Math.exp(-t / 4))), { events: evR });
+    check('metrics: ratchets = EVT,TEAM_RATCHET inside the stretch (2 of 3), kicks count only kicks (1); no events list -> null', mr.ratchets === 2 && mr.kicks === 1 && A.metrics(mkc(() => 5, 3), {}).ratchets === null && A.metrics(mkc(() => 5, 3), { events: [] }).ratchets === 0);
+
+    // the dump, line by line like the firmware prints it (%.1f of 0.1° steps), from an analytic response: zeta 0.3, wn 2, 10° step
+    const z = 0.3; const wn = 2; const wd = wn * Math.sqrt(1 - z * z);
+    const f2 = (t) => 10 * (1 - Math.exp(-z * wn * t) * (Math.cos(wd * t) + (z / Math.sqrt(1 - z * z)) * Math.sin(wd * t)));
+    const df2 = (t) => (f2(t + 0.001) - f2(t - 0.001)) / 0.002;
+    const lines = [];
+    const N = 600; // 24 s at 25 Hz
+    lines.push(`ACK,TEAM_CDUMP,${N}`);
+    lines.push('TM,TEAM_CR_AUTO,' + on.slice('EVT,TEAM_AUTO,'.length));
+    lines.push(`TM,TEAM_CR_HEAD,N,${N},DIV,2,COLS,i;t;tgt;ang;est;err;gz;u;I;K;rw;fl`);
+    for (let i = 0; i < N; i++) {
+      const t = i * 0.04;
+      const a = f2(t);
+      const u = Math.max(-80, Math.min(80, 2 * (10 - a)));
+      const rw = Math.round(t < 1 ? 80 : u);
+      const fl = 1 | (t < 1 ? 8 : 0);
+      lines.push(`TM,TEAM_CR,${i},${Math.round(12000 + t * 1000)},10.0,${a.toFixed(1)},${a.toFixed(1)},${(10 - a).toFixed(1)},${df2(t).toFixed(1)},${u.toFixed(1)},0.0,0.0,${rw},${fl}`);
+    }
+    lines.push(`EVT,TEAM_CDUMP,END,${N}`);
+    const rd = new A.DumpReader();
+    const took = lines.map((l) => rd.feed(P(l)));
+    check('DumpReader: ACK, AUTO snapshot, header, 600 rows and END all recognised as part of the dump', took.every(Boolean) && rd.rows.length === N && rd.expect === N && rd.ended && rd.endLines === N && rd.head.N === N && rd.head.DIV === 2 && rd.auto.KP === 2 && rd.auto.STRAT === 'REACTION' && rd.auto.on === true);
+    check('DumpReader: a TEAM_C row, an ACK of another command and an EVT of another kind are not the dump', !new A.DumpReader().feed(P('TM,TEAM_C,T,1,M,1,ANG,2')) && !new A.DumpReader().feed(P('ACK,STOP')) && !new A.DumpReader().feed(P('EVT,TEAM_KICK,3,ERR,1')) && !new A.DumpReader().feed(null));
+    const r0 = rd.rows[0]; const r30 = rd.rows[30];
+    check('dump rows: positional columns mapped (i, t -> T ms, tgt, ang, est, err, gz, u, I, K, rw), time in s from the first row, M = 1', r0.i === 0 && r0.T === 12000 && r0.t === 0 && r30.t === 1.2 && r0.TGT === 10 && r0.ANG === 0 && r30.RW === Math.round(Math.max(-80, Math.min(80, 2 * (10 - f2(1.2))))) && r0.M === 1 && Math.abs(r30.GZ - df2(1.2)) < 0.06);
+    check('dump rows: fl bits decoded (1 LIT, 2 HOLD, 4 SEARCH, 8 wheel at +max, 16 at -max)', (() => {
+      const x = (fl) => A.parseCr(P(`TM,TEAM_CR,1,100,0,1,1,-1,0,0,0,0,0,${fl}`));
+      return x(1).LIT === 1 && x(0).LIT === 0 && x(2).H === 1 && x(4).SR === 1 && x(8).SAT === 1 && x(16).SAT === -1 && x(0).SAT === 0 && x(1 | 2 | 8).H === 1 && x(1 | 2 | 8).SAT === 1;
+    })());
+    const segsD = A.segments(rd.rows);
+    const mD = A.metrics(segsD[0].rows, { tol: 2, hold: 3 });
+    const ovTh = Math.exp(-Math.PI * z / Math.sqrt(1 - z * z));
+    let lastOut = 0; for (let i = 0; i < N; i++) if (Math.abs(10 - Number(f2(i * 0.04).toFixed(1))) > 2) lastOut = i * 0.04;
+    check('dump -> the same metrics as a live run: one stretch, target 10, overshoot 37.2 % (±1 with 0.1° rounding), settle at the last exit from ±2°', segsD.length === 1 && mD.tgt === 10 && Math.abs(mD.overshootPct - ovTh * 100) < 1 && mD.tSettle >= lastOut && mD.tSettle < lastOut + 0.1 && !mD.wrong, `${mD.overshootPct.toFixed(2)} % settle ${mD.tSettle} (brute force ${lastOut})`);
+    check('dump -> saturated time from fl bit 8 (first second at +max = 1.0 s), no kicks (K column 0), ratchets unknown (no events)', Math.abs(mD.tSat - 1.0) < 0.06 && mD.kicks === 0 && mD.ratchets === null && mD.maxGZ > 3);
+    check('dump -> the gains of that run under the board names (adcs.kp, adcs.kd, adcs.ki, adcs.max, adcs.db, adcs.wrap, adcs.sign, imu.rsign)', JSON.stringify(A.paramsFromAuto(rd.auto)) === JSON.stringify({ 'adcs.kp': 2, 'adcs.kd': 0.5, 'adcs.ki': 0.02, 'adcs.max': 80, 'adcs.db': 0.5, 'adcs.wrap': 1, 'adcs.sign': 1, 'imu.rsign': -1 }) && JSON.stringify(A.paramsFromAuto(null)) === '{}');
+
+    // columns follow the header: another order and an appended column are read right; a row with too few fields or text is dropped
+    const rdh = new A.DumpReader();
+    rdh.feed(P('TM,TEAM_CR_HEAD,N,2,DIV,2,COLS,i;t;ang;tgt;est;err;gz;u;I;K;rw;fl;vb'));
+    rdh.feed(P('TM,TEAM_CR,0,5000,-24.5,10.0,-24.4,34.5,0.1,69.0,0.0,0.0,69,1,7.4'));
+    rdh.feed(P('TM,TEAM_CR,1,5040,-24.0,10.0,-24.0,34.0,2.5,68.0,0.0,0.0,68,1,7.4'));
+    check('dump header COLS decides the column order; an extra column at the end is ignored', rdh.rows.length === 2 && rdh.rows[0].ANG === -24.5 && rdh.rows[0].TGT === 10 && rdh.rows[1].GZ === 2.5 && rdh.rows[1].t === 0.04);
+    check('parseCr: too few fields / text in a number / not TEAM_CR / T missing -> null', A.parseCr(P('TM,TEAM_CR,1,2,3')) === null && A.parseCr(P('TM,TEAM_CR,1,100,0,x,1,-1,0,0,0,0,0,1')) === null && A.parseCr(P('TM,TEAM_C,T,5,ANG,1')) === null && A.parseCr(P('TM,TEAM_CR_HEAD,N,1')) === null && A.parseCr(null) === null);
+    check('dump with no AUTO run on the board: ACK 0, header N 0, END 0 -> no rows, ended', (() => { const r = new A.DumpReader(); ['ACK,TEAM_CDUMP,0', 'TM,TEAM_CR_HEAD,N,0,DIV,2,COLS,i;t;tgt;ang;est;err;gz;u;I;K;rw;fl', 'EVT,TEAM_CDUMP,END,0'].forEach((l) => r.feed(P(l))); return r.rows.length === 0 && r.ended && r.endLines === 0 && r.expect === 0 && r.auto === null; })());
+    const cut = new A.DumpReader();
+    lines.slice(0, 200).forEach((l) => cut.feed(P(l)));
+    check('a dump that stops half way (link lost): not ended, fewer rows than ACK said', !cut.ended && cut.rows.length === 197 && cut.expect === N);
+
+    // 100 lines a second must not fill the key table of the status State
+    const st = new NS.ss.State();
+    const before = st.nKeys;
+    lines.forEach((l, i) => st.apply(P(l), i));
+    check('State ignores the dump lines (positional rows would create thousands of keys; TEAM_CR_AUTO would overwrite KP / KD / TARGET of the organizer lines)', st.nKeys === before && st.get('KP') === undefined && st.get('TGT') === undefined && st.lastAck.cmd === 'TEAM_CDUMP' && st.events.length === 1);
+    st.apply(P('TM,TEAM_C,T,1,M,1,ANG,3,EST,3'), 1);
+    check('State still keeps TM,TEAM_C values (group keys)', st.num('TEAM_C.ANG') === 3);
+    check('errHelp: the new ERR codes (TEAM_REQUIRES_MANUAL for TEAM_CDUMP, step / divider ranges)', /MANUAL/.test(NS.ss.errHelp('ERR,TEAM_REQUIRES_MANUAL,TEAM_CDUMP')) && /1 ถึง 50/.test(NS.ss.errHelp('ERR,TEAM_CDUMP_STEP_1_TO_50')) && /0 ถึง 50/.test(NS.ss.errHelp('ERR,TEAM_CREC_RANGE_0_TO_50')) && /0 ถึง 20/.test(NS.ss.errHelp('ERR,TEAM_CSTREAM_RANGE_0_TO_20')));
+
+    // new parameters
+    check('paramInfo: adcs.wrap (0..1, MANUAL only), adcs.aw, adcs.ratchet (0..10000 ms), cam.off (-180..180, MANUAL only); old ones are not MANUAL only', (() => {
+      const w = A.paramInfo('adcs.wrap'); const aw = A.paramInfo('adcs.aw'); const r = A.paramInfo('adcs.ratchet'); const c = A.paramInfo('cam.off');
+      return w && w.manual && w.min === 0 && w.max === 1 && aw && !aw.manual && r && r.unit === 'ms' && r.max === 10000 && c && c.manual && c.min === -180 && c.max === 180 && !A.paramInfo('adcs.kp').manual;
+    })() && A.isRunParam('adcs.wrap') && A.isRunParam('adcs.aw') && A.isRunParam('adcs.ratchet') && A.isRunParam('cam.off'));
+
+    // CSV: ratchets column, end of run, the new AUTO keys
+    const csv = A.toCSV([{ id: 7, source: 'recorder', wall: Date.UTC(2026, 9, 6, 13, 0, 0), seg: '→ 10°', m: { tgt: 10, a0: -25, tol: 2, hold: 3, tEnter: 3, tSettle: 5, overshoot: 3.7, overshootPct: 10, kicks: 1, ratchets: 2, wrong: false, n: 600, dur: 24 }, params: A.paramsFromAuto(rd.auto), auto: rd.auto, end: off }]);
+    const [h, row] = csv.split('\n').map((l) => l.split(','));
+    const col = (name) => row[h.indexOf(name)];
+    check('toCSV: columns ratchets, auto.DB / WRAP / SYNC / STRAT and end.state / ERR / I are there with the values', col('ratchets') === '2' && col('kicks') === '1' && col('auto.WRAP') === '1' && col('auto.STRAT') === 'REACTION' && col('auto.DB') === '0.5' && col('end.state') === 'OFF' && col('end.ERR') === '0.42' && col('end.I') === '3.1' && col('source') === 'recorder' && col('p.adcs.wrap') === '1' && row.length === h.length, `${row.length} vs ${h.length}`);
+  }
   console.log(`\n${passes} passed, ${fails} failed`);
   process.exit(fails ? 1 : 0);
 })();

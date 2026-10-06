@@ -31,7 +31,7 @@
     const ts = Date.now();
     S.log.push([ts, dir, text]);
     if (S.log.length > 300000) S.log.splice(0, 50000);
-    if (dir === 'rx' && text.startsWith('TM,TEAM_C,')) return; // the ADCS stream (up to 20 lines a second) goes to the session log and the ADCS page, not the console
+    if (dir === 'rx' && (text.startsWith('TM,TEAM_C,') || text.startsWith('TM,TEAM_CR,'))) return; // the ADCS stream (20 lines a second) and a flight-recorder dump (100) go to the session log and the ADCS page, not the console
     const ss = S.proto === 'sunseek'; // the organizer's lines: ACK ok, ERR error, EVT event, TM muted (and hideable like our T, lines)
     const isT = dir === 'rx' && (ss ? text.startsWith('TM,') : (text.startsWith('T,') || text.startsWith('IMG C') || text.includes('"type":"pins"')));
     let cls = dir === 'tx' ? 'tx' : dir === 'sys' ? 'sys' : '';

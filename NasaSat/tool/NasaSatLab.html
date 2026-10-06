@@ -1041,6 +1041,20 @@ label.radio:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
       </div>
 
       <div class="sec">
+        <div class="sh">
+          <div><h2>ดึงรอบ AUTO ล่าสุดจากบอร์ด (flight recorder)</h2><p class="lead">บอร์ดบันทึกทุกรอบ AUTO ไว้ในหน่วยความจำเอง (25 Hz รอบละไม่เกิน ~96 วินาที) ใช้เมื่อรัน AUTO จาก Ground Station ซึ่งถือลิงก์บลูทูธอยู่คนเดียว: รันเสร็จ กด STOP ที่ GS, ตัดการเชื่อมต่อ GS, ต่อบลูทูธกับเว็บนี้ แล้วกดปุ่มนี้ ผลเข้าตารางเหมือนรอบที่ทดสอบจากเว็บ (ดึงได้เฉพาะ MANUAL ประมาณ 100 บรรทัดต่อวินาที)</p></div>
+          <div class="pageact"><button id="adDump" class="primary">ดึงรอบล่าสุดจากบอร์ด<small>TEAM_CDUMP</small></button></div>
+        </div>
+        <div class="row mid">
+          <label>ข้ามทุกกี่บรรทัด (1 = ครบ, เร็วขึ้นถ้าเพิ่ม) <input type="number" id="adDumpStep" value="1" min="1" max="50" step="1" style="width:90px"></label>
+          <label>ตัวหารการบันทึก (0 = ปิด, 2 = 25 Hz) <input type="number" id="adCrec" value="2" min="0" max="50" step="1" style="width:90px"></label>
+          <button id="adCrecSet" class="quiet">ตั้ง / ดูสถานะการบันทึก<small>TEAM_CREC</small></button>
+        </div>
+        <p class="note" id="adCrecOut"></p>
+        <p class="note" id="adDumpOut"></p>
+      </div>
+
+      <div class="sec">
         <h2>3. กราฟ</h2>
         <p class="note">แสดงรอบที่กำลังบันทึก หรือรอบที่คลิกเลือกในตาราง (เส้นประจางคือเกณฑ์ ± รอบเป้า) ถ้าไม่มีทั้งสองอย่างจะแสดงสตรีมสด 20 วินาทีล่าสุด</p>
         <div class="box"><div class="box-h">มุม: เป้า, EST (ตัวประมาณ), ANG (เซนเซอร์แสง)</div><canvas class="chart" id="adChAng"></canvas></div>
@@ -1054,7 +1068,7 @@ label.radio:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
           <div class="pageact"><button id="adClear" class="quiet">ล้างตาราง</button><button id="adRaw" title="ข้อมูลดิบทุกบรรทัดของรอบที่เลือกอยู่ในกราฟ">ข้อมูลดิบรอบที่เลือก (.csv)</button><button id="adExport" class="primary">Export ผล (.csv)</button></div>
         </div>
         <div class="tablebox"><table class="tbl" id="adTable">
-          <thead><tr><th>#</th><th>เวลา</th><th>ช่วง</th><th>เป้า จาก</th><th>เข้า ±เกณฑ์</th><th>นิ่ง</th><th>overshoot</th><th>error ท้าย (mean ± SD)</th><th>max |GZ| °/s</th><th>ล้อตัน</th><th>เตะ</th><th>ผิดทิศ</th><th>พารามิเตอร์ / AUTO</th></tr></thead>
+          <thead><tr><th>#</th><th>เวลา</th><th>ช่วง</th><th>เป้า จาก</th><th>เข้า ±เกณฑ์</th><th>นิ่ง</th><th>overshoot</th><th>error ท้าย (mean ± SD)</th><th>max |GZ| °/s</th><th>ล้อตัน</th><th>เตะ</th><th>ratchet</th><th>ผิดทิศ</th><th>พารามิเตอร์ / AUTO</th></tr></thead>
           <tbody></tbody>
         </table></div>
         <p class="note" id="adEmpty">ยังไม่มีผล: กด "เริ่มทดสอบ" หรือนำเข้า log จาก Ground Station ด้านล่าง</p>
@@ -1504,6 +1518,7 @@ NS.ss.State = class {
       this.lastAt = t;
       switch (p.kind) {
         case 'tm': {
+          if (/^TM,TEAM_CR(?:_[A-Z]+)?,/.test(p.raw || '')) break; // flight-recorder dump: positional rows and one-off snapshot, not key,value pairs (100 lines a second would fill the key table)
           const g = p.tm.group;
           for (const k of Object.keys(p.tm.kv)) {
             const key = g ? `${g}.${k}` : k;
@@ -1870,6 +1885,9 @@ NS.ss.errHelp = (() => {
     TEAM_LUT_DATA_SYNTAX: 'TEAM_LUT_DATA,<เริ่มที่>,<ค่า>,...',
     TEAM_LUT_DATA_VALUE: 'ค่าใน LUT ผิด (ต้องไม่เกิน ±90 และไม่เกินจำนวนที่ประกาศ)',
     TEAM_STREAM_RANGE_0_TO_20: 'TEAM_STREAM ต้องเป็น 0 ถึง 20',
+    TEAM_CSTREAM_RANGE_0_TO_20: 'TEAM_CSTREAM ต้องเป็น 0 ถึง 20',
+    TEAM_CREC_RANGE_0_TO_50: 'TEAM_CREC ต้องเป็นจำนวนเต็ม 0 ถึง 50 (0 = ปิดการบันทึก, 2 = 25 Hz)',
+    TEAM_CDUMP_STEP_1_TO_50: 'TEAM_CDUMP,<ข้ามทุกกี่บรรทัด> ต้องเป็นจำนวนเต็ม 1 ถึง 50',
     TEAM_UNKNOWN_COMMAND: 'ไม่รู้จักคำสั่ง TEAM_ นี้',
     TEAM_GYRO_ZERO_MOVING: 'ดาวเทียมยังขยับ (gyro สั่นหรือมุมดวงอาทิตย์เลื่อน): รอให้นิ่ง ไม่แตะโต๊ะ แล้วสั่ง TEAM_GYRO_ZERO ใหม่',
     TEAM_GYRO_ZERO_WHEEL_ON: 'ล้อยังถูกสั่งอยู่: STOP แล้วรอล้อหยุดสนิท (~8 วินาที) ก่อน TEAM_GYRO_ZERO',
@@ -1904,12 +1922,16 @@ NS.ss.errHelp = (() => {
 //   TM,TEAM_C,T,<ms>,M,<0|1>,TGT,<deg>,ANG,<deg>,EST,<deg>,ERR,<deg>,GZ,<dps>,U,<pct>,I,<pct>,K,<pct>,RW,<pct>,LIT,<0|1>,H,<0|1>,SR,<0|1>[,more]
 //   EVT,TEAM_AUTO,ON,TGT,..,EST,..,ANG,..,LIT,..[,KP,..,KD,..,KI,..,SIGN,..,RSIGN,..,MAX,..]   at AUTO entry
 //   EVT,TEAM_KICK,<k>,ERR,<e> · EVT,TEAM_HOLD,ON|OFF,ERR,<e> · EVT,TEAM_SUN_SEARCH,START,DIR,<+-1> | FOUND,ANGLE,<a>
+//   EVT,TEAM_RATCHET,<+-1>,ERR,<e> · EVT,TEAM_AUTO,OFF|FAULT,ERR,..,EST,..,ANG,..,I,..   (end of a run) · TM,TEAM_C also has SAT,<1|-1|0> (wheel at +-max)
+// Flight recorder (the board keeps the last AUTO run, also when only the Ground Station was connected): TEAM_CREC,<0..50> then, in MANUAL,
+//   TEAM_CDUMP[,<step>] -> ACK,TEAM_CDUMP,<lines> · TM,TEAM_CR_AUTO,ON,TGT,..(the AUTO-entry snapshot) · TM,TEAM_CR_HEAD,N,<n>,DIV,<d>,COLS,i;t;tgt;ang;est;err;gz;u;I;K;rw;fl
+//   · <lines> x TM,TEAM_CR,<i>,<t ms>,<tgt>,<ang>,<est>,<err>,<gz>,<u>,<I>,<K>,<rw>,<fl> (positional) · EVT,TEAM_CDUMP,END,<lines>
 // Every line is read as key,value pairs and unknown keys are ignored (the firmware may append more at the end).
 NS.adcs = NS.adcs || {};
 
 const AD_NUM = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
 const adIs = (x) => typeof x === 'number' && Number.isFinite(x);
-const adKnown = new Set(['T', 'M', 'TGT', 'ANG', 'EST', 'ERR', 'GZ', 'U', 'I', 'K', 'RW', 'LIT', 'H', 'SR']);
+const adKnown = new Set(['T', 'M', 'TGT', 'ANG', 'EST', 'ERR', 'GZ', 'U', 'I', 'K', 'RW', 'LIT', 'H', 'SR', 'SAT']);
 
 // parsed TM line (NS.ss.parse) -> { T, M, TGT, ANG, EST, ERR, GZ, U, I, K, RW, LIT, H, SR, extra } or null (not TEAM_C / unusable)
 NS.adcs.parseC = (p) => {
@@ -1933,12 +1955,75 @@ NS.adcs.parseEvt = (p) => {
   if (!p || p.kind !== 'evt' || !p.evt) return null;
   const a = p.evt.args || [];
   switch (p.evt.name) {
-    case 'TEAM_AUTO': return { type: 'auto', on: a[0] !== 'OFF', ...adKv(a, 1) };
+    case 'TEAM_AUTO': return { type: 'auto', state: a[0] || '', on: a[0] === 'ON', ...adKv(a, 1) }; // ON = entry (gains and signs), OFF / FAULT = the end of the run
+    case 'TEAM_RATCHET': return { type: 'ratchet', dir: AD_NUM.test(a[0] || '') ? +a[0] : NaN, ...adKv(a, 1) };
+    case 'TEAM_CDUMP': return { type: 'cdump', what: a[0] || '', lines: AD_NUM.test(a[1] || '') ? +a[1] : NaN };
     case 'TEAM_KICK': return { type: 'kick', k: AD_NUM.test(a[0] || '') ? +a[0] : NaN, ...adKv(a, 1) };
     case 'TEAM_HOLD': return { type: 'hold', on: a[0] === 'ON', ...adKv(a, 1) };
     case 'TEAM_SUN_SEARCH': return { type: 'search', what: a[0] || '', ...adKv(a, 1) };
     default: return null;
   }
+};
+
+// ---------------------------------------------------------------- flight recorder dump (TEAM_CDUMP)
+// the lines are positional (TM,TEAM_CR,...), so they are read from the raw text, with the column names of the TEAM_CR_HEAD line
+NS.adcs.CR_COLS = ['i', 't', 'tgt', 'ang', 'est', 'err', 'gz', 'u', 'I', 'K', 'rw', 'fl'];
+const AD_CR_MAP = { i: 'i', t: 'T', tgt: 'TGT', ang: 'ANG', est: 'EST', err: 'ERR', gz: 'GZ', u: 'U', I: 'I', K: 'K', rw: 'RW', fl: 'fl' };
+const adTok = (p, name) => { // tokens after "TM,<name>" of a parsed TM line, or null
+  if (!p || p.kind !== 'tm' || typeof p.raw !== 'string') return null;
+  const t = p.raw.split(',').map((s) => s.trim());
+  return t[0] === 'TM' && t[1] === name ? t.slice(2) : null;
+};
+NS.adcs.parseCrHead = (p) => {
+  const t = adTok(p, 'TEAM_CR_HEAD');
+  if (!t) return null;
+  const kv = adKv(t, 0);
+  const cols = typeof kv.COLS === 'string' && kv.COLS ? kv.COLS.split(';') : NS.adcs.CR_COLS;
+  return { N: adIs(kv.N) ? kv.N : NaN, DIV: adIs(kv.DIV) ? kv.DIV : NaN, cols };
+};
+// the AUTO-entry snapshot: the first field is the bare word ON, the rest key,value pairs (same keys as EVT,TEAM_AUTO,ON)
+NS.adcs.parseCrAuto = (p) => {
+  const t = adTok(p, 'TEAM_CR_AUTO');
+  if (!t) return null;
+  return { type: 'auto', state: 'ON', on: true, ...adKv(t, 1) };
+};
+// one recorded sample -> a row shaped like a TM,TEAM_C row (T = the sample time in ms), fl decoded: 1 LIT, 2 HOLD, 4 SEARCH, 8 wheel at +max, 16 at -max
+NS.adcs.parseCr = (p, cols = NS.adcs.CR_COLS) => {
+  const t = adTok(p, 'TEAM_CR');
+  if (!t || t.length < cols.length || !t.slice(0, cols.length).every((s) => AD_NUM.test(s))) return null;
+  const row = { M: 1 };
+  cols.forEach((c, i) => { if (AD_CR_MAP[c]) row[AD_CR_MAP[c]] = +t[i]; });
+  if (!adIs(row.T) || !(adIs(row.ANG) || adIs(row.EST))) return null;
+  const fl = adIs(row.fl) ? row.fl : 0;
+  row.LIT = fl & 1 ? 1 : 0;
+  row.H = fl & 2 ? 1 : 0;
+  row.SR = fl & 4 ? 1 : 0;
+  row.SAT = fl & 8 ? 1 : fl & 16 ? -1 : 0;
+  return row;
+};
+// collects the lines of one TEAM_CDUMP in order; feed(p) says whether the line belonged to the dump
+NS.adcs.DumpReader = class {
+  constructor() { this.cols = NS.adcs.CR_COLS; this.head = null; this.auto = null; this.rows = []; this.expect = 0; this.ended = false; this.endLines = NaN; this.T0 = undefined; }
+  feed(p) {
+    if (!p) return false;
+    if (p.kind === 'ack' && p.ack.cmd === 'TEAM_CDUMP') { this.expect = +p.ack.args[0] || 0; return true; }
+    if (p.kind === 'evt' && p.evt.name === 'TEAM_CDUMP') { this.ended = true; this.endLines = +p.evt.args[1]; return true; }
+    if (p.kind !== 'tm') return false;
+    const h = NS.adcs.parseCrHead(p);
+    if (h) { this.head = h; this.cols = h.cols; return true; }
+    const a = NS.adcs.parseCrAuto(p);
+    if (a) { this.auto = a; return true; }
+    const r = NS.adcs.parseCr(p, this.cols);
+    if (r) { if (this.T0 === undefined) this.T0 = r.T; this.rows.push({ ...r, t: (r.T - this.T0) / 1000 }); return true; }
+    return /^TM,TEAM_CR[,_]/.test(p.raw || '');
+  }
+};
+// the gains the dump (or EVT,TEAM_AUTO,ON) reports, under the parameter names of the board
+NS.adcs.paramsFromAuto = (a) => {
+  const m = { KP: 'adcs.kp', KD: 'adcs.kd', KI: 'adcs.ki', MAX: 'adcs.max', DB: 'adcs.db', WRAP: 'adcs.wrap', SIGN: 'adcs.sign', RSIGN: 'imu.rsign' };
+  const o = {};
+  for (const [k, name] of Object.entries(m)) if (a && adIs(a[k])) o[name] = a[k];
+  return o;
 };
 
 // ---------------------------------------------------------------- step-response metrics
@@ -2007,15 +2092,18 @@ NS.adcs.metrics = (rowsIn, o = {}) => {
   const gz = rows.map((r) => r.GZ).filter(adIs);
   m.maxGZ = gz.length ? Math.max(...gz.map(Math.abs)) : null;
 
-  m.tSat = null; // time with the wheel command at its limit
-  if (adIs(o.satLevel) && o.satLevel > 0 && rows.some((r) => adIs(r.RW))) {
+  // time with the wheel command at its limit: the board's own SAT flag (wheel at +-max) when the rows have it, else |RW| >= satLevel
+  const timeWhere = (test) => {
     let s = 0;
     for (let i = 0; i < rows.length; i++) {
       const dt = Math.min(i + 1 < rows.length ? tau[i + 1] - tau[i] : (i > 0 ? tau[i] - tau[i - 1] : 0), 0.25);
-      if (adIs(rows[i].RW) && Math.abs(rows[i].RW) >= o.satLevel) s += dt;
+      if (test(rows[i])) s += dt;
     }
-    m.tSat = s;
-  }
+    return s;
+  };
+  m.tSat = null;
+  if (rows.some((r) => adIs(r.SAT))) m.tSat = timeWhere((r) => adIs(r.SAT) && r.SAT !== 0);
+  else if (adIs(o.satLevel) && o.satLevel > 0 && rows.some((r) => adIs(r.RW))) m.tSat = timeWhere((r) => adIs(r.RW) && Math.abs(r.RW) >= o.satLevel);
 
   m.kicks = null; // stiction kicks: the EVT,TEAM_KICK events of this stretch, else the rising edges of the K term
   const ev = (o.events || []).filter((e) => e && e.type === 'kick' && e.t >= rows[0].t - 1e-9 && e.t <= rows[rows.length - 1].t + 0.25).length;
@@ -2024,6 +2112,8 @@ NS.adcs.metrics = (rowsIn, o = {}) => {
   let was = false;
   for (const r of rows) if (adIs(r.K)) { hasK = true; const on = Math.abs(r.K) > 0.5; if (on && !was) edges++; was = on; }
   if (ev > 0) m.kicks = ev; else if (hasK) m.kicks = edges; else if (o.events) m.kicks = 0;
+  // ratchets (EVT,TEAM_RATCHET: stuck at the wheel limit, the command backs off and jumps back): counted like the kicks
+  m.ratchets = o.events ? o.events.filter((e) => e && e.type === 'ratchet' && e.t >= rows[0].t - 1e-9 && e.t <= rows[rows.length - 1].t + 0.25).length : null;
 
   // wrong way: in the first wrongWin s the angle moves AWAY from the target by more than wrongDeg
   let grow = 0;
@@ -2094,36 +2184,48 @@ NS.adcs.PARAMS = [
   ['adcs.sk', 'gain ของลูปความเร็วตอนหาแสง', '', 0, 20],
   ['adcs.ghold', 'ไม่เห็นหลอด: 1 = ใช้ gyro ต่อมุมไปก่อน', '0/1', 0, 1],
   ['adcs.retarget', 'อนุญาตให้ SET_TARGET ตอน AUTO (ใช้ในการทดสอบ A→B→A)', '0/1', 0, 1],
+  ['adcs.wrap', 'ใช้มุมผิดพลาดทางสั้น (±180°) และซิงก์ตัวประมาณกับมุมเซนเซอร์ตอนเข้า AUTO (กันหมุนคืนรอบเก่า) 1 = เปิด', '0/1', 0, 1, true],
+  ['adcs.aw', 'anti-windup: ไม่สะสม integral / เตะ ตอนคำสั่งล้ออยู่ที่ขีดสูงสุด (มีผลเมื่อ adcs.ki > 0) 1 = เปิด', '0/1', 0, 1],
+  ['adcs.ratchet', 'ติดอยู่ที่ขีดล้อสูงสุดนานเท่านี้ ถอยคำสั่งลง adcs.kick % แล้วกระโดดกลับ (แรงบิดแบบกระชาก) 0 = ปิด', 'ms', 0, 10000],
+  ['cam.off', 'ตัวควบคุมเล็งที่ (เป้า + ค่านี้) ใช้ตอนกล้องติดเยื้องจากเซนเซอร์แสง', '°', -180, 180, true],
   ['rw.slew', 'จำกัดความชันของคำสั่งล้อ (0 = กระโดดทันที)', '%/s', 0, 5000],
   ['rw.minStart', 'คำสั่งล้อต่ำสุดที่ล้อเริ่มหมุน', '%', 0, 100],
   ['rw.minStable', 'คำสั่งล้อต่ำสุดที่ล้อหมุนต่อได้', '%', 0, 100],
 ];
-NS.adcs.paramInfo = (key) => { const r = NS.adcs.PARAMS.find((x) => x[0] === key); return r ? { key, text: r[1], unit: r[2], min: r[3], max: r[4] } : null; };
+NS.adcs.paramInfo = (key) => { const r = NS.adcs.PARAMS.find((x) => x[0] === key); return r ? { key, text: r[1], unit: r[2], min: r[3], max: r[4], manual: !!r[5] } : null; }; // manual: the board refuses it in AUTO
 // the parameters worth recording with every run (everything ADCS and the wheel use)
-NS.adcs.isRunParam = (key) => /^(adcs|rw)\./.test(key) || key === 'imu.rsign' || key === 'imu.gbz';
+NS.adcs.isRunParam = (key) => /^(adcs|rw)\./.test(key) || key === 'imu.rsign' || key === 'imu.gbz' || key === 'cam.off';
 // "kp 2 · kd 0.5 · ki 0.02 …" for the table
 NS.adcs.paramText = (p, keys = ['adcs.kp', 'adcs.kd', 'adcs.ki', 'adcs.db', 'adcs.max', 'adcs.kick', 'adcs.lock']) => keys.filter((k) => p && adIs(p[k])).map((k) => `${k.replace(/^adcs\./, '')} ${+(+p[k]).toPrecision(4)}`).join(' · ');
 // "KP 2 · KD 0.5 ..." of the EVT,TEAM_AUTO line (what the controller really had at AUTO entry)
 NS.adcs.autoText = (a) => {
   if (!a) return '';
   const f = (k) => (adIs(a[k]) ? `${k} ${+a[k].toPrecision(4)}` : '');
-  return [f('EST'), f('ANG'), a.LIT === 0 ? 'ไม่เห็นหลอด' : '', f('KP'), f('KD'), f('KI'), f('SIGN'), f('RSIGN'), f('MAX')].filter(Boolean).join(' · ');
+  const s = (k) => (typeof a[k] === 'string' && a[k] ? `${k} ${a[k]}` : f(k));
+  return [f('EST'), f('ANG'), a.LIT === 0 ? 'ไม่เห็นหลอด' : '', f('KP'), f('KD'), f('KI'), f('SIGN'), f('RSIGN'), f('MAX'), f('DB'), f('WRAP'), f('SYNC'), s('STRAT')].filter(Boolean).join(' · ');
+};
+// "OFF · error 0.4 · EST 0.1 · ANG 0.2 · I 3.1" of EVT,TEAM_AUTO,OFF|FAULT (the end of the run)
+NS.adcs.endText = (e) => {
+  if (!e) return '';
+  const f = (k, l = k) => (adIs(e[k]) ? `${l} ${+e[k].toPrecision(3)}` : '');
+  return [e.state === 'FAULT' ? 'FAULT (บอร์ดตัดออกจาก AUTO)' : e.state === 'OFF' ? 'จบ AUTO' : e.state, f('ERR', 'error'), f('EST'), f('ANG'), f('I')].filter(Boolean).join(' · ');
 };
 
 // ---------------------------------------------------------------- results table -> CSV
 // items: [{ id, label, source, wall (ms), seg (label), m (metrics), params {key: value}, auto, note }]
-NS.adcs.CSV_HEAD = ['run', 'source', 'time', 'step', 'target_deg', 'from_deg', 'tol_deg', 'hold_s', 'enter_s', 'settle_s', 'overshoot_deg', 'overshoot_pct', 'steady_mean_deg', 'steady_sd_deg', 'max_abs_gz_dps', 'wheel_saturated_s', 'kicks', 'wrong_way', 'rows', 'duration_s'];
+NS.adcs.CSV_HEAD = ['run', 'source', 'time', 'step', 'target_deg', 'from_deg', 'tol_deg', 'hold_s', 'enter_s', 'settle_s', 'overshoot_deg', 'overshoot_pct', 'steady_mean_deg', 'steady_sd_deg', 'max_abs_gz_dps', 'wheel_saturated_s', 'kicks', 'ratchets', 'wrong_way', 'rows', 'duration_s'];
 NS.adcs.toCSV = (items) => {
   const keys = [...new Set(items.flatMap((it) => Object.keys(it.params || {})))].sort();
-  const akeys = ['TGT', 'EST', 'ANG', 'LIT', 'KP', 'KD', 'KI', 'SIGN', 'RSIGN', 'MAX'];
+  const akeys = ['TGT', 'EST', 'ANG', 'LIT', 'KP', 'KD', 'KI', 'SIGN', 'RSIGN', 'MAX', 'DB', 'WRAP', 'SYNC', 'STRAT'];
+  const ekeys = ['state', 'ERR', 'EST', 'ANG', 'I'];
   const q = (v) => { const s = v === null || v === undefined ? '' : adIs(v) ? String(+v.toFixed(4)) : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  const head = [...NS.adcs.CSV_HEAD, ...keys.map((k) => 'p.' + k), ...akeys.map((k) => 'auto.' + k), 'note'];
+  const head = [...NS.adcs.CSV_HEAD, ...keys.map((k) => 'p.' + k), ...akeys.map((k) => 'auto.' + k), ...ekeys.map((k) => 'end.' + k), 'note'];
   const lines = [head.join(',')];
   for (const it of items) {
     const m = it.m || {};
     const t = it.wall ? new Date(it.wall).toISOString() : '';
-    const base = [it.id, it.source, t, it.seg, m.tgt, m.a0, m.tol, m.hold, m.tEnter, m.tSettle, m.overshoot, m.overshootPct, m.ssMean, m.ssSD, m.maxGZ, m.tSat, m.kicks, m.wrong === undefined ? '' : m.wrong ? 1 : 0, m.n, m.dur];
-    lines.push([...base, ...keys.map((k) => (it.params || {})[k]), ...akeys.map((k) => (it.auto || {})[k]), it.note || ''].map(q).join(','));
+    const base = [it.id, it.source, t, it.seg, m.tgt, m.a0, m.tol, m.hold, m.tEnter, m.tSettle, m.overshoot, m.overshootPct, m.ssMean, m.ssSD, m.maxGZ, m.tSat, m.kicks, m.ratchets, m.wrong === undefined ? '' : m.wrong ? 1 : 0, m.n, m.dur];
+    lines.push([...base, ...keys.map((k) => (it.params || {})[k]), ...akeys.map((k) => (it.auto || {})[k]), ...ekeys.map((k) => (it.end || {})[k]), it.note || ''].map(q).join(','));
   }
   return lines.join('\n');
 };
@@ -4543,7 +4645,7 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     const ts = Date.now();
     S.log.push([ts, dir, text]);
     if (S.log.length > 300000) S.log.splice(0, 50000);
-    if (dir === 'rx' && text.startsWith('TM,TEAM_C,')) return; // the ADCS stream (up to 20 lines a second) goes to the session log and the ADCS page, not the console
+    if (dir === 'rx' && (text.startsWith('TM,TEAM_C,') || text.startsWith('TM,TEAM_CR,'))) return; // the ADCS stream (20 lines a second) and a flight-recorder dump (100) go to the session log and the ADCS page, not the console
     const ss = S.proto === 'sunseek'; // the organizer's lines: ACK ok, ERR error, EVT event, TM muted (and hideable like our T, lines)
     const isT = dir === 'rx' && (ss ? text.startsWith('TM,') : (text.startsWith('T,') || text.startsWith('IMG C') || text.includes('"type":"pins"')));
     let cls = dir === 'tx' ? 'tx' : dir === 'sys' ? 'sys' : '';
@@ -6616,6 +6718,7 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     run.rows.push({ ...row, t: (row.T - run.T0) / 1000 });
   }
   NS.bus.on('ss:line', (p) => {
+    if (A.dump && A.dump.reader.feed(p)) { A.dump.last = performance.now(); return; } // a TEAM_CDUMP is coming in (about 100 lines a second)
     const row = NS.adcs.parseC(p);
     if (row) {
       A.lastRow = row; A.lastAt = Date.now();
@@ -6629,6 +6732,7 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     }
     if (p.kind === 'ack') {
       if (p.ack.cmd === 'TEAM_CSTREAM') A.streamHz = +p.ack.args[0] || 0;
+      else if (p.ack.cmd === 'TEAM_CREC') { const a = p.ack.args; $('#adCrecOut').textContent = `ตัวหาร ${a[0]}${+a[0] > 0 ? ` (${NS.fmt(50 / +a[0], 1)} Hz)` : ' (ปิด)'} · บอร์ดเก็บรอบล่าสุดไว้ ${a[2] ?? '?'} ตัวอย่าง${a[4] === '1' ? ' (เต็ม: รอบยาวเกินหน่วยความจำ ส่วนต้นหายไป)' : ''}`; }
       else if (p.ack.cmd === 'TEAM_SET' && p.ack.args.length >= 2 && Number.isFinite(+p.ack.args[1])) { A.params[p.ack.args[0]] = +p.ack.args[1]; refreshParamRow(p.ack.args[0]); }
       return;
     }
@@ -6644,7 +6748,7 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     if (ev && A.rec) {
       const t = A.rec.rows.length ? A.rec.rows[A.rec.rows.length - 1].t : 0;
       A.rec.events.push({ ...ev, t });
-      if (ev.type === 'auto' && ev.on && !A.rec.auto) A.rec.auto = ev;
+      if (ev.type === 'auto') { if (ev.state === 'ON') { if (!A.rec.auto) A.rec.auto = ev; } else if (!A.rec.end) A.rec.end = ev; } // ON = entry, OFF / FAULT = the board ended the run
     }
   });
   NS.bus.on('stop', () => { if (A.busy) A.abort = true; });
@@ -6675,7 +6779,7 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
       el('div', { class: 'key' }, key, el('span', { class: 'tag', text: 'ยังไม่ SAVE' })),
       el('div', { class: 'val' }, inp, el('span', { class: 'u', text: info ? info.unit : '' })),
       el('div', { class: 'def', text: info ? `${info.min}..${info.max}` : '' }),
-      el('div', { class: 'desc', text: info ? info.text : '' }));
+      el('div', { class: 'desc', text: info ? info.text + (info.manual ? ' · แก้ได้เฉพาะ MANUAL (บอร์ดไม่รับตอน AUTO)' : '') : '' }));
   }
   function refreshParamRow(key) {
     const row = $(`.cfg-row[data-p="${CSS.escape(key)}"]`);
@@ -6740,6 +6844,8 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     $('#adLive').disabled = b;
     $('#adRead').disabled = b;
     $('#adSave').disabled = b;
+    $('#adDump').disabled = b;
+    $('#adCrecSet').disabled = b;
     for (const e of document.querySelectorAll('#adParams input')) e.disabled = b;
   }
   async function waitFor(sec) {
@@ -6818,6 +6924,61 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     setBusy(false);
     renderTable();
   }
+  // ---- the board's flight recorder: the last AUTO run (also one started from the Ground Station), pulled in MANUAL
+  async function pullDump() {
+    if (A.busy) return;
+    if (!ready()) { NS.toast('ยังไม่ได้เชื่อมต่อ (ถ้า Ground Station ต่ออยู่ ให้ตัดการเชื่อมต่อ GS ก่อน)', 'warn'); return; }
+    const step = Math.max(1, Math.min(50, Math.round(num('#adDumpStep', 1))));
+    const d = (A.dump = { reader: new NS.adcs.DumpReader(), last: performance.now() });
+    setBusy(true);
+    A.abort = false;
+    const out = $('#adDumpOut');
+    out.textContent = 'ขอข้อมูล…';
+    let err = null;
+    try {
+      const r = await cmd(step > 1 ? `TEAM_CDUMP,${step}` : 'TEAM_CDUMP', 4000);
+      if (!r.ok) throw new Error(/TEAM_REQUIRES_MANUAL/.test((r.reply && r.reply.raw) || '') ? 'บอร์ดอยู่ในโหมด AUTO: กด STOP ก่อน แล้วดึงอีกครั้ง (ดึงได้เฉพาะ MANUAL)' : `TEAM_CDUMP: ${why(r)}`);
+      d.last = performance.now();
+      while (!d.reader.ended && !A.abort) {
+        if (!S.connected) throw new Error('การเชื่อมต่อหลุดระหว่างดึงข้อมูล');
+        if (performance.now() - d.last > 4000) { err = new Error('ข้อมูลหยุดไหลเกิน 4 วินาทีก่อนบอร์ดบอกว่าจบ: ได้ข้อมูลไม่ครบ'); break; }
+        await NS.sleep(80);
+        out.textContent = `รับแล้ว ${d.reader.rows.length} / ${d.reader.expect || '?'} บรรทัด`;
+      }
+      if (A.abort) err = new Error('หยุดโดยผู้ใช้ (STOP): ได้ข้อมูลไม่ครบ');
+    } catch (e) { err = e; }
+    A.dump = null;
+    A.abort = false;
+    const rd = d.reader;
+    const n = rd.rows.length;
+    setBusy(false);
+    if (n < 5) {
+      const msg = err ? err.message : rd.ended ? 'บอร์ดไม่มีรอบ AUTO ที่บันทึกไว้ (เพิ่งรีสตาร์ต หรือยังไม่เคยเข้า AUTO หรือ TEAM_CREC,0)' : 'ได้ข้อมูลน้อยเกินไป';
+      out.textContent = msg;
+      NS.toast(msg, 'bad', 8000);
+      return;
+    }
+    const notes = [];
+    if (err) notes.push(err.message);
+    if (Number.isFinite(rd.endLines) && n < rd.endLines) notes.push(`ได้ ${n} จาก ${rd.endLines} บรรทัด (บรรทัดหาย)`);
+    if (rd.head) notes.push(`บันทึกทุก ${rd.head.DIV} สเต็ป (${NS.fmt(50 / rd.head.DIV, 0)} Hz)${step > 1 ? ` ข้ามทุก ${step}` : ''} รวม ${rd.head.N} ตัวอย่าง`);
+    if (!rd.auto) notes.push('ไม่มีบรรทัดสรุปตอนเข้า AUTO (TEAM_CR_AUTO): ไม่ทราบค่าที่ใช้');
+    const run = { id: A.nextId++, source: 'recorder', dump: true, wall: Date.now(), rows: rd.rows, events: [], params: NS.adcs.paramsFromAuto(rd.auto), auto: rd.auto, end: null, mode: 'dump', note: notes.join(' · ') };
+    A.runs.push(run);
+    A.view = run;
+    A.sel = run.id;
+    out.textContent = `ได้ ${n} บรรทัด (${NS.fmt(rd.rows[n - 1].t, 1)} วินาที) ${err ? '· ไม่ครบ' : '· ครบ'} · อยู่ในตารางแล้ว คลิกแถวดูกราฟ`;
+    renderTable();
+    const it = items().find((x) => x.run === run);
+    if (it && it.m.ok) NS.app.addEvidence('adcs_dump', `ดึงรอบ AUTO จากบอร์ด #${it.id}: ${NS.adcs.paramText(run.params)} · เข้า ±${it.m.tol}° ${NS.fmt(it.m.tEnter, 1)} s · นิ่ง ${NS.fmt(it.m.tSettle, 1)} s · overshoot ${NS.fmt(it.m.overshoot, 1)}°${it.m.wrong ? ' · ผิดทิศ' : ''}`, { id: run.id, auto: run.auto, m: it.m });
+    NS.toast(err ? `ดึงได้บางส่วน: ${err.message}` : 'ดึงรอบล่าสุดจากบอร์ดแล้ว: ดูผลในตารางด้านล่าง', err ? 'warn' : 'good', 6000);
+  }
+  async function setCrec() {
+    if (!ready()) { NS.toast('ยังไม่ได้เชื่อมต่อ', 'warn'); return; }
+    const n = Math.round(num('#adCrec', 2));
+    const r = await cmd(`TEAM_CREC,${n}`);
+    if (!r.ok) NS.toast(`TEAM_CREC: ${why(r)}`, 'bad', 7000);
+  }
   async function toggleLive() {
     if (A.busy) return;
     if (!ready()) { NS.toast('ยังไม่ได้เชื่อมต่อ', 'warn'); return; }
@@ -6836,7 +6997,7 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
       if (run.gs) { out.push({ run, id: String(run.id), seg: run.label, m: NS.adcs.gsMetrics(run, { tgt: run.tgt, satLevel: run.satLevel, tol, hold }) }); continue; }
       const segs = NS.adcs.segments(run.rows);
       if (!segs.length) { out.push({ run, id: String(run.id), seg: 'ไม่มีช่วง AUTO', m: { ok: false } }); continue; }
-      segs.forEach((sg, i) => out.push({ run, id: segs.length > 1 ? `${run.id}.${i + 1}` : String(run.id), seg: NS.adcs.segLabel(segs, i), first: i === 0, m: NS.adcs.metrics(sg.rows, { tol, hold, src, tgt: sg.tgt, satLevel: satOf(run), events: run.events }) }));
+      segs.forEach((sg, i) => out.push({ run, id: segs.length > 1 ? `${run.id}.${i + 1}` : String(run.id), seg: NS.adcs.segLabel(segs, i), first: i === 0, m: NS.adcs.metrics(sg.rows, { tol, hold, src, tgt: sg.tgt, satLevel: satOf(run), events: run.dump ? undefined : run.events }) }));
     }
     return out;
   }
@@ -6851,7 +7012,7 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
       td(it.id);
       td(it.run.gs ? it.run.clock : NS.clock(it.run.wall).slice(0, 8));
       td(it.seg);
-      if (!m.ok) { td(it.run.note || 'ข้อมูลไม่พอ'); for (let k = 0; k < 8; k++) td(''); tr.append(el('td')); }
+      if (!m.ok) { td(it.run.note || 'ข้อมูลไม่พอ'); for (let k = 0; k < 9; k++) td(''); tr.append(el('td')); }
       else {
         td(`${f1(m.tgt)}° จาก ${f1(m.a0)}°`, 'num');
         tr.append(el('td', { class: 'num' + (m.tEnter === null ? ' bad' : ''), text: m.tEnter === null ? 'ไม่เข้า' : `${f1(m.tEnter)} s` }));
@@ -6861,10 +7022,11 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
         td(m.maxGZ === null ? '—' : f1(m.maxGZ, 0), 'num');
         td(m.tSat === null ? '—' : `${f1(m.tSat)} s`, 'num');
         td(m.kicks === null ? '—' : String(m.kicks), 'num');
+        td(m.ratchets === null || m.ratchets === undefined ? '—' : String(m.ratchets), 'num');
         tr.append(el('td', { class: m.wrong ? 'bad' : '', text: m.wrong ? `ผิดทิศ ${f1(m.wrongDev)}°` : '—' }));
         const pc = el('td', { class: 'ad-params' });
         if (it.run.gs) pc.append(el('div', { text: `log GS · ${it.run.note || ''}` }));
-        else if (it.first) { pc.append(el('div', { text: NS.adcs.paramText(it.run.params) })); if (it.run.auto) pc.append(el('div', { class: 'muted', title: 'EVT,TEAM_AUTO: ค่าที่ตัวควบคุมมีตอนเข้า AUTO', text: 'AUTO: ' + NS.adcs.autoText(it.run.auto) })); if (it.run.note) pc.append(el('div', { class: 'muted', text: it.run.note })); }
+        else if (it.first) { pc.append(el('div', { text: NS.adcs.paramText(it.run.params) })); if (it.run.auto) pc.append(el('div', { class: 'muted', title: 'EVT,TEAM_AUTO: ค่าที่ตัวควบคุมมีตอนเข้า AUTO', text: 'AUTO: ' + NS.adcs.autoText(it.run.auto) })); if (it.run.end) pc.append(el('div', { class: 'muted', title: 'EVT,TEAM_AUTO,OFF / FAULT', text: NS.adcs.endText(it.run.end) })); if (it.run.dump) pc.append(el('div', { class: 'muted', text: 'ดึงจาก flight recorder' })); if (it.run.note) pc.append(el('div', { class: 'muted', text: it.run.note })); }
         else pc.append(el('div', { class: 'muted', text: '″' }));
         pc.title = Object.entries(it.run.params || {}).map(([k, v]) => `${k} = ${v}`).join('\n');
         tr.append(pc);
@@ -6876,7 +7038,7 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     $('#adExport').disabled = !its.length;
     $('#adRaw').disabled = !A.view;
   }
-  const csvItems = () => items().map((it) => ({ id: it.id, source: it.run.source, wall: it.run.wall, seg: it.seg, m: it.m, params: it.run.params, auto: it.run.auto, note: it.run.note }));
+  const csvItems = () => items().map((it) => ({ id: it.id, source: it.run.source, wall: it.run.wall, seg: it.seg, m: it.m, params: it.run.params, auto: it.run.auto, end: it.run.end, note: it.run.note }));
   function rawCsv(run) {
     const cols = ['t', 'T', 'M', 'TGT', 'ANG', 'EST', 'ERR', 'GZ', 'U', 'I', 'K', 'RW', 'LIT', 'H', 'SR'];
     return [cols.join(','), ...run.rows.map((r) => cols.map((c) => (NS.isNum(r[c]) ? +r[c].toFixed(4) : '')).join(','))].join('\n');
@@ -6961,7 +7123,8 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
         $('#adLive').firstChild.nodeValue = A.streamHz > 0 && !A.busy ? 'หยุดดูสด' : 'ดูสด';
         $('#adLive small').textContent = A.streamHz > 0 && !A.busy ? 'TEAM_CSTREAM,0' : 'TEAM_CSTREAM,10';
         const st = $('#adStatus');
-        const txt = A.busy ? (A.rec ? `${A.phase} ${NS.fmt((performance.now() - A.t0rec) / 1000, 1)} / ${NS.fmt(A.planDur, 0)} s · ${A.rec.rows.length} บรรทัด · กด STOP ได้ตลอด` : A.phase) : (ready() ? (A.streamHz > 0 ? `สตรีม TEAM_C ${A.streamHz} Hz เปิดอยู่` : 'พร้อม') : 'ยังไม่ได้เชื่อมต่อแบบ SunSeek');
+        const dr = A.dump ? A.dump.reader : null;
+        const txt = dr ? `ดึงข้อมูลจากบอร์ด ${dr.rows.length} / ${dr.expect || '?'} บรรทัด${dr.expect ? ` (${Math.min(100, Math.round((dr.rows.length / dr.expect) * 100))}%)` : ''} · กด STOP เพื่อเลิก` : A.busy ? (A.rec ? `${A.phase} ${NS.fmt((performance.now() - A.t0rec) / 1000, 1)} / ${NS.fmt(A.planDur, 0)} s · ${A.rec.rows.length} บรรทัด · กด STOP ได้ตลอด` : A.phase) : (ready() ? (A.streamHz > 0 ? `สตรีม TEAM_C ${A.streamHz} Hz เปิดอยู่` : 'พร้อม') : 'ยังไม่ได้เชื่อมต่อแบบ SunSeek');
         if (st.textContent !== txt) st.textContent = txt;
       }
       for (const c of charts) if (c.c.offsetParent !== null) c.draw();
@@ -6985,6 +7148,8 @@ function TimeChartTooltip(g, lines, x, y, w) { NS.TimeChart.prototype.tooltip.ca
     for (const id of ['#adTol', '#adHold', '#adSrc']) $(id).addEventListener('change', () => { viewSig = ''; renderTable(); });
     $('#adRun').addEventListener('click', runTest);
     $('#adLive').addEventListener('click', toggleLive);
+    $('#adDump').addEventListener('click', pullDump);
+    $('#adCrecSet').addEventListener('click', setCrec);
     $('#adRead').addEventListener('click', async () => { if (!ready()) { NS.toast('ยังไม่ได้เชื่อมต่อ', 'warn'); return; } try { await readParams(); NS.toast(`อ่านค่าแล้ว ${A.paramOrder.length} ค่า`, 'good'); } catch (e) { NS.toast(e.message, 'bad', 7000); } });
     $('#adSave').addEventListener('click', saveParams);
     $('#adStop').addEventListener('click', () => $('#btnStop').click());

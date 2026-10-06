@@ -97,6 +97,7 @@ NS.ss.State = class {
       this.lastAt = t;
       switch (p.kind) {
         case 'tm': {
+          if (/^TM,TEAM_CR(?:_[A-Z]+)?,/.test(p.raw || '')) break; // flight-recorder dump: positional rows and one-off snapshot, not key,value pairs (100 lines a second would fill the key table)
           const g = p.tm.group;
           for (const k of Object.keys(p.tm.kv)) {
             const key = g ? `${g}.${k}` : k;
@@ -463,6 +464,9 @@ NS.ss.errHelp = (() => {
     TEAM_LUT_DATA_SYNTAX: 'TEAM_LUT_DATA,<เริ่มที่>,<ค่า>,...',
     TEAM_LUT_DATA_VALUE: 'ค่าใน LUT ผิด (ต้องไม่เกิน ±90 และไม่เกินจำนวนที่ประกาศ)',
     TEAM_STREAM_RANGE_0_TO_20: 'TEAM_STREAM ต้องเป็น 0 ถึง 20',
+    TEAM_CSTREAM_RANGE_0_TO_20: 'TEAM_CSTREAM ต้องเป็น 0 ถึง 20',
+    TEAM_CREC_RANGE_0_TO_50: 'TEAM_CREC ต้องเป็นจำนวนเต็ม 0 ถึง 50 (0 = ปิดการบันทึก, 2 = 25 Hz)',
+    TEAM_CDUMP_STEP_1_TO_50: 'TEAM_CDUMP,<ข้ามทุกกี่บรรทัด> ต้องเป็นจำนวนเต็ม 1 ถึง 50',
     TEAM_UNKNOWN_COMMAND: 'ไม่รู้จักคำสั่ง TEAM_ นี้',
     TEAM_GYRO_ZERO_MOVING: 'ดาวเทียมยังขยับ (gyro สั่นหรือมุมดวงอาทิตย์เลื่อน): รอให้นิ่ง ไม่แตะโต๊ะ แล้วสั่ง TEAM_GYRO_ZERO ใหม่',
     TEAM_GYRO_ZERO_WHEEL_ON: 'ล้อยังถูกสั่งอยู่: STOP แล้วรอล้อหยุดสนิท (~8 วินาที) ก่อน TEAM_GYRO_ZERO',

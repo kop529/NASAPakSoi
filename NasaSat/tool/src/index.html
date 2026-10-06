@@ -673,6 +673,20 @@
       </div>
 
       <div class="sec">
+        <div class="sh">
+          <div><h2>ดึงรอบ AUTO ล่าสุดจากบอร์ด (flight recorder)</h2><p class="lead">บอร์ดบันทึกทุกรอบ AUTO ไว้ในหน่วยความจำเอง (25 Hz รอบละไม่เกิน ~96 วินาที) ใช้เมื่อรัน AUTO จาก Ground Station ซึ่งถือลิงก์บลูทูธอยู่คนเดียว: รันเสร็จ กด STOP ที่ GS, ตัดการเชื่อมต่อ GS, ต่อบลูทูธกับเว็บนี้ แล้วกดปุ่มนี้ ผลเข้าตารางเหมือนรอบที่ทดสอบจากเว็บ (ดึงได้เฉพาะ MANUAL ประมาณ 100 บรรทัดต่อวินาที)</p></div>
+          <div class="pageact"><button id="adDump" class="primary">ดึงรอบล่าสุดจากบอร์ด<small>TEAM_CDUMP</small></button></div>
+        </div>
+        <div class="row mid">
+          <label>ข้ามทุกกี่บรรทัด (1 = ครบ, เร็วขึ้นถ้าเพิ่ม) <input type="number" id="adDumpStep" value="1" min="1" max="50" step="1" style="width:90px"></label>
+          <label>ตัวหารการบันทึก (0 = ปิด, 2 = 25 Hz) <input type="number" id="adCrec" value="2" min="0" max="50" step="1" style="width:90px"></label>
+          <button id="adCrecSet" class="quiet">ตั้ง / ดูสถานะการบันทึก<small>TEAM_CREC</small></button>
+        </div>
+        <p class="note" id="adCrecOut"></p>
+        <p class="note" id="adDumpOut"></p>
+      </div>
+
+      <div class="sec">
         <h2>3. กราฟ</h2>
         <p class="note">แสดงรอบที่กำลังบันทึก หรือรอบที่คลิกเลือกในตาราง (เส้นประจางคือเกณฑ์ ± รอบเป้า) ถ้าไม่มีทั้งสองอย่างจะแสดงสตรีมสด 20 วินาทีล่าสุด</p>
         <div class="box"><div class="box-h">มุม: เป้า, EST (ตัวประมาณ), ANG (เซนเซอร์แสง)</div><canvas class="chart" id="adChAng"></canvas></div>
@@ -686,7 +700,7 @@
           <div class="pageact"><button id="adClear" class="quiet">ล้างตาราง</button><button id="adRaw" title="ข้อมูลดิบทุกบรรทัดของรอบที่เลือกอยู่ในกราฟ">ข้อมูลดิบรอบที่เลือก (.csv)</button><button id="adExport" class="primary">Export ผล (.csv)</button></div>
         </div>
         <div class="tablebox"><table class="tbl" id="adTable">
-          <thead><tr><th>#</th><th>เวลา</th><th>ช่วง</th><th>เป้า จาก</th><th>เข้า ±เกณฑ์</th><th>นิ่ง</th><th>overshoot</th><th>error ท้าย (mean ± SD)</th><th>max |GZ| °/s</th><th>ล้อตัน</th><th>เตะ</th><th>ผิดทิศ</th><th>พารามิเตอร์ / AUTO</th></tr></thead>
+          <thead><tr><th>#</th><th>เวลา</th><th>ช่วง</th><th>เป้า จาก</th><th>เข้า ±เกณฑ์</th><th>นิ่ง</th><th>overshoot</th><th>error ท้าย (mean ± SD)</th><th>max |GZ| °/s</th><th>ล้อตัน</th><th>เตะ</th><th>ratchet</th><th>ผิดทิศ</th><th>พารามิเตอร์ / AUTO</th></tr></thead>
           <tbody></tbody>
         </table></div>
         <p class="note" id="adEmpty">ยังไม่มีผล: กด "เริ่มทดสอบ" หรือนำเข้า log จาก Ground Station ด้านล่าง</p>

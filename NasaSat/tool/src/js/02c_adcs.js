@@ -5,12 +5,16 @@
 //   TM,TEAM_C,T,<ms>,M,<0|1>,TGT,<deg>,ANG,<deg>,EST,<deg>,ERR,<deg>,GZ,<dps>,U,<pct>,I,<pct>,K,<pct>,RW,<pct>,LIT,<0|1>,H,<0|1>,SR,<0|1>[,more]
 //   EVT,TEAM_AUTO,ON,TGT,..,EST,..,ANG,..,LIT,..[,KP,..,KD,..,KI,..,SIGN,..,RSIGN,..,MAX,..]   at AUTO entry
 //   EVT,TEAM_KICK,<k>,ERR,<e> · EVT,TEAM_HOLD,ON|OFF,ERR,<e> · EVT,TEAM_SUN_SEARCH,START,DIR,<+-1> | FOUND,ANGLE,<a>
+//   EVT,TEAM_RATCHET,<+-1>,ERR,<e> · EVT,TEAM_AUTO,OFF|FAULT,ERR,..,EST,..,ANG,..,I,..   (end of a run) · TM,TEAM_C also has SAT,<1|-1|0> (wheel at +-max)
+// Flight recorder (the board keeps the last AUTO run, also when only the Ground Station was connected): TEAM_CREC,<0..50> then, in MANUAL,
+//   TEAM_CDUMP[,<step>] -> ACK,TEAM_CDUMP,<lines> · TM,TEAM_CR_AUTO,ON,TGT,..(the AUTO-entry snapshot) · TM,TEAM_CR_HEAD,N,<n>,DIV,<d>,COLS,i;t;tgt;ang;est;err;gz;u;I;K;rw;fl
+//   · <lines> x TM,TEAM_CR,<i>,<t ms>,<tgt>,<ang>,<est>,<err>,<gz>,<u>,<I>,<K>,<rw>,<fl> (positional) · EVT,TEAM_CDUMP,END,<lines>
 // Every line is read as key,value pairs and unknown keys are ignored (the firmware may append more at the end).
 NS.adcs = NS.adcs || {};
 
 const AD_NUM = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
 const adIs = (x) => typeof x === 'number' && Number.isFinite(x);
-const adKnown = new Set(['T', 'M', 'TGT', 'ANG', 'EST', 'ERR', 'GZ', 'U', 'I', 'K', 'RW', 'LIT', 'H', 'SR']);
+const adKnown = new Set(['T', 'M', 'TGT', 'ANG', 'EST', 'ERR', 'GZ', 'U', 'I', 'K', 'RW', 'LIT', 'H', 'SR', 'SAT']);
 
 // parsed TM line (NS.ss.parse) -> { T, M, TGT, ANG, EST, ERR, GZ, U, I, K, RW, LIT, H, SR, extra } or null (not TEAM_C / unusable)
 NS.adcs.parseC = (p) => {
@@ -34,12 +38,75 @@ NS.adcs.parseEvt = (p) => {
   if (!p || p.kind !== 'evt' || !p.evt) return null;
   const a = p.evt.args || [];
   switch (p.evt.name) {
-    case 'TEAM_AUTO': return { type: 'auto', on: a[0] !== 'OFF', ...adKv(a, 1) };
+    case 'TEAM_AUTO': return { type: 'auto', state: a[0] || '', on: a[0] === 'ON', ...adKv(a, 1) }; // ON = entry (gains and signs), OFF / FAULT = the end of the run
+    case 'TEAM_RATCHET': return { type: 'ratchet', dir: AD_NUM.test(a[0] || '') ? +a[0] : NaN, ...adKv(a, 1) };
+    case 'TEAM_CDUMP': return { type: 'cdump', what: a[0] || '', lines: AD_NUM.test(a[1] || '') ? +a[1] : NaN };
     case 'TEAM_KICK': return { type: 'kick', k: AD_NUM.test(a[0] || '') ? +a[0] : NaN, ...adKv(a, 1) };
     case 'TEAM_HOLD': return { type: 'hold', on: a[0] === 'ON', ...adKv(a, 1) };
     case 'TEAM_SUN_SEARCH': return { type: 'search', what: a[0] || '', ...adKv(a, 1) };
     default: return null;
   }
+};
+
+// ---------------------------------------------------------------- flight recorder dump (TEAM_CDUMP)
+// the lines are positional (TM,TEAM_CR,...), so they are read from the raw text, with the column names of the TEAM_CR_HEAD line
+NS.adcs.CR_COLS = ['i', 't', 'tgt', 'ang', 'est', 'err', 'gz', 'u', 'I', 'K', 'rw', 'fl'];
+const AD_CR_MAP = { i: 'i', t: 'T', tgt: 'TGT', ang: 'ANG', est: 'EST', err: 'ERR', gz: 'GZ', u: 'U', I: 'I', K: 'K', rw: 'RW', fl: 'fl' };
+const adTok = (p, name) => { // tokens after "TM,<name>" of a parsed TM line, or null
+  if (!p || p.kind !== 'tm' || typeof p.raw !== 'string') return null;
+  const t = p.raw.split(',').map((s) => s.trim());
+  return t[0] === 'TM' && t[1] === name ? t.slice(2) : null;
+};
+NS.adcs.parseCrHead = (p) => {
+  const t = adTok(p, 'TEAM_CR_HEAD');
+  if (!t) return null;
+  const kv = adKv(t, 0);
+  const cols = typeof kv.COLS === 'string' && kv.COLS ? kv.COLS.split(';') : NS.adcs.CR_COLS;
+  return { N: adIs(kv.N) ? kv.N : NaN, DIV: adIs(kv.DIV) ? kv.DIV : NaN, cols };
+};
+// the AUTO-entry snapshot: the first field is the bare word ON, the rest key,value pairs (same keys as EVT,TEAM_AUTO,ON)
+NS.adcs.parseCrAuto = (p) => {
+  const t = adTok(p, 'TEAM_CR_AUTO');
+  if (!t) return null;
+  return { type: 'auto', state: 'ON', on: true, ...adKv(t, 1) };
+};
+// one recorded sample -> a row shaped like a TM,TEAM_C row (T = the sample time in ms), fl decoded: 1 LIT, 2 HOLD, 4 SEARCH, 8 wheel at +max, 16 at -max
+NS.adcs.parseCr = (p, cols = NS.adcs.CR_COLS) => {
+  const t = adTok(p, 'TEAM_CR');
+  if (!t || t.length < cols.length || !t.slice(0, cols.length).every((s) => AD_NUM.test(s))) return null;
+  const row = { M: 1 };
+  cols.forEach((c, i) => { if (AD_CR_MAP[c]) row[AD_CR_MAP[c]] = +t[i]; });
+  if (!adIs(row.T) || !(adIs(row.ANG) || adIs(row.EST))) return null;
+  const fl = adIs(row.fl) ? row.fl : 0;
+  row.LIT = fl & 1 ? 1 : 0;
+  row.H = fl & 2 ? 1 : 0;
+  row.SR = fl & 4 ? 1 : 0;
+  row.SAT = fl & 8 ? 1 : fl & 16 ? -1 : 0;
+  return row;
+};
+// collects the lines of one TEAM_CDUMP in order; feed(p) says whether the line belonged to the dump
+NS.adcs.DumpReader = class {
+  constructor() { this.cols = NS.adcs.CR_COLS; this.head = null; this.auto = null; this.rows = []; this.expect = 0; this.ended = false; this.endLines = NaN; this.T0 = undefined; }
+  feed(p) {
+    if (!p) return false;
+    if (p.kind === 'ack' && p.ack.cmd === 'TEAM_CDUMP') { this.expect = +p.ack.args[0] || 0; return true; }
+    if (p.kind === 'evt' && p.evt.name === 'TEAM_CDUMP') { this.ended = true; this.endLines = +p.evt.args[1]; return true; }
+    if (p.kind !== 'tm') return false;
+    const h = NS.adcs.parseCrHead(p);
+    if (h) { this.head = h; this.cols = h.cols; return true; }
+    const a = NS.adcs.parseCrAuto(p);
+    if (a) { this.auto = a; return true; }
+    const r = NS.adcs.parseCr(p, this.cols);
+    if (r) { if (this.T0 === undefined) this.T0 = r.T; this.rows.push({ ...r, t: (r.T - this.T0) / 1000 }); return true; }
+    return /^TM,TEAM_CR[,_]/.test(p.raw || '');
+  }
+};
+// the gains the dump (or EVT,TEAM_AUTO,ON) reports, under the parameter names of the board
+NS.adcs.paramsFromAuto = (a) => {
+  const m = { KP: 'adcs.kp', KD: 'adcs.kd', KI: 'adcs.ki', MAX: 'adcs.max', DB: 'adcs.db', WRAP: 'adcs.wrap', SIGN: 'adcs.sign', RSIGN: 'imu.rsign' };
+  const o = {};
+  for (const [k, name] of Object.entries(m)) if (a && adIs(a[k])) o[name] = a[k];
+  return o;
 };
 
 // ---------------------------------------------------------------- step-response metrics
@@ -108,15 +175,18 @@ NS.adcs.metrics = (rowsIn, o = {}) => {
   const gz = rows.map((r) => r.GZ).filter(adIs);
   m.maxGZ = gz.length ? Math.max(...gz.map(Math.abs)) : null;
 
-  m.tSat = null; // time with the wheel command at its limit
-  if (adIs(o.satLevel) && o.satLevel > 0 && rows.some((r) => adIs(r.RW))) {
+  // time with the wheel command at its limit: the board's own SAT flag (wheel at +-max) when the rows have it, else |RW| >= satLevel
+  const timeWhere = (test) => {
     let s = 0;
     for (let i = 0; i < rows.length; i++) {
       const dt = Math.min(i + 1 < rows.length ? tau[i + 1] - tau[i] : (i > 0 ? tau[i] - tau[i - 1] : 0), 0.25);
-      if (adIs(rows[i].RW) && Math.abs(rows[i].RW) >= o.satLevel) s += dt;
+      if (test(rows[i])) s += dt;
     }
-    m.tSat = s;
-  }
+    return s;
+  };
+  m.tSat = null;
+  if (rows.some((r) => adIs(r.SAT))) m.tSat = timeWhere((r) => adIs(r.SAT) && r.SAT !== 0);
+  else if (adIs(o.satLevel) && o.satLevel > 0 && rows.some((r) => adIs(r.RW))) m.tSat = timeWhere((r) => adIs(r.RW) && Math.abs(r.RW) >= o.satLevel);
 
   m.kicks = null; // stiction kicks: the EVT,TEAM_KICK events of this stretch, else the rising edges of the K term
   const ev = (o.events || []).filter((e) => e && e.type === 'kick' && e.t >= rows[0].t - 1e-9 && e.t <= rows[rows.length - 1].t + 0.25).length;
@@ -125,6 +195,8 @@ NS.adcs.metrics = (rowsIn, o = {}) => {
   let was = false;
   for (const r of rows) if (adIs(r.K)) { hasK = true; const on = Math.abs(r.K) > 0.5; if (on && !was) edges++; was = on; }
   if (ev > 0) m.kicks = ev; else if (hasK) m.kicks = edges; else if (o.events) m.kicks = 0;
+  // ratchets (EVT,TEAM_RATCHET: stuck at the wheel limit, the command backs off and jumps back): counted like the kicks
+  m.ratchets = o.events ? o.events.filter((e) => e && e.type === 'ratchet' && e.t >= rows[0].t - 1e-9 && e.t <= rows[rows.length - 1].t + 0.25).length : null;
 
   // wrong way: in the first wrongWin s the angle moves AWAY from the target by more than wrongDeg
   let grow = 0;
@@ -195,36 +267,48 @@ NS.adcs.PARAMS = [
   ['adcs.sk', 'gain ของลูปความเร็วตอนหาแสง', '', 0, 20],
   ['adcs.ghold', 'ไม่เห็นหลอด: 1 = ใช้ gyro ต่อมุมไปก่อน', '0/1', 0, 1],
   ['adcs.retarget', 'อนุญาตให้ SET_TARGET ตอน AUTO (ใช้ในการทดสอบ A→B→A)', '0/1', 0, 1],
+  ['adcs.wrap', 'ใช้มุมผิดพลาดทางสั้น (±180°) และซิงก์ตัวประมาณกับมุมเซนเซอร์ตอนเข้า AUTO (กันหมุนคืนรอบเก่า) 1 = เปิด', '0/1', 0, 1, true],
+  ['adcs.aw', 'anti-windup: ไม่สะสม integral / เตะ ตอนคำสั่งล้ออยู่ที่ขีดสูงสุด (มีผลเมื่อ adcs.ki > 0) 1 = เปิด', '0/1', 0, 1],
+  ['adcs.ratchet', 'ติดอยู่ที่ขีดล้อสูงสุดนานเท่านี้ ถอยคำสั่งลง adcs.kick % แล้วกระโดดกลับ (แรงบิดแบบกระชาก) 0 = ปิด', 'ms', 0, 10000],
+  ['cam.off', 'ตัวควบคุมเล็งที่ (เป้า + ค่านี้) ใช้ตอนกล้องติดเยื้องจากเซนเซอร์แสง', '°', -180, 180, true],
   ['rw.slew', 'จำกัดความชันของคำสั่งล้อ (0 = กระโดดทันที)', '%/s', 0, 5000],
   ['rw.minStart', 'คำสั่งล้อต่ำสุดที่ล้อเริ่มหมุน', '%', 0, 100],
   ['rw.minStable', 'คำสั่งล้อต่ำสุดที่ล้อหมุนต่อได้', '%', 0, 100],
 ];
-NS.adcs.paramInfo = (key) => { const r = NS.adcs.PARAMS.find((x) => x[0] === key); return r ? { key, text: r[1], unit: r[2], min: r[3], max: r[4] } : null; };
+NS.adcs.paramInfo = (key) => { const r = NS.adcs.PARAMS.find((x) => x[0] === key); return r ? { key, text: r[1], unit: r[2], min: r[3], max: r[4], manual: !!r[5] } : null; }; // manual: the board refuses it in AUTO
 // the parameters worth recording with every run (everything ADCS and the wheel use)
-NS.adcs.isRunParam = (key) => /^(adcs|rw)\./.test(key) || key === 'imu.rsign' || key === 'imu.gbz';
+NS.adcs.isRunParam = (key) => /^(adcs|rw)\./.test(key) || key === 'imu.rsign' || key === 'imu.gbz' || key === 'cam.off';
 // "kp 2 · kd 0.5 · ki 0.02 …" for the table
 NS.adcs.paramText = (p, keys = ['adcs.kp', 'adcs.kd', 'adcs.ki', 'adcs.db', 'adcs.max', 'adcs.kick', 'adcs.lock']) => keys.filter((k) => p && adIs(p[k])).map((k) => `${k.replace(/^adcs\./, '')} ${+(+p[k]).toPrecision(4)}`).join(' · ');
 // "KP 2 · KD 0.5 ..." of the EVT,TEAM_AUTO line (what the controller really had at AUTO entry)
 NS.adcs.autoText = (a) => {
   if (!a) return '';
   const f = (k) => (adIs(a[k]) ? `${k} ${+a[k].toPrecision(4)}` : '');
-  return [f('EST'), f('ANG'), a.LIT === 0 ? 'ไม่เห็นหลอด' : '', f('KP'), f('KD'), f('KI'), f('SIGN'), f('RSIGN'), f('MAX')].filter(Boolean).join(' · ');
+  const s = (k) => (typeof a[k] === 'string' && a[k] ? `${k} ${a[k]}` : f(k));
+  return [f('EST'), f('ANG'), a.LIT === 0 ? 'ไม่เห็นหลอด' : '', f('KP'), f('KD'), f('KI'), f('SIGN'), f('RSIGN'), f('MAX'), f('DB'), f('WRAP'), f('SYNC'), s('STRAT')].filter(Boolean).join(' · ');
+};
+// "OFF · error 0.4 · EST 0.1 · ANG 0.2 · I 3.1" of EVT,TEAM_AUTO,OFF|FAULT (the end of the run)
+NS.adcs.endText = (e) => {
+  if (!e) return '';
+  const f = (k, l = k) => (adIs(e[k]) ? `${l} ${+e[k].toPrecision(3)}` : '');
+  return [e.state === 'FAULT' ? 'FAULT (บอร์ดตัดออกจาก AUTO)' : e.state === 'OFF' ? 'จบ AUTO' : e.state, f('ERR', 'error'), f('EST'), f('ANG'), f('I')].filter(Boolean).join(' · ');
 };
 
 // ---------------------------------------------------------------- results table -> CSV
 // items: [{ id, label, source, wall (ms), seg (label), m (metrics), params {key: value}, auto, note }]
-NS.adcs.CSV_HEAD = ['run', 'source', 'time', 'step', 'target_deg', 'from_deg', 'tol_deg', 'hold_s', 'enter_s', 'settle_s', 'overshoot_deg', 'overshoot_pct', 'steady_mean_deg', 'steady_sd_deg', 'max_abs_gz_dps', 'wheel_saturated_s', 'kicks', 'wrong_way', 'rows', 'duration_s'];
+NS.adcs.CSV_HEAD = ['run', 'source', 'time', 'step', 'target_deg', 'from_deg', 'tol_deg', 'hold_s', 'enter_s', 'settle_s', 'overshoot_deg', 'overshoot_pct', 'steady_mean_deg', 'steady_sd_deg', 'max_abs_gz_dps', 'wheel_saturated_s', 'kicks', 'ratchets', 'wrong_way', 'rows', 'duration_s'];
 NS.adcs.toCSV = (items) => {
   const keys = [...new Set(items.flatMap((it) => Object.keys(it.params || {})))].sort();
-  const akeys = ['TGT', 'EST', 'ANG', 'LIT', 'KP', 'KD', 'KI', 'SIGN', 'RSIGN', 'MAX'];
+  const akeys = ['TGT', 'EST', 'ANG', 'LIT', 'KP', 'KD', 'KI', 'SIGN', 'RSIGN', 'MAX', 'DB', 'WRAP', 'SYNC', 'STRAT'];
+  const ekeys = ['state', 'ERR', 'EST', 'ANG', 'I'];
   const q = (v) => { const s = v === null || v === undefined ? '' : adIs(v) ? String(+v.toFixed(4)) : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  const head = [...NS.adcs.CSV_HEAD, ...keys.map((k) => 'p.' + k), ...akeys.map((k) => 'auto.' + k), 'note'];
+  const head = [...NS.adcs.CSV_HEAD, ...keys.map((k) => 'p.' + k), ...akeys.map((k) => 'auto.' + k), ...ekeys.map((k) => 'end.' + k), 'note'];
   const lines = [head.join(',')];
   for (const it of items) {
     const m = it.m || {};
     const t = it.wall ? new Date(it.wall).toISOString() : '';
-    const base = [it.id, it.source, t, it.seg, m.tgt, m.a0, m.tol, m.hold, m.tEnter, m.tSettle, m.overshoot, m.overshootPct, m.ssMean, m.ssSD, m.maxGZ, m.tSat, m.kicks, m.wrong === undefined ? '' : m.wrong ? 1 : 0, m.n, m.dur];
-    lines.push([...base, ...keys.map((k) => (it.params || {})[k]), ...akeys.map((k) => (it.auto || {})[k]), it.note || ''].map(q).join(','));
+    const base = [it.id, it.source, t, it.seg, m.tgt, m.a0, m.tol, m.hold, m.tEnter, m.tSettle, m.overshoot, m.overshootPct, m.ssMean, m.ssSD, m.maxGZ, m.tSat, m.kicks, m.ratchets, m.wrong === undefined ? '' : m.wrong ? 1 : 0, m.n, m.dur];
+    lines.push([...base, ...keys.map((k) => (it.params || {})[k]), ...akeys.map((k) => (it.auto || {})[k]), ...ekeys.map((k) => (it.end || {})[k]), it.note || ''].map(q).join(','));
   }
   return lines.join('\n');
 };
