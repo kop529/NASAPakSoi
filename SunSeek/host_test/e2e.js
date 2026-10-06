@@ -327,6 +327,29 @@ console.log('closed loop F4 (REACTION, drag 0.15/s, lamp +30 deg, 30 s)');
   check('integral term ends inside the 2 deg deadband, organizer PD does not (stick 0)', res['0/+ ki 0.5'].wob <= 2 && res['0/organizer PD'].wob > 3);
 }
 
+// F8 adcs.ghold: a target outside the sun sensor's range (camera targets) is reached on the gyro alone
+console.log('F8 gyro hold: SUN reference, lamp ahead, target 80 deg (sensor range ~ +-55 deg)');
+{
+  const go = (ghold, target) => {
+    const out = run(['#SET drag 0.15', '#SET stick 10', '#SET rateSign -1', '#SET lamp 0', '#WAIT 300', ...CAL,
+      'TEAM_SET,rw.minStart,10', 'TEAM_SET,rw.minStable,5', 'TEAM_SET,rw.slew,500', 'TEAM_SET,adcs.kp,4', 'TEAM_SET,adcs.kd,1', 'TEAM_SET,adcs.ki,1',
+      'TEAM_SET,adcs.db,0.5', 'TEAM_SET,adcs.kick,20', `TEAM_SET,adcs.ghold,${ghold}`, 'TEAM_SET,adcs.retarget,1', 'ADCS_REFERENCE,SUN', `SET_TARGET,${target}`,
+      'ADCS_STRATEGY,REACTION', 'ADCS_MODE,AUTO', ...Array.from({ length: 40 }, () => ['#WAIT 1000', '#STATE']).flat(), `SET_TARGET,0`,
+      ...Array.from({ length: 30 }, () => ['#WAIT 1000', '#STATE']).flat(), 'STOP', '#WAIT 10']);
+    const s = states(out);
+    return { at: s[39], back: s[s.length - 1], out };
+  };
+  const off = go(0, 80), on = go(1, 80);
+  console.log(`       ghold 0: after 40 s sun ${off.at.sun.toFixed(1)} deg (body ${off.at.body.toFixed(1)}), back at 0: ${off.back.sun.toFixed(1)}`);
+  console.log(`       ghold 1: after 40 s sun ${on.at.sun.toFixed(1)} deg (body ${on.at.body.toFixed(1)}), back at 0: ${on.back.sun.toFixed(1)}`);
+  // first version: ~5 deg past 80 (estimate pulled near the sensor edge before the lamp counts as lost), ghold 0 ends 40+ deg off
+  check('ghold 1 reaches 80 deg on the gyro (within 6 deg), much better than ghold 0', Math.abs(Math.abs(on.at.sun) - 80) < 6 && Math.abs(Math.abs(off.at.sun) - 80) > 20);
+  check('ghold 1 comes back to the lamp (within 2.5 deg after 30 s)', Math.abs(on.back.sun) < 2.5);
+  check('new target accepted in AUTO (adcs.retarget 1)', all(on.out, /^ERR,TARGET_OUT_OF_RANGE_OR_AUTO$/).length === 0);
+  const ref = run(['ADCS_MODE,AUTO', 'SET_TARGET,10', '#WAIT 20']);
+  check('organizer behaviour by default: SET_TARGET refused in AUTO', !!find(ref, /^ERR,TARGET_OUT_OF_RANGE_OR_AUTO$/) || !find(ref, /^ACK,ADCS_MODE,AUTO$/));
+}
+
 // organizer v3.0 profile momentum (T04): the merged team firmware must still run it
 console.log('v3.0 momentum profile (MOM_PROFILE_*, MOMENTUM AUTO)');
 {

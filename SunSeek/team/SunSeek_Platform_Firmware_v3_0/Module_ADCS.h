@@ -76,17 +76,18 @@ inline ADCSState adcsGet(){return _a;}
 inline void adcsManual(){_a.mode=ADCS_MANUAL;_a.u=0;}
 
 inline bool adcsReference(ADCSReference r){
-  if(_a.mode==ADCS_AUTO)return false;
+  if(_a.mode==ADCS_AUTO&&!TP.adcsRetarget)return false;  // TEAM NasaPakSoi: adcs.retarget=1 allows a new target in AUTO (wheel keeps running)
   _a.ref=r;
   estimatorSetReference(r==ADCS_MAG ? EST_REF_MAG : EST_REF_SUN);
   return true;
 }
 
 inline bool adcsTarget(float t){
-  if(_a.mode==ADCS_AUTO)return false;
+  if(_a.mode==ADCS_AUTO&&!TP.adcsRetarget)return false;  // TEAM NasaPakSoi: adcs.retarget=1 allows a new target in AUTO (wheel keeps running)
   if(_a.ref==ADCS_SUN&&(t < -90 || t > 90))return false;
   if(_a.ref==ADCS_MAG&&(t<0||t>=360))return false;
   _a.target=t;
+  if(_a.mode==ADCS_AUTO){_aK=0;_aMovedAt=millis();_aKickE0=1e9f;_aHold=false;_aInSince=millis();}  // TEAM: fresh kick/hold state for the new target
   return true;
 }
 
@@ -119,6 +120,13 @@ inline bool adcsRead(){
   _a.rate = p.bodyRate;
 
   _a.rawReference = (_a.ref==ADCS_MAG) ? p.heading : s.angleDeg;
+  // TEAM NasaPakSoi F8 (adcs.ghold): lamp not seen -> feed the estimator its own gyro prediction, so the angle
+  // continues on the gyro alone (no pull toward the meaningless dark/edge reading). Lets SET_TARGET go past the
+  // sun sensor's range (camera targets); the lamp seen again pulls the estimate back (fusion correction).
+  if(TP.adcsGhold&&_a.ref==ADCS_SUN&&!_aSunSeen&&_aEverSeen){
+    const EstimatorState e0=estimatorGet();
+    if(e0.valid)_a.rawReference=e0.estimatedAngleDeg+_a.rate*(ADCS_CONTROL_PERIOD_MS/1000.0f);
+  }
   EstimatorReference er = (_a.ref==ADCS_MAG) ? EST_REF_MAG : EST_REF_SUN;
   if(!estimatorUpdate(_a.rawReference, _a.rate, er)){
     _a.valid=false;
@@ -165,7 +173,7 @@ inline void adcsUpdate(){
   // TEAM NasaPakSoi F7: lamp not seen for 0.3 s -> turn at adcs.srate toward where it was last seen (gyro rate loop),
   // seen again for 0.2 s -> back to the normal law, the integrator taking over the wheel command (no jump).
   const float dtS=ADCS_CONTROL_PERIOD_MS/1000.0f;
-  if(TP.adcsSrate>0&&_a.ref==ADCS_SUN){
+  if(TP.adcsSrate>0&&_a.ref==ADCS_SUN&&!TP.adcsGhold){  // F8 on: no search, the gyro carries the angle
     if(_aSunSeen)_aLostSince=n; else _aSeenSince=n;  // lost since = last time seen, and the other way round
     if(!_aSearch&&!_aSunSeen&&n-_aLostSince>=300){
       _aSearch=true;_aS=_a.u;

@@ -69,6 +69,8 @@ struct TeamParams {
   float adcsKick = 0;
   float adcsKickMs = 1500;  // sim scan 5 Oct: 600 ms also kicked at the turning points of a slow swing
   float adcsKrate = 1;
+  int adcsGhold = 0;     // F8: lamp not seen (SUN reference) -> the angle continues on the gyro alone (adcs.ghold)
+  int adcsRetarget = 0;  // SET_TARGET accepted in AUTO (adcs.retarget)
   // team telemetry over USB, 0 = off
   int tmHz = 0;
 };
@@ -128,6 +130,8 @@ static TeamParamDef _tpDefs[] = {
   {"adcs.kick",   TPT_FLOAT,  &TP.adcsKick,      0, 0, 60},
   {"adcs.kickMs", TPT_FLOAT,  &TP.adcsKickMs,    0, 100, 10000},
   {"adcs.krate",  TPT_FLOAT,  &TP.adcsKrate,     0, 0, 30},
+  {"adcs.ghold",  TPT_INT,    &TP.adcsGhold,      0, 0, 1},
+  {"adcs.retarget", TPT_INT,  &TP.adcsRetarget,   0, 0, 1},
   {"team.tm",     TPT_INT,    &TP.tmHz,          0, 0, 20},
 };
 static const int TEAM_PARAM_COUNT = sizeof(_tpDefs) / sizeof(_tpDefs[0]);
