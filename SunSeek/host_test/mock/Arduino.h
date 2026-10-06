@@ -138,6 +138,7 @@ class Stream {
 class MockSerial : public Stream {
  public:
   void begin(unsigned long) {}
+  size_t setTxBufferSize(size_t n) { return n; }
   void writeText(const std::string& s) override;
   operator bool() const { return true; }
 };

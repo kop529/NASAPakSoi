@@ -276,7 +276,7 @@ inline void _adcsStep(){
     }
     u=hg*(_a.kp*_a.error-_a.kd*_a.rate)+_aI;  // hg: F5 hold gain
     // TEAM NasaPakSoi F4 stiction kick: still for adcs.kickMs although outside the deadband -> step toward the target
-    if(TP.adcsKick>0&&!_aRat){
+    if(TP.adcsKick>0&&!_aRat&&!_aHold){  // team-4: no kick in HOLD (rig: a kick slips 3-4.5 deg -> past the target)
       if(fabsf(_a.rate)>=TP.adcsKrate){_aMovedAt=n;_aKickE0=fabsf(_a.error);}
       else if(n-_aMovedAt>=(unsigned long)TP.adcsKickMs){
         // stuck = slow AND the error did not shrink 0.2 deg in the window (a body creeping toward the target on a
@@ -326,6 +326,7 @@ inline void _adcsStep(){
       cu,
       -TP.adcsMax,
       TP.adcsMax));
+    if(((volatile ADCSState&)_a).mode!=ADCS_AUTO)return;  // team-4: BLE commands run on core 0; STOP may land mid-step
     rwSetReactionCommand(c); return;
   }
 

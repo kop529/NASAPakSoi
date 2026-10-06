@@ -10,7 +10,7 @@
      TEAM_LIST                        one TM,TEAM_PARAM,<key>,<value> per parameter
      TEAM_GET,<key>                   TM,TEAM_PARAM,<key>,<value>
      TEAM_SET,<key>,<value>           ACK,TEAM_SET,<key>,<value>   (RAM only until TEAM_SAVE)
-     TEAM_SAVE                        ACK,TEAM_SAVE,<n>            (flash; survives reset/power-off)
+     TEAM_SAVE                        ACK,TEAM_SAVE,<n>            (flash; survives reset/power-off; MANUAL only)
      TEAM_DEFAULTS,YES                ACK,TEAM_DEFAULTS            (organizer defaults + clears flash; MANUAL only)
      TEAM_LUT_BEGIN,<x0>,<dx>,<n>     start a new LUT (n <= 256 values on the grid x0 + i*dx of the raw angle)
      TEAM_LUT_DATA,<i0>,<v>,<v>,...   values i0, i0+1, ... (keep each line < 240 characters)
@@ -231,6 +231,7 @@ inline void teamHandleCommand(const String& command) {
   }
 
   if (command == "TEAM_SAVE") {
+    if (!manual) { sendTelemetry("ERR,TEAM_REQUIRES_MANUAL,TEAM_SAVE"); return; }  // team-4: a flash write stalls both cores
     const int n = teamParamsSave();
     if (n < 0) { sendTelemetry("ERR,TEAM_SAVE_FLASH"); return; }
     sendTelemetry("ACK,TEAM_SAVE," + String(n));

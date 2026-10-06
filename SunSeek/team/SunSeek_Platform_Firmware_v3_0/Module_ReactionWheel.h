@@ -62,7 +62,7 @@ static float _rwApplied=0;
 static int _rwPinsCommand=1000;  // last command written to the pins (1000 = none yet)
 static unsigned long _rwSlewLast=0;
 inline void _rwOutput(int command){
-  if(command==_rwPinsCommand)return; _rwPinsCommand=command;
+  if(command==_rwPinsCommand&&command!=0)return; _rwPinsCommand=command;  // team-4: 0 (STOP) always reaches the pins
   int pwm=_rwPercentToPWM(abs(command));
   if(command==0){ analogWrite(RW_PIN_PWMA,0); digitalWrite(RW_PIN_AIN1,LOW); digitalWrite(RW_PIN_AIN2,LOW); }
   else if(command>0){ digitalWrite(RW_PIN_AIN1,HIGH); digitalWrite(RW_PIN_AIN2,LOW); analogWrite(RW_PIN_PWMA,pwm); }

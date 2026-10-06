@@ -14,6 +14,7 @@
 #include "System_CommandRouter.h"
 
 void setup(){
+  Serial.setTxBufferSize(4096);  // TEAM NasaPakSoi team-4: core 3.3.11 default 0 -> println blocks the loop
   Serial.begin(115200);
   delay(1000);
   rwBegin();

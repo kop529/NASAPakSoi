@@ -23,7 +23,7 @@
 */
 #define ESTIMATOR_DEFAULT_FILTER_ENABLED true
 #define ESTIMATOR_DEFAULT_FILTER_TYPE 1
-#define ESTIMATOR_DEFAULT_MA_WINDOW 10
+#define ESTIMATOR_DEFAULT_MA_WINDOW 1  // TEAM NasaPakSoi team-4 (organizer 10): MA 10 = ~90 ms lag -> EST behind the body, ghold counts ~92 %; the sampler already averages 20 ms
 #define ESTIMATOR_MAX_MA_WINDOW 500
 
 #define ESTIMATOR_DEFAULT_FILTER_STRENGTH 0.35f

@@ -18,7 +18,7 @@
 #include "Config_Sensor.h"
 #include "Team_SunModel.h"
 
-#define TEAM_FW_VERSION "NasaPakSoi-team-3"
+#define TEAM_FW_VERSION "NasaPakSoi-team-4"
 #define TEAM_NVS_NAMESPACE "nps"
 
 struct TeamParams {
@@ -257,7 +257,7 @@ inline int teamParamsSave() {
   if (!prefs.begin(TEAM_NVS_NAMESPACE, false)) return -1;
   int n = 0;
   for (int i = 0; i < TEAM_PARAM_COUNT; i++) {
-    prefs.putDouble(_tpDefs[i].key, teamParamGet(_tpDefs[i]));
+    if (prefs.putDouble(_tpDefs[i].key, teamParamGet(_tpDefs[i])) == 0) { prefs.end(); return -1; }  // team-4: report a failed write
     _tpDirty[i] = false;
     n++;
   }
@@ -265,7 +265,7 @@ inline int teamParamsSave() {
     prefs.putInt("lut.n", TP.sun.lutN);
     prefs.putDouble("lut.x0", TP.sun.lutX0);
     prefs.putDouble("lut.dx", TP.sun.lutDx);
-    if (TP.sun.lutN > 0) prefs.putBytes("lut.v", TP.sun.lutV, TP.sun.lutN * sizeof(float));
+    if (TP.sun.lutN > 0) { if (prefs.putBytes("lut.v", TP.sun.lutV, TP.sun.lutN * sizeof(float)) == 0) { prefs.end(); return -1; } }
     else prefs.remove("lut.v");
     _teamLutDirty = false;
   }
