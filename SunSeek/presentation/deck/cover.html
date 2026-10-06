@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>NasaPakSoi · ปก</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* theme tokens (from the official key visual: bg #050704, lime #A9B92A) — copy these for every slide */
+  :root {
+    --bg: #0A0C09; --text: #F1F3EE; --muted: #A3AA9C; --line: #2C3328; --lime: #A9B92A;
+    --head: 'Kanit', sans-serif; --body: 'IBM Plex Sans Thai', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #000; height: 100%; }
+  body { display: grid; place-items: center; overflow: hidden; }
+  .slide { position: relative; width: 1920px; height: 1080px; background: var(--bg); color: var(--text); font-family: var(--body); overflow: hidden;
+           transform-origin: center; }
+  /* real ISS photo (NASA iss060e022358, public domain): Earth limb + airglow at the bottom */
+  .earth { position: absolute; inset: 0; background: url(img/earth_iss060e022358.jpg) center 70% / cover no-repeat; }
+  .earth::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10,12,9,.92) 0%, rgba(10,12,9,.55) 45%, rgba(10,12,9,0) 75%); }
+  .tysc { position: absolute; left: 112px; top: 84px; width: 300px; }
+  .org { position: absolute; right: 112px; top: 92px; display: grid; justify-items: end; gap: 12px; }
+  .org img:first-child { height: 40px; }
+  .org img:last-child { height: 46px; opacity: .85; }
+  .title { position: absolute; left: 112px; top: 470px; width: 900px; }
+  .event { font-family: var(--head); font-weight: 500; font-size: 28px; color: var(--lime); letter-spacing: .02em; }
+  h1 { margin-top: 18px; font-family: var(--head); font-weight: 600; font-size: 84px; line-height: 1.12; }
+  h1 em { font-style: normal; color: var(--lime); }
+  .sub { margin-top: 22px; font-size: 30px; color: var(--muted); }
+  .photo { position: absolute; right: 112px; top: 300px; width: 700px; }
+  .photo img { display: block; width: 700px; height: 394px; object-fit: cover; object-position: 50% 40%; border: 1px solid var(--line); }
+  .photo p { margin-top: 12px; font-size: 20px; color: var(--muted); text-align: right; }
+  .team { position: absolute; left: 112px; bottom: 84px; display: flex; align-items: center; gap: 28px; }
+  .team img { height: 112px; }
+  .team b { display: block; font-family: var(--head); font-weight: 600; font-size: 44px; }
+  .team span { font-size: 26px; color: var(--muted); }
+</style>
+</head>
+<body>
+<section class="slide">
+  <div class="earth"></div>
+  <img class="tysc" src="img/tysc_logo_lime.png" alt="Thailand Young Satellite Challenge">
+  <div class="org"><img src="img/bde_27_white.png" alt="BDE"><img src="img/bde_25_white.png" alt="สำนักงานคณะกรรมการดิจิทัลเพื่อเศรษฐกิจและสังคมแห่งชาติ"></div>
+  <div class="title">
+    <div class="event">Thailand Young Satellite Challenge 2026 · รอบชิงชนะเลิศ</div>
+    <h1>ดาวเทียมหันหาแสงเอง<br>ด้วย<em>ล้อปฏิกิริยา</em></h1>
+    <p class="sub">ระบบควบคุมทิศทาง (Reaction Wheel ADCS) บนบอร์ด SunSeek</p>
+  </div>
+  <figure class="photo">
+    <img src="img/sat_20261006.jpg" alt="ยานของทีมบนแท่นหมุน">
+    <p>ยานของเราบนแท่นหมุน · 6 ต.ค. 2569</p>
+  </figure>
+  <div class="team">
+    <img src="img/school.png" alt="ตราโรงเรียนชลราษฎรอำรุง">
+    <div><b>ทีมนาซ่าหน้าปากซอย</b><span>โรงเรียนชลราษฎรอำรุง จ.ชลบุรี · ตัวแทนภาคตะวันออก · 9 ต.ค. 2569</span></div>
+  </div>
+</section>
+<script>
+  // fit the 1920x1080 slide to any window
+  const s = document.querySelector('.slide');
+  const fit = () => { s.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; };
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>
