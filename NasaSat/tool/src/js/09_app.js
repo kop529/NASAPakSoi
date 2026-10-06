@@ -67,6 +67,7 @@
     if (st === 'open') {
       S.connected = true;
       if (S.tr.kind === 'serial' && info && info.usbVendorId) S.portInfo = info;
+      if (S.tr.kind === 'ble') S.bleInfo = info || {};
       const sim = S.tr.kind === 'sim';
       setPill('#connPill', sim ? 'ตัวจำลอง — ไม่ใช่บอร์ดจริง' : S.proto === 'sunseek' ? 'บอร์ดจริง · SunSeek' : 'บอร์ดจริง', sim ? 'sim' : 'on'); channel(S.tr.kind); sys('connected ' + JSON.stringify(info || {})); showConnInfo(info);
     } else if (st === 'closed') { S.connected = false; clearLive(); if (!re.on) { setPill('#connPill', 'ยังไม่เชื่อมต่อ', 'off'); channel(''); } sys('closed'); }
@@ -79,6 +80,8 @@
       S.pending.clear();
       rejectImageWaits('การเชื่อมต่อหลุด');
       if (S.tr && S.tr.kind === 'serial' && $('#autoRe').checked && S.portInfo) startReconnect();
+      else if (S.tr && S.tr.kind === 'ble' && $('#autoRe').checked && S.tr.device) startReconnect();
+      else if (S.tr && S.tr.kind === 'ble') NS.toast('บลูทูธหลุด (บอร์ดอยู่ไกลเกินไป, แบตหมด หรือมีโปรแกรมอื่นเช่น Ground Station มาต่อแทน) กด "เชื่อมต่อ" ใหม่', 'bad', 7000);
       else NS.toast('บอร์ดหลุดการเชื่อมต่อ (สายหลุด, บอร์ดรีเซ็ต หรือเปิด Arduino Serial Monitor อยู่) กด "เชื่อมต่อ" ใหม่', 'bad', 7000);
     }
     updateNav();
@@ -92,13 +95,31 @@
     re.on = true;
     re.t0 = Date.now();
     setPill('#connPill', 'กำลังต่อใหม่…', 'warn');
-    NS.toast('บอร์ดหลุด: กำลังต่อใหม่อัตโนมัติ (บอร์ดรีเซ็ตจะกลับมาเองในไม่กี่วินาที)', 'warn', 5000);
+    NS.toast(S.tr && S.tr.kind === 'ble' ? 'บลูทูธหลุด: กำลังต่อบอร์ดเดิมใหม่อัตโนมัติ (ไม่ต้องเลือกอุปกรณ์ใหม่)' : 'บอร์ดหลุด: กำลังต่อใหม่อัตโนมัติ (บอร์ดรีเซ็ตจะกลับมาเองในไม่กี่วินาที)', 'warn', 5000);
     tryReconnect();
   }
   function stopReconnect() { re.on = false; clearTimeout(re.timer); }
+  async function bleReconnect() { // the same BluetoothDevice again (gatt.connect, no chooser), retried by the transport
+    const tr = S.tr;
+    try {
+      await tr.reconnect({ ms: Math.max(1000, 30000 - (Date.now() - re.t0)), stop: () => !re.on || S.tr !== tr });
+    } catch (_) {
+      if (!re.on || S.tr !== tr) return; // the user closed the link meanwhile
+      stopReconnect();
+      setPill('#connPill', 'หลุด!', 'bad');
+      NS.toast('ต่อบลูทูธใหม่อัตโนมัติไม่สำเร็จใน 30 วินาที: ตรวจว่าบอร์ดมีไฟและอยู่ใกล้คอม และ Ground Station ไม่ได้ต่ออยู่ แล้วกด "เชื่อมต่อ" เอง', 'bad', 9000);
+      return;
+    }
+    if (!re.on || S.tr !== tr) { try { await tr.disconnect(); } catch (_) { /* gone */ } return; }
+    stopReconnect();
+    sys('reconnected');
+    NS.toast('ต่อบอร์ดใหม่อัตโนมัติแล้ว', 'good');
+    setTimeout(handshake, 600);
+  }
   async function tryReconnect() {
     if (!re.on) return;
     clearTimeout(re.timer);
+    if (S.tr && S.tr.kind === 'ble') { await bleReconnect(); return; }
     if (Date.now() - re.t0 > 30000) {
       stopReconnect();
       setPill('#connPill', 'หลุด!', 'bad');
@@ -127,7 +148,8 @@
     if (re.on) re.timer = setTimeout(tryReconnect, 700);
   }
   const showConnInfo = (info) => {
-    const o = { ช่องทาง: S.tr.kind === 'sim' ? 'ตัวจำลอง' : 'Web Serial' };
+    const o = { ช่องทาง: S.tr.kind === 'sim' ? 'ตัวจำลอง' : S.tr.kind === 'ble' ? 'Web Bluetooth (Nordic UART)' : 'Web Serial' };
+    if (S.tr.kind === 'ble' && info) o['ชื่ออุปกรณ์'] = info.name || '—';
     if (info && info.usbVendorId) { o['USB VID:PID'] = `${info.usbVendorId.toString(16).padStart(4, '0')}:${(info.usbProductId || 0).toString(16).padStart(4, '0')}`; o['ชนิดชิป USB (เดา)'] = usbGuess(info.usbVendorId); }
     NS.kv($('#connInfo'), o);
   };
@@ -136,23 +158,27 @@
   async function connect() {
     const kind = $('input[name=trKind]:checked').value;
     if (kind === 'serial' && !NS.SerialTransport.supported()) { NS.toast('เบราว์เซอร์นี้ไม่มี Web Serial ให้เปิดด้วย Chrome หรือ Edge', 'bad', 6000); return; }
+    if (kind === 'ble' && !NS.BleTransport.supported()) { NS.toast('เบราว์เซอร์นี้ไม่มี Web Bluetooth ให้เปิดไฟล์ด้วย Chrome หรือ Edge', 'bad', 6000); return; }
     stopReconnect();
     if (S.tr) await disconnect();
     if (kind === 'sim' && S.proto !== 'nasasat') setProto('nasasat', false); // the simulator only speaks our protocol
-    const tr = kind === 'sim' ? new NS.Sim() : new NS.SerialTransport();
+    if (kind === 'ble' && S.proto !== 'sunseek') setProto('sunseek', false); // the board speaks only the SunSeek protocol over Bluetooth
+    const tr = kind === 'sim' ? new NS.Sim() : kind === 'ble' ? new NS.BleTransport() : new NS.SerialTransport();
     tr.onLine = onLine;
     tr.onStatus = onStatus;
     S.tr = tr;
     S.cols = null;
+    S.portInfo = null; S.bleInfo = null;
+    S.ss.client.timeout = kind === 'ble' ? 3000 : 1500; // a notification takes longer than a USB line
     S.ss.state.clear(); S.ss.hinted = false; // a new connection starts without the old board's values
     NS.store.set('baud', $('#selBaud').value);
     NS.store.set('dtr', $('#selDtr').value);
     NS.store.set('kind', kind);
     try {
-      await tr.connect({ baud: $('#selBaud').value, dtr: $('#selDtr').value });
+      await tr.connect(kind === 'ble' ? { all: $('#bleAll').checked } : { baud: $('#selBaud').value, dtr: $('#selDtr').value });
     } catch (e) {
       S.tr = null;
-      if (!/No port selected|cancel/i.test(e.message)) NS.toast('เชื่อมต่อไม่สำเร็จ: ' + e.message, 'bad', 6000);
+      if (!/No port selected|cancel/i.test(e.message)) NS.toast(('เชื่อมต่อไม่สำเร็จ: ' + e.message + ' ' + (kind === 'ble' ? NS.bleErrHelp(e) : '')).trim(), 'bad', 9000);
       return;
     }
     $('#simCard').hidden = kind !== 'sim';
@@ -576,12 +602,13 @@
   ];
   function applyProtoUI() { // everything on the page that depends on the protocol
     const ss = S.proto === 'sunseek';
-    const sim = $('input[name=trKind]:checked').value === 'sim';
+    const tk = $('input[name=trKind]:checked').value;
+    const sim = tk === 'sim';
     document.body.dataset.proto = S.proto;
     for (const e of $$('.ss-only')) e.hidden = !ss;
     for (const e of $$('.ns-only')) e.hidden = ss;
     $('#helloInfo').hidden = ss;
-    $('#protoNote').textContent = sim ? 'ตัวจำลองพูดได้เฉพาะโปรโตคอล NasaSat' : ss
+    $('#protoNote').textContent = sim ? 'ตัวจำลองพูดได้เฉพาะโปรโตคอล NasaSat' : tk === 'ble' ? 'บลูทูธใช้ได้กับเฟิร์มแวร์ SunSeek เท่านั้น (ต่อ Nordic UART ของบอร์ด) · คำสั่งและหน้าต่าง ๆ ใช้เหมือนต่อ USB' : ss
       ? 'เฟิร์มแวร์ของผู้จัด: ส่งคำสั่งแบบ CMD,arg (ไม่มี @id) บอร์ดตอบ PONG / ACK / ERR / TM / EVT · ใช้ Console และคำสั่งด่วน · ปุ่ม STOP ส่ง STOP'
       : 'คุยด้วยคำสั่ง @id (ตอบ OK / ERR) ใช้ได้ครบทุกหน้า ทั้งคาลิเบรต ภารกิจ และจูนค่า';
     const ph = ss ? 'พิมพ์คำสั่ง เช่น STATUS หรือ RW,30 แล้วกด Enter (↑/↓ = ประวัติ)' : 'พิมพ์คำสั่ง เช่น SET ctl.k 0.8 แล้วกด Enter (↑/↓ = ประวัติ)';
@@ -605,10 +632,11 @@
     if (rf.firstChild.nodeValue !== lbl) { rf.firstChild.nodeValue = lbl; rf.querySelector('small').textContent = ss ? 'STATUS' : 'DIAG'; }
     updateNav();
   }
-  function syncProtoForKind(sim) { // the simulator cannot speak SunSeek; the saved choice comes back with a real board
-    $('input[name=proto][value=sunseek]').disabled = sim;
+  function syncProtoForKind(kind) { // the simulator cannot speak SunSeek, Bluetooth speaks nothing else; the saved choice comes back with a USB board
+    $('input[name=proto][value=sunseek]').disabled = kind === 'sim';
+    $('input[name=proto][value=nasasat]').disabled = kind === 'ble';
     if (S.connected) applyProtoUI(); // an open connection keeps its protocol
-    else setProto(sim ? 'nasasat' : NS.store.get('proto', 'nasasat'), false);
+    else setProto(kind === 'sim' ? 'nasasat' : kind === 'ble' ? 'sunseek' : NS.store.get('proto', 'nasasat'), false);
   }
 
   // ------------------------------------------------------------------ telemetry + live
@@ -715,7 +743,7 @@
     if (S.proto === 'sunseek') { // the checks of our firmware (HELLO, settings, telemetry) mean nothing here
       const s = S.ss.state; const live = c && s.lines > 0;
       $('#connList').replaceChildren(
-        vrow(c ? 'ok' : 'muted', 'พอร์ต', c ? (pi && pi.usbVendorId ? `USB ${pi.usbVendorId.toString(16)}:${(pi.usbProductId || 0).toString(16)}` : 'Web Serial') : 'ยังไม่เชื่อมต่อ', c ? '' : 'กด "เชื่อมต่อ"'),
+        vrow(c ? 'ok' : 'muted', 'พอร์ต', c ? (S.tr && S.tr.kind === 'ble' ? `Bluetooth ${(S.bleInfo && S.bleInfo.name) || ''}`.trim() : pi && pi.usbVendorId ? `USB ${pi.usbVendorId.toString(16)}:${(pi.usbProductId || 0).toString(16)}` : 'Web Serial') : 'ยังไม่เชื่อมต่อ', c ? '' : 'กด "เชื่อมต่อ"'),
         vrow(s.lastPong ? 'ok' : c ? 'warn' : 'muted', 'บอร์ดตอบ PING', s.lastPong ? 'PONG' : live ? 'ยังไม่ตอบ' : '—', s.lastPong || !c ? '' : 'กด "ตรวจการเชื่อมต่อ" ในคำสั่งด่วน'),
         vrow(s.banner ? 'ok' : 'muted', 'เฟิร์มแวร์', s.banner ? s.banner.replace(/\s+—.*$/, '') : '—', s.banner ? '' : 'เห็นตอนบอร์ดเพิ่งบูต'),
         vrow(S.ss.tmHz > 0 ? 'ok' : 'muted', 'สตรีม TM', S.ss.tmHz > 0 ? `${S.ss.tmHz} บรรทัด/วินาที` : '—', S.ss.tmHz > 0 || !c ? '' : 'ยังไม่เปิดสตรีม'),
@@ -1513,12 +1541,19 @@
   function wire() {
     $('#verLabel').textContent = 'tool v' + NS.VERSION;
     $('#serialSupport').textContent = NS.SerialTransport.supported() ? '' : 'เบราว์เซอร์นี้ไม่มี Web Serial ใช้ได้แค่ตัวจำลอง (ใช้ Chrome หรือ Edge บนคอมจึงจะต่อบอร์ดจริงได้)';
+    $('#bleSupport').textContent = NS.BleTransport.supported() ? '' : 'เบราว์เซอร์นี้ไม่มี Web Bluetooth (ใช้ Chrome หรือ Edge บนคอมที่มี Bluetooth)';
     $('#selBaud').value = NS.store.get('baud', '115200');
     $('#selDtr').value = NS.store.get('dtr', 'none');
     const kind = NS.store.get('kind', 'serial');
     const r = $(`input[name=trKind][value=${kind}]`);
     if (r) r.checked = true;
-    const syncKind = () => { const sim = $('input[name=trKind]:checked').value === 'sim'; for (const e of $$('.serial-only')) e.hidden = sim; syncProtoForKind(sim); };
+    const syncKind = () => {
+      const k = $('input[name=trKind]:checked').value;
+      for (const e of $$('.serial-only')) e.hidden = k !== 'serial';
+      for (const e of $$('.ble-only')) e.hidden = k !== 'ble';
+      for (const e of $$('.real-only')) e.hidden = k === 'sim';
+      syncProtoForKind(k);
+    };
     $$('input[name=trKind]').forEach((e) => e.addEventListener('change', syncKind));
     // protocol: NasaSat (ours) or SunSeek (the organizer's); remembered, applies at once
     $$('input[name=proto]').forEach((e) => e.addEventListener('change', () => {
@@ -1955,5 +1990,5 @@
       if (/^wait \d+$/i.test(c)) await NS.sleep(+c.slice(5)); else await sendQuiet(c).catch(() => {});
     }
   })();
-  window.addEventListener('beforeunload', (e) => { if (S.connected && S.tr && S.tr.kind === 'serial') { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', (e) => { if (S.connected && S.tr && (S.tr.kind === 'serial' || S.tr.kind === 'ble')) { e.preventDefault(); e.returnValue = ''; } });
 })();

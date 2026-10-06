@@ -66,6 +66,7 @@
             <h2>ช่องทาง</h2>
             <div class="row mid">
               <label class="radio"><input type="radio" name="trKind" value="serial" checked> บอร์ดจริง (USB / Web Serial)</label>
+              <label class="radio"><input type="radio" name="trKind" value="ble"> บอร์ดจริง (บลูทูธ / Web Bluetooth)</label>
               <label class="radio"><input type="radio" name="trKind" value="sim"> ตัวจำลอง (ไม่ต้องมีบอร์ด)</label>
             </div>
             <div class="row mid" id="protoRow">
@@ -86,7 +87,12 @@
                 </select>
               </label>
             </div>
-            <div class="row serial-only"><label class="chk"><input type="checkbox" id="autoRe" checked> ต่อใหม่เองเมื่อบอร์ดรีเซ็ตหรือหลุด (หาพอร์ตเดิม 30 วินาที)</label></div>
+            <div class="row real-only"><label class="chk"><input type="checkbox" id="autoRe" checked> ต่อใหม่เองเมื่อบอร์ดรีเซ็ตหรือหลุด (หาพอร์ต / อุปกรณ์เดิม 30 วินาที)</label></div>
+            <div class="ble-only" hidden>
+              <p class="note"><b>บลูทูธต่อได้ทีละโปรแกรมเดียว:</b> ต้องกด Disconnect ที่ Ground Station ของผู้จัดก่อน (ปิดแท็บหรือปิดโปรแกรม GS ได้ยิ่งดี) ไม่งั้นบอร์ดไม่โผล่ในรายการหรือต่อไม่ติด · ใช้ตอนวางดาวเทียมบนแท่นหมุนด้วยแบตเตอรี่ ไม่ให้สาย USB ดึงตัวดาวเทียม · ชื่อที่ต้องเลือกคือ <span class="cmd">SUNSEEK-NasaPakSoi</span></p>
+              <div class="row"><label class="chk"><input type="checkbox" id="bleAll"> แสดงอุปกรณ์บลูทูธทั้งหมดในรายการ (ใช้เมื่อหาชื่อ SUNSEEK-… ไม่เจอ)</label></div>
+              <p class="note" id="bleSupport"></p>
+            </div>
             <p class="note serial-only">ก่อนกด Upload ใน Arduino IDE ต้องกด "ตัดการเชื่อมต่อ" และห้ามเปิด Serial Monitor ของ Arduino พร้อมกัน เพราะพอร์ตใช้ได้ทีละโปรแกรม</p>
             <p class="note" id="serialSupport"></p>
           </div>

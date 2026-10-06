@@ -2,7 +2,7 @@
 'use strict';
 const path = require('path');
 const js = path.join(__dirname, '..', 'src', 'js');
-for (const f of ['01_util.js', '02_protocol.js', '02b_sunseek.js', '03_serial.js', '04_estimator.js', '05_cam.js', '05_fit.js', '06_cfgdefs.js', '06b_rules.js', '07_sim.js']) require(path.join(js, f));
+for (const f of ['01_util.js', '02_protocol.js', '02b_sunseek.js', '03b_ble.js', '03_serial.js', '04_estimator.js', '05_cam.js', '05_fit.js', '06_cfgdefs.js', '06b_rules.js', '07_sim.js']) require(path.join(js, f));
 const NS = globalThis.NS;
 
 let fails = 0;
@@ -849,6 +849,228 @@ console.log('simulator end-to-end (virtual firmware + physics)');
       check('Client works again after abort', r.ok);
       b.failWith = 'throw';
       check('Client.sendNow reports a failed write instead of throwing', (await b.client.sendNow('STOP')).ok === false);
+    }
+  }
+  // ---- Web Bluetooth transport (03b_ble.js) with a fake device / characteristics ----
+  console.log('bluetooth transport (Nordic UART, fake GATT)');
+  {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const enc = new TextEncoder();
+    const dv = (s) => { const u = typeof s === 'string' ? enc.encode(s) : Uint8Array.from(s); return new DataView(u.buffer, u.byteOffset, u.byteLength); };
+    // a board on the other side of the radio: writes land in `got`, notify() sends what the board says
+    const mkBle = (o = {}) => {
+      const f = { writes: [], concurrent: 0, maxConcurrent: 0, connects: 0, req: null, failConnect: 0, listeners: {}, devL: {}, started: 0, stopped: 0, writeFail: null };
+      const tx = {
+        addEventListener: (t, fn) => { f.listeners[t] = fn; },
+        removeEventListener: (t, fn) => { if (f.listeners[t] === fn) delete f.listeners[t]; },
+        startNotifications: async () => { f.started++; },
+        stopNotifications: async () => { f.stopped++; },
+      };
+      const write = async (v) => {
+        f.concurrent++; f.maxConcurrent = Math.max(f.maxConcurrent, f.concurrent);
+        await wait(2); // a GATT write takes time; a second one now would be refused by Chrome
+        f.concurrent--;
+        if (f.writeFail) { const e = f.writeFail; if (e.once) f.writeFail = null; throw e.err; }
+        f.writes.push(Uint8Array.from(new Uint8Array(v.buffer ? v.buffer.slice(v.byteOffset, v.byteOffset + v.byteLength) : v)));
+      };
+      const rx = o.noResp ? { writeValue: write } : { writeValueWithResponse: write, writeValue: write };
+      const svc = { getCharacteristic: async (u) => { if (u === NS.BLE.RX) return rx; if (u === NS.BLE.TX) return tx; throw Object.assign(new Error('no such characteristic'), { name: 'NotFoundError' }); } };
+      const server = {
+        connected: false,
+        getPrimaryService: async (u) => { if (u !== NS.BLE.SERVICE) throw Object.assign(new Error('no service'), { name: 'NotFoundError' }); return svc; },
+      };
+      const device = {
+        name: 'SUNSEEK-NasaPakSoi', id: 'abc',
+        addEventListener: (t, fn) => { f.devL[t] = fn; },
+        removeEventListener: (t, fn) => { if (f.devL[t] === fn) delete f.devL[t]; },
+        gatt: {
+          get connected() { return server.connected; },
+          connect: async () => { f.connects++; await wait(1); if (f.failConnect > 0) { f.failConnect--; throw Object.assign(new Error('GATT Error: Connection attempt failed.'), { name: 'NetworkError' }); } server.connected = true; return server; },
+          disconnect: () => { if (!server.connected) return; server.connected = false; if (f.devL.gattserverdisconnected) f.devL.gattserverdisconnected({ target: device }); },
+        },
+      };
+      f.device = device; f.server = server;
+      f.bluetooth = { requestDevice: async (opt) => { f.req = opt; return device; } };
+      f.notify = (x) => { if (f.listeners.characteristicvaluechanged) f.listeners.characteristicvaluechanged({ target: { value: dv(x) } }); };
+      f.drop = () => { server.connected = false; if (f.devL.gattserverdisconnected) f.devL.gattserverdisconnected({ target: device }); }; // the board went away
+      f.text = () => new TextDecoder().decode(Uint8Array.from(f.writes.flatMap((w) => [...w])));
+      return f;
+    };
+    const make = (f, extra = {}) => {
+      const tr = new NS.BleTransport({ bluetooth: f.bluetooth, ...extra });
+      tr.got = []; tr.status = [];
+      tr.onLine = (l) => tr.got.push(l);
+      tr.onStatus = (s, i) => tr.status.push([s, i]);
+      return tr;
+    };
+
+    // pure helpers
+    const lb = new NS.LineBuffer();
+    check('LineBuffer: one line per notification (the board adds "\\n")', lb.push(enc.encode('TM,SENSOR_SUN,READY\n')).join('|') === 'TM,SENSOR_SUN,READY');
+    check('LineBuffer: a line cut into pieces comes out whole, once', (() => { const a = lb.push('TM,TEAM_C,T,12'); const b = lb.push('34,M,1,TGT'); const c = lb.push(',0\n'); return a.length === 0 && b.length === 0 && c.join('|') === 'TM,TEAM_C,T,1234,M,1,TGT,0'; })());
+    check('LineBuffer: several lines in one notification, "\\r\\n" and empty lines handled', lb.push(enc.encode('ACK,STOP\r\n\r\nPONG\nEVT,SAFE')).join('|') === 'ACK,STOP|PONG' && lb.push('\n').join('|') === 'EVT,SAFE');
+    check('LineBuffer: a Thai character split between two notifications is decoded whole (DataView input too)', (() => { const b = enc.encode('PAYLOAD,ก\n'); const l = new NS.LineBuffer(); const a = l.push(dv([...b.slice(0, 10)])); const c = l.push(dv([...b.slice(10)])); return a.length === 0 && c.join('|') === 'PAYLOAD,ก'; })());
+    check('LineBuffer: a stream that never ends a line is cut at the limit', (() => { const l = new NS.LineBuffer(100); l.push('x'.repeat(150)); return l.buf.length === 0 && l.push('PONG\n').join() === 'PONG'; })());
+    const ch = NS.bleChunks(enc.encode('A'.repeat(240) + '\n'), 100);
+    check('bleChunks: 241 bytes -> 100 + 100 + 41, none empty, concatenation is the original', ch.length === 3 && ch.map((c) => c.length).join() === '100,100,41' && ch.flatMap((c) => [...c]).join() === [...enc.encode('A'.repeat(240) + '\n')].join());
+    check('bleChunks: a short line is one piece; exactly 100 bytes is one piece; nothing -> no pieces', NS.bleChunks(enc.encode('PING\n')).length === 1 && NS.bleChunks(new Uint8Array(100)).length === 1 && NS.bleChunks(new Uint8Array(0)).length === 0 && NS.bleChunks(new Uint8Array(101)).length === 2);
+
+    // connect
+    {
+      const f = mkBle();
+      const tr = make(f);
+      const info = await tr.connect();
+      check('connect: chooser filtered by name prefix SUNSEEK, Nordic UART service requested, notifications on, status open with the name',
+        f.req.filters.length === 1 && f.req.filters[0].namePrefix === 'SUNSEEK' && f.req.optionalServices[0] === '6e400001-b5a3-f393-e0a9-e50e24dcca9e' && !f.req.acceptAllDevices && f.started === 1 && tr.keep && tr.kind === 'ble' && tr.status[0][0] === 'open' && info.name === 'SUNSEEK-NasaPakSoi');
+      const f2 = mkBle();
+      await make(f2).connect({ all: true });
+      check('connect with "show all devices": acceptAllDevices and still the service in optionalServices', f2.req.acceptAllDevices === true && !f2.req.filters && f2.req.optionalServices.length === 1);
+      check('UUIDs are the ones of the board (service, RX we write, TX it notifies)', NS.BLE.RX === '6e400002-b5a3-f393-e0a9-e50e24dcca9e' && NS.BLE.TX === '6e400003-b5a3-f393-e0a9-e50e24dcca9e');
+
+      // notifications -> onLine
+      f.notify('PONG\n');
+      f.notify('TM,TEAM_C,T,100,M,1,TGT,0,ANG,-5.2\nACK,STOP\r\n');
+      f.notify('EVT,TEAM_KICK,12');
+      f.notify(',ERR,3.4\n');
+      f.notify('\n');
+      check('notifications become lines (onLine), cut / merged / empty ones handled', tr.got.join('|') === 'PONG|TM,TEAM_C,T,100,M,1,TGT,0,ANG,-5.2|ACK,STOP|EVT,TEAM_KICK,12,ERR,3.4', tr.got.join('|'));
+      tr.onLine = () => { throw new Error('ui bug'); };
+      let threw = false;
+      const ce = console.error;
+      console.error = () => {};
+      try { f.notify('PONG\n'); f.notify('PONG\n'); } catch (_) { threw = true; }
+      console.error = ce;
+      check('a handler that throws does not stop the reading', !threw);
+      tr.onLine = (l) => tr.got.push(l);
+
+      // writes
+      const long = 'TEAM_LUT_DATA,0,' + '1.234,'.repeat(40);
+      const w1 = tr.write('PING');
+      const w2 = tr.write(long.slice(0, 240));
+      const w3 = tr.write('STOP');
+      await Promise.all([w1, w2, w3]);
+      check('write: every line + "\\n" reaches the RX characteristic in order (even when three are queued at once)', f.text() === 'PING\n' + long.slice(0, 240) + '\nSTOP\n', JSON.stringify(f.text().slice(0, 40)));
+      check('write: pieces are at most 100 bytes, never two GATT writes at the same time', f.writes.every((w) => w.length <= 100) && f.maxConcurrent === 1 && f.writes.length === 1 + 3 + 1, `${f.writes.map((w) => w.length)} max concurrent ${f.maxConcurrent}`);
+      check('write: the 240-character command is cut as 100 + 100 + 41', f.writes.slice(1, 4).map((w) => w.length).join() === '100,100,41');
+
+      // a failing write rejects, the chain goes on
+      f.writeFail = { once: true, err: Object.assign(new Error('GATT operation failed for unknown reason.'), { name: 'NetworkError' }) };
+      let failed = false;
+      await tr.write('RW,10').catch(() => { failed = true; });
+      await tr.write('RW,0');
+      check('write: a failed write rejects its own promise, the next line still goes out', failed && f.text().endsWith('RW,0\n'));
+      f.writeFail = { once: true, err: Object.assign(new Error('GATT operation already in progress.'), { name: 'NetworkError' }) };
+      const before = f.writes.length;
+      await tr.write('TEAM_GET,adcs.kp');
+      check('write: "GATT operation already in progress" is retried, the line is sent once', f.writes.length === before + 1 && f.text().endsWith('TEAM_GET,adcs.kp\n'));
+
+      // our own close is not a loss
+      const st0 = tr.status.length;
+      await tr.disconnect();
+      check('disconnect: status closed (never lost), notifications unhooked, link down, write refused afterwards', tr.status.slice(st0).map((s) => s[0]).join() === 'closed' && !tr.keep && !f.server.connected && !f.listeners.characteristicvaluechanged && (await tr.write('PING').then(() => false, () => true)));
+    }
+    {
+      const f = mkBle({ noResp: true });
+      const tr = make(f);
+      await tr.connect();
+      await tr.write('STOP');
+      check('write falls back to writeValue when writeValueWithResponse does not exist', f.text() === 'STOP\n');
+    }
+    {
+      const f = mkBle();
+      const tr = make(f);
+      await tr.connect();
+      let n = 0;
+      tr.rx.writeValueWithResponse = async () => { n++; throw Object.assign(new Error('not supported'), { name: 'NotSupportedError' }); };
+      await tr.write('STOP');
+      await tr.write('PING');
+      check('write falls back to writeValue after writeValueWithResponse is refused (and stays there)', n === 1 && f.text() === 'STOP\nPING\n' && tr.noResp === true);
+    }
+
+    // link lost, reconnect without the chooser
+    {
+      const f = mkBle();
+      const tr = make(f);
+      await tr.connect();
+      f.drop();
+      check('gattserverdisconnected -> status lost (once), keep false, write refused', tr.status.map((s) => s[0]).join() === 'open,lost' && !tr.keep && (await tr.write('PING').then(() => false, () => true)));
+      f.drop();
+      check('a second gattserverdisconnected while already lost is ignored', tr.status.length === 2);
+      f.failConnect = 2;
+      const req0 = f.req;
+      const info = await tr.reconnect({ ms: 5000, every: 5 });
+      check('reconnect: retries gatt.connect on the same device (no chooser), 2 failures then open again with notifications and writes working',
+        f.req === req0 && f.connects === 4 && tr.keep && tr.status[tr.status.length - 1][0] === 'open' && info.name === 'SUNSEEK-NasaPakSoi', `connects ${f.connects}`);
+      f.notify('PONG\n');
+      await tr.write('PING');
+      check('after the reconnect lines arrive and writes go out', tr.got.pop() === 'PONG' && f.text().endsWith('PING\n') && f.started === 2);
+      f.drop();
+      check('and a loss after the reconnect is reported again', tr.status[tr.status.length - 1][0] === 'lost');
+    }
+    {
+      const f = mkBle();
+      const tr = make(f);
+      await tr.connect();
+      f.drop();
+      f.failConnect = 1000;
+      let err = null;
+      const t0 = Date.now();
+      await tr.reconnect({ ms: 80, every: 10 }).catch((e) => { err = e; });
+      check('reconnect gives up after the time limit with the last error, nothing left half open', !!err && Date.now() - t0 < 600 && !tr.keep && !tr.rx && f.connects > 3, err && err.message);
+      let stopAt = 0;
+      f.connects = 0;
+      const t1 = Date.now();
+      await tr.reconnect({ ms: 5000, every: 10, stop: () => ++stopAt > 3 }).catch(() => {});
+      check('reconnect stops at once when the user closes the link (stop() = true)', Date.now() - t1 < 500 && f.connects <= 3);
+      f.failConnect = 0;
+      const f2 = mkBle();
+      const tr2 = make(f2);
+      await tr2.connect();
+      f2.server.getPrimaryService = async () => { throw Object.assign(new Error('Service not found'), { name: 'NotFoundError' }); };
+      f2.drop();
+      let e2 = null;
+      await tr2.reconnect({ ms: 40, every: 5 }).catch((e) => { e2 = e; });
+      check('a device without the Nordic UART service: the attempt fails and the GATT link is closed again', !!e2 && !f2.server.connected && !tr2.keep);
+    }
+    {
+      const f = mkBle();
+      const tr = make(f);
+      f.bluetooth.requestDevice = async () => { throw Object.assign(new Error('User cancelled the requestDevice() chooser.'), { name: 'NotFoundError' }); };
+      const e = await tr.connect().then(() => null, (x) => x);
+      check('cancelling the chooser rejects (the app ignores "cancel"), nothing is open', e && /cancel/i.test(e.message) && !tr.keep && tr.status.length === 0);
+      check('bleErrHelp: cancel -> no hint, no adapter / connection failure / wrong device -> Thai hint', NS.bleErrHelp(e) === '' && NS.bleErrHelp(new Error('Bluetooth adapter not available.')).includes('Bluetooth') && NS.bleErrHelp(Object.assign(new Error('GATT Error: Connection attempt failed.'), { name: 'NetworkError' })).includes('Ground Station') && NS.bleErrHelp(Object.assign(new Error('Service not found'), { name: 'NotFoundError' })).includes('SUNSEEK'));
+    }
+
+    // the SunSeek client over the Bluetooth transport: the same commands, the same replies
+    {
+      const f = mkBle();
+      const tr = make(f);
+      const client = new NS.ss.Client(tr, { timeout: 500 });
+      tr.onLine = (l) => client.feed(l);
+      await tr.connect();
+      const answer = async () => { // the "firmware": answers every complete line it has received
+        let done = 0;
+        const timer = setInterval(() => {
+          const lines = f.text().split('\n').slice(0, -1);
+          for (; done < lines.length; done++) {
+            const c = lines[done];
+            if (c === 'PING') f.notify('PONG\n');
+            else if (c === 'TEAM_CSTREAM,10') f.notify('ACK,TEAM_CSTREAM,10\n');
+            else if (c.startsWith('TEAM_SET,')) f.notify('ACK,' + c + '\n');
+          }
+        }, 3);
+        return () => clearInterval(timer);
+      };
+      const stopAnswer = await answer();
+      const r1 = await client.send('PING');
+      const r2 = await client.send('TEAM_CSTREAM,10');
+      const r3 = await client.send('TEAM_SET,adcs.kp,2.5');
+      const r4 = await client.send('NOREPLY', { timeout: 60 });
+      stopAnswer();
+      check('Client over Bluetooth: PING -> PONG, TEAM_CSTREAM -> ACK, TEAM_SET -> ACK, a silent command times out', r1.ok && r2.ok && r2.reply.ack.args[0] === '10' && r3.ok && r4.timeout === true);
+      const sn = await client.sendNow('STOP');
+      check('Client.sendNow (STOP) works over Bluetooth too', sn.ok && f.text().endsWith('STOP\n'));
+      await tr.disconnect();
     }
   }
   console.log(`\n${passes} passed, ${fails} failed`);
