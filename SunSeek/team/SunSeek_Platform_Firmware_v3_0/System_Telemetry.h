@@ -232,7 +232,7 @@ inline void sensorSendGSSnapshot() {
     ",MAG_Y," + String(p.magY, 2) +
     ",MAG_Z," + String(p.magZ, 2) +
     ",MAG_HEADING," + String(p.heading, 2) +
-    ",GYRO_Z," + String(p.bodyRate, 3) +
+    ",GYRO_Z," + String(p.bodyRate * TP.imuRsign, 3) +  // TEAM: raw gyro Z like the GYRO stream (GS mixes both lines)
     ",RW_CMD," + String(rwGetMotorCommand())
   );
 }
@@ -365,7 +365,7 @@ inline void sensorSendADCSSnapshot(){
     ",POINTING_ERROR,"+String(a.error,2)+
     ",SUN_ERROR,"+String(a.sunError,2)+
     ",MAG_ERROR,"+String(a.magError,2)+
-    ",GYRO_Z,"+String(a.rate,3)+
+    ",GYRO_Z,"+String(a.rate*TP.imuRsign,3)+  /* TEAM: raw gyro Z, same key as the GYRO stream */
     ",RW_CMD,"+String(rwGetMotorCommand())
   );
   sensorSendEstimatorSnapshot();
