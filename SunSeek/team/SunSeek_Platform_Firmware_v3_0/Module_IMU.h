@@ -159,12 +159,13 @@ inline bool imuProcess(const IMURawSample &r, IMUProcessedSample &p) {
   p.gyroZ = r.gz * GYRO_SENSITIVITY_DPS_PER_LSB - TP.imuGbz;  // TEAM NasaPakSoi (was GYRO_BIAS_Z_DPS)
   p.bodyRate = TP.imuRsign * imuAxisValue(p.gyroX, p.gyroY, p.gyroZ, IMU_BODY_RATE_AXIS);  // TEAM (was IMU_BODY_RATE_SIGN)
 
-  p.magX = (r.mx - MAG_OFFSET_X) * MAG_SCALE_X * MAG_SENSITIVITY_UT_PER_LSB;
-  p.magY = (r.my - MAG_OFFSET_Y) * MAG_SCALE_Y * MAG_SENSITIVITY_UT_PER_LSB;
-  p.magZ = (r.mz - MAG_OFFSET_Z) * MAG_SCALE_Z * MAG_SENSITIVITY_UT_PER_LSB;
+  // TEAM NasaPakSoi team-4: compass calibration from team params (MAG_CAL_STOP fills them; organizer #defines stay 0 / 1)
+  p.magX = (r.mx - MAG_OFFSET_X - TP.magOx) * MAG_SCALE_X * TP.magSx * MAG_SENSITIVITY_UT_PER_LSB;
+  p.magY = (r.my - MAG_OFFSET_Y - TP.magOy) * MAG_SCALE_Y * TP.magSy * MAG_SENSITIVITY_UT_PER_LSB;
+  p.magZ = (r.mz - MAG_OFFSET_Z - TP.magOz) * MAG_SCALE_Z * MAG_SENSITIVITY_UT_PER_LSB;
 
   float heading = atan2f(p.magY, p.magX) * 180.0f / PI;
-  heading = MAG_HEADING_SIGN * heading + MAG_HEADING_OFFSET_DEG;
+  heading = MAG_HEADING_SIGN * heading + MAG_HEADING_OFFSET_DEG + TP.magH0;  // team-4: mag.h0 = compass zero
   while (heading < 0.0f) heading += 360.0f;
   while (heading >= 360.0f) heading -= 360.0f;
   p.heading = heading;

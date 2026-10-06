@@ -38,6 +38,9 @@ struct TeamParams {
   // IMU (organizer defaults)
   float imuGbz = GYRO_BIAS_Z_DPS;
   float imuRsign = IMU_BODY_RATE_SIGN;
+  // compass (team-4): the organizer MAG_CAL only REPORTS offsets ("SAVE_VALUES_TO_CONFIG_IMU" = edit the code and upload again);
+  // here MAG_CAL_STOP writes them to these params (RAM, TEAM_SAVE keeps them). Raw LSB; scale x/y only (the rig turns in yaw only).
+  float magOx = 0, magOy = 0, magOz = 0, magSx = 1, magSy = 1, magH0 = 0;
   // reaction wheel characterization from T01
   float rwMinStart = RW_MIN_START_PERCENT;
   float rwMinStable = RW_MIN_START_PERCENT;
@@ -124,6 +127,12 @@ static TeamParamDef _tpDefs[] = {
   {"adcs.sign",   TPT_SIGN,   &TP.adcsSign,      0, -1, 1},
   {"imu.gbz",     TPT_FLOAT,  &TP.imuGbz,        0, -50, 50},
   {"imu.rsign",   TPT_SIGN,   &TP.imuRsign,      0, -1, 1},
+  {"mag.ox",      TPT_FLOAT,  &TP.magOx,         0, -20000, 20000},
+  {"mag.oy",      TPT_FLOAT,  &TP.magOy,         0, -20000, 20000},
+  {"mag.oz",      TPT_FLOAT,  &TP.magOz,         0, -20000, 20000},
+  {"mag.sx",      TPT_FLOAT,  &TP.magSx,         0, 0.5, 2},
+  {"mag.sy",      TPT_FLOAT,  &TP.magSy,         0, 0.5, 2},
+  {"mag.h0",      TPT_FLOAT,  &TP.magH0,         0, -180, 180},
   {"rw.minStart", TPT_FLOAT,  &TP.rwMinStart,    0, 0, 100},
   {"rw.minStable",TPT_FLOAT,  &TP.rwMinStable,   0, 0, 100},
   {"adcs.dzc",    TPT_INT,    &TP.adcsDzc,       0, 0, 1},

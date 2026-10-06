@@ -73,8 +73,26 @@ inline void teamDumpUpdate() {
   _tdI += _tdStep;
 }
 
+// team-4: MAG_CAL_STOP -> apply the min/max centre as hard-iron offset (+ x/y scale) instead of only reporting it.
+// Needs a full turn: both half-ranges > 300 LSB (4.8 uT) and within 2x of each other.
+inline void teamMagCalApply() {
+  const float hx = ((float)_magMaxX - (float)_magMinX) * 0.5f, hy = ((float)_magMaxY - (float)_magMinY) * 0.5f;
+  if (hx < 300 || hy < 300 || hx > 2 * hy || hy > 2 * hx) {
+    sendTelemetry("EVT,TEAM_MAG_CAL,NOT_APPLIED,HX," + String(hx, 0) + ",HY," + String(hy, 0) + ",TURN_A_FULL_CIRCLE");
+    return;
+  }
+  TP.magOx = ((float)_magMinX + (float)_magMaxX) * 0.5f;
+  TP.magOy = ((float)_magMinY + (float)_magMaxY) * 0.5f;
+  TP.magOz = ((float)_magMinZ + (float)_magMaxZ) * 0.5f;
+  const float h = (hx + hy) * 0.5f;
+  TP.magSx = h / hx; TP.magSy = h / hy;
+  for (const char* k : {"mag.ox", "mag.oy", "mag.oz", "mag.sx", "mag.sy"}) { const int i = teamParamFind(k); if (i >= 0) _tpDirty[i] = true; }
+  sendTelemetry("EVT,TEAM_MAG_CAL,APPLIED,OX," + String(TP.magOx, 0) + ",OY," + String(TP.magOy, 0) + ",OZ," + String(TP.magOz, 0) +
+    ",SX," + String(TP.magSx, 3) + ",SY," + String(TP.magSy, 3) + ",R_UT," + String(h * MAG_SENSITIVITY_UT_PER_LSB, 1));
+}
+
 inline bool _teamNeedsManual(const String& key) {
-  return key == "sun.model" || key == "adcs.sign" || key == "imu.rsign" || key == "adcs.wrap" || key == "cam.off";
+  return key.startsWith("mag.") || key == "sun.model" || key == "adcs.sign" || key == "imu.rsign" || key == "adcs.wrap" || key == "cam.off";
 }
 
 inline String teamTelemetryLine() {

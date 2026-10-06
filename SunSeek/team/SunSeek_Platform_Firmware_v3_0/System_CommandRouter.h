@@ -40,7 +40,7 @@ inline void processTelecommand(String command){command=ttcNormalizeCommand(comma
  // GYRO_OFFSET waits ~3 s inside delay(): only in MANUAL with the wheel stopped.
  if(command=="GYRO_OFFSET"){if(adcsGet().mode==ADCS_AUTO||rwGetMotorCommand()!=0){sendTelemetry("ERR,GYRO_OFFSET_REQUIRES_MANUAL_WHEEL_STOPPED");return;}sensorGyroOffsetAssistant();return;}
  if(command=="MAG_CAL_START"){sensorMagCalStart();return;}
- if(command=="MAG_CAL_STOP"){sensorMagCalStop();return;}
+ if(command=="MAG_CAL_STOP"){if(sensorMagCalStop())teamMagCalApply();return;}  // team-4: and apply it
  if(command.startsWith("TEAM_")){teamHandleCommand(command);return;}  // TEAM NasaPakSoi
  if(command=="PAYLOAD_PING"){payloadSendCommand("PING");sendTelemetry("ACK,PAYLOAD_PING");return;}
  if(command=="PAYLOAD_STATUS"){payloadSendCommand("STATUS");sendTelemetry("ACK,PAYLOAD_STATUS");return;}

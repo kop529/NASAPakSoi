@@ -46,4 +46,22 @@ module.exports = ({ run, check, find, all, kv, states, CAL }) => {
     check('TEAM_SAVE after STOP -> ACK', !!find(out, /^ACK,TEAM_SAVE,\d+$/));
     check('STOP: wheel command 0 within 5 ms', s[0].cmd !== 0 && s[1].cmd === 0, `before ${s[0].cmd}, after ${s[1].cmd}`);
   }
+  console.log('team-4: compass - MAG_CAL_STOP now applies the hard-iron offset (organizer: only reported, #define offsets 0)');
+  {
+    const at = [0, 90, 180, 270];
+    const measure = () => at.flatMap((b) => [`#SET body ${b}`, '#WAIT 600', '#STATE']);
+    const out = run(['#SET drag 0', '#SET north 0', '#SET magOx 1750', '#SET magOy 1240', '#SET magSy 1.1', '#WAIT 300', 'TM_STREAM,MAG,ON', ...measure(),
+      'MAG_CAL_START', '#SET bodyRate 60', '#WAIT 7000', '#SET bodyRate 0', 'MAG_CAL_STOP', '#WAIT 20', ...measure(), 'TEAM_INFO', '#WAIT 20']);
+    let hd = NaN; const res = [];
+    for (const l of out) {
+      const m = l.match(/^TM,MAG_X,.*MAG_HEADING,(-?[\d.]+)/); if (m) hd = +m[1];
+      // sim: heading = north - body (north 0) -> heading + body should be 0 (mod 360)
+      if (l.startsWith('#STATE ')) { const body = +l.match(/body=(-?[\d.]+)/)[1]; const e = ((hd + body) % 360 + 540) % 360 - 180; res.push(Math.abs(e)); }
+    }
+    const before = Math.max(...res.slice(0, 4)), after = Math.max(...res.slice(4, 8));
+    const ev = find(out, /^EVT,TEAM_MAG_CAL,/) || 'none';
+    console.log(`       rig-like offset (28, 20) uT + y scale 1.1: heading error before ${before.toFixed(1)} deg, after MAG_CAL ${after.toFixed(1)} deg · ${ev}`);
+    check('MAG_CAL_STOP applies the offset (EVT,TEAM_MAG_CAL,APPLIED) and the compass error drops below 3 deg', /APPLIED/.test(ev) && before > 20 && after < 3, ev);
+    check('compass params are UNSAVED until TEAM_SAVE', !!find(out, /^TM,TEAM_FW,.*UNSAVED,[1-9]/));
+  }
 };

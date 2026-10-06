@@ -73,8 +73,8 @@ int16_t SimWorld::gyroZRaw() {
 
 void SimWorld::magRaw(int16_t& x, int16_t& y, int16_t& z) {
   const double h = (magNorthDeg - bodyDeg) * kDeg;  // 30 uT horizontal field, 0.016 uT/LSB
-  x = (int16_t)std::lround(std::cos(h) * 1875);
-  y = (int16_t)std::lround(std::sin(h) * 1875);
+  x = (int16_t)std::lround(std::cos(h) * 1875 + magOx);
+  y = (int16_t)std::lround(std::sin(h) * 1875 * magSy + magOy);
   z = -2000;
 }
 
@@ -84,7 +84,7 @@ bool SimWorld::set(const std::string& k, double v) {
     {"ambient", &ambient}, {"flicker", &flicker}, {"noise", &noiseMv}, {"alpha", &alpha}, {"gamma", &gamma},
     {"q", &q}, {"minStart", &minStartPct}, {"minStable", &minStablePct}, {"wheelMax", &wheelMaxRate},
     {"wheelTau", &wheelTau}, {"coast", &wheelCoastTau}, {"ratio", &inertiaRatio}, {"drag", &bearingDrag}, {"stick", &bodyStick}, {"air", &wheelAir}, {"gyroBias", &gyroBiasDps},
-    {"gyroNoise", &gyroNoiseDps}, {"north", &magNorthDeg},
+    {"gyroNoise", &gyroNoiseDps}, {"north", &magNorthDeg}, {"magOx", &magOx}, {"magOy", &magOy}, {"magSy", &magSy},
   };
   for (auto& d : dbl) if (k == d.key) { *d.p = v; return true; }
   if (k == "swap") { swapLdrPins = v != 0; return true; }
