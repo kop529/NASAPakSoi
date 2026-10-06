@@ -107,6 +107,9 @@ inline void _payloadHandleLine(String line) {
     sendTelemetry("PAYLOAD," + line);
     return;
   }
+  // TEAM NasaPakSoi: ESP-IDF driver logs on the camera's UART0 ("cam_hal: FB-OVF" many times a second while the
+  // camera idles) are not payload replies; forwarding them floods BLE and the GS terminal.
+  if (line.startsWith("cam_hal:") || line.startsWith("E (") || line.startsWith("W (") || line.startsWith("I (")) return;
   sendTelemetry("PAYLOAD,RX," + line);
 }
 
