@@ -9,6 +9,7 @@ static HardwareSerial _payloadSerial(1);
 static String _payloadLine;
 static bool _payloadSeen = false;
 static unsigned long _payloadLastRxMs = 0;
+static String _payloadIp = "192.168.4.1";  // TEAM NasaPakSoi: last IP the camera reported (STATUS / WIFI_IP)
 
 inline String _payloadField(const String &line, const String &key) {
   int start = 0;
@@ -45,6 +46,7 @@ inline void _payloadForwardStatus(const String &line) {
   if (!camera.length()) camera = "UNKNOWN";
   if (!wifi.length()) wifi = "UNKNOWN";
   if (!ip.length()) ip = "0.0.0.0";
+  else if (ip != "0.0.0.0") _payloadIp = ip;  // TEAM NasaPakSoi
   if (!count.length()) count = "0";
   if (!last.length()) last = "---";
   sendTelemetry("TM,CAMERA," + camera + ",PAYLOAD_WIFI," + wifi +
@@ -58,6 +60,7 @@ inline void _payloadHandleLine(String line) {
   _payloadSeen = true;
   _payloadLastRxMs = millis();
 
+  if (line.startsWith("WIFI_IP,") && line.length() > 8) _payloadIp = line.substring(8);  // TEAM NasaPakSoi
   if (line.startsWith("STATUS,")) {
     _payloadForwardStatus(line);
     return;
@@ -75,6 +78,9 @@ inline void _payloadHandleLine(String line) {
   }
   if (line.startsWith("EVENT,")) {
     sendTelemetry("PAYLOAD," + line);
+    // TEAM NasaPakSoi: GS v1.10.4 starts its MJPEG viewer on "PAYLOAD,STREAM_URL,<url>" (payload v0.3 sent it),
+    // but payload v3.0 only says EVENT,STREAM_ON -> Live View stays at STARTING. Send the URL for it.
+    if (line == "EVENT,STREAM_ON") sendTelemetry("PAYLOAD,STREAM_URL,http://" + _payloadIp + "/stream");
     return;
   }
   if (line.startsWith("ACK,STREAM_") ||
