@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>NasaPakSoi · ทีม</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* same tokens as cover.html */
+  :root {
+    --bg: #0A0C09; --text: #F1F3EE; --muted: #A3AA9C; --line: #2C3328; --lime: #A9B92A;
+    --head: 'Kanit', sans-serif; --body: 'IBM Plex Sans Thai', sans-serif;
+    --soi: #1D4F9C;  /* the blue of a real Thai street sign, used only on this slide */
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #000; height: 100%; }
+  body { display: grid; place-items: center; overflow: hidden; }
+  .slide { position: relative; width: 1920px; height: 1080px; background: var(--bg); color: var(--text); font-family: var(--body); overflow: hidden; transform-origin: center; }
+  .tysc { position: absolute; right: 112px; top: 84px; width: 190px; }
+  .head { position: absolute; left: 112px; top: 84px; width: 1000px; }
+  .eyebrow { font-family: var(--head); font-weight: 500; font-size: 28px; color: var(--lime); }
+  h2 { margin-top: 14px; font-family: var(--head); font-weight: 600; font-size: 76px; line-height: 1.12; }
+  h2 em { font-style: normal; color: var(--lime); }
+  .sub { margin-top: 16px; font-size: 30px; color: var(--muted); }
+
+  /* members: placeholders until the real photos (shot list) */
+  .members { position: absolute; left: 112px; top: 390px; display: grid; grid-template-columns: repeat(3, 250px); gap: 40px; }
+  .ph { height: 300px; border: 2px dashed var(--line); display: grid; place-items: center; color: var(--muted); font-size: 22px; }
+  .members b { display: block; margin-top: 16px; font-family: var(--head); font-weight: 500; font-size: 32px; }
+  .members span { font-size: 24px; color: var(--muted); }
+  .advisor { position: absolute; left: 112px; top: 830px; font-size: 26px; color: var(--muted); }
+  .advisor b { color: var(--text); font-weight: 500; }
+  .school { position: absolute; left: 112px; bottom: 72px; display: flex; align-items: center; gap: 20px; font-size: 24px; color: var(--muted); }
+  .school img { height: 64px; }
+
+  /* the joke: NASA, literally at the mouth of the soi */
+  .street { position: absolute; left: 1120px; top: 320px; width: 690px; height: 680px; }
+  .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--line); }
+  .pole { position: absolute; left: 335px; top: 40px; bottom: 0; width: 20px; background: #3A3F38; }
+  .soi { position: absolute; left: 115px; top: 0; width: 460px; padding: 18px 0 20px; background: var(--soi); border-radius: 10px;
+         box-shadow: inset 0 0 0 6px var(--soi), inset 0 0 0 10px #fff; text-align: center; color: #fff; }
+  .soi b { display: block; font-family: var(--head); font-weight: 600; font-size: 64px; line-height: 1.05; }
+  .soi span { font-family: var(--head); font-weight: 500; font-size: 30px; letter-spacing: .04em; }
+  .banner { position: absolute; left: 55px; top: 215px; width: 580px; padding: 34px 40px 30px; background: var(--lime); color: var(--bg);
+            transform: rotate(-1.6deg); }
+  .banner::before, .banner::after { content: ''; position: absolute; top: 14px; width: 14px; height: 14px; border-radius: 50%; background: var(--bg); }
+  .banner::before { left: 14px; } .banner::after { right: 14px; }
+  .banner .big { font-family: var(--head); font-weight: 600; font-size: 58px; line-height: 1.05; }
+  .banner .branch { font-family: var(--head); font-weight: 500; font-size: 36px; }
+  .banner hr { margin: 18px 0 16px; border: 0; height: 3px; background: var(--bg); }
+  .banner .svc { font-family: var(--head); font-weight: 600; font-size: 38px; }
+  .banner .note { font-size: 22px; }
+  .banner .open { margin-top: 18px; font-family: var(--head); font-weight: 500; font-size: 28px; }
+  .banner .tel { margin-top: 6px; font-size: 22px; }
+  .page { position: absolute; right: 112px; bottom: 34px; font-size: 22px; color: var(--muted); }
+</style>
+</head>
+<body>
+<section class="slide">
+  <img class="tysc" src="img/tysc_logo_lime.png" alt="Thailand Young Satellite Challenge">
+  <div class="head">
+    <div class="eyebrow">ทีมของเรา</div>
+    <h2>นาซ่า สาขา<em>หน้าปากซอย</em></h2>
+    <p class="sub">ศูนย์อวกาศที่ใกล้บ้านคุณที่สุด</p>
+  </div>
+
+  <div class="members">
+    <div><div class="ph">รูปจริง</div><b>ชื่อเล่น</b><span>หน้าที่</span></div>
+    <div><div class="ph">รูปจริง</div><b>ชื่อเล่น</b><span>หน้าที่</span></div>
+    <div><div class="ph">รูปจริง</div><b>ชื่อเล่น</b><span>หน้าที่</span></div>
+  </div>
+  <p class="advisor">ครูที่ปรึกษา · <b>ชื่อครู</b></p>
+  <div class="school"><img src="img/school.png" alt="ตราโรงเรียนชลราษฎรอำรุง">โรงเรียนชลราษฎรอำรุง จ.ชลบุรี · ตัวแทนภาคตะวันออก</div>
+
+  <div class="street" aria-label="ป้ายซอยนาซ่า และป้ายร้านศูนย์อวกาศนาซ่า สาขาหน้าปากซอย">
+    <div class="pole"></div>
+    <div class="soi"><b>ซอย นาซ่า</b><span>Soi NASA</span></div>
+    <div class="banner">
+      <div class="big">ศูนย์อวกาศนาซ่า</div>
+      <div class="branch">สาขาหน้าปากซอย</div>
+      <hr>
+      <div class="svc">ตั้งศูนย์ · ถ่วงล้อ · หันหาแสง</div>
+      <div class="note">(ล้อปฏิกิริยา ไม่ใช่ล้อรถ)</div>
+      <div class="open">เปิด 9 ต.ค. 10:00–14:30 เท่านั้น</div>
+      <div class="tel">ติดต่อทางบลูทูธ: SUNSEEK-NasaPakSoi</div>
+    </div>
+    <div class="ground"></div>
+  </div>
+  <div class="page">02</div>
+</section>
+<script>
+  const s = document.querySelector('.slide');
+  const fit = () => { s.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; };
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>
