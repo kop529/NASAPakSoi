@@ -2,7 +2,7 @@
 'use strict';
 const path = require('path');
 const js = path.join(__dirname, '..', 'src', 'js');
-for (const f of ['01_util.js', '02_protocol.js', '02b_sunseek.js', '03b_ble.js', '03_serial.js', '04_estimator.js', '05_cam.js', '05_fit.js', '06_cfgdefs.js', '06b_rules.js', '07_sim.js']) require(path.join(js, f));
+for (const f of ['01_util.js', '02_protocol.js', '02b_sunseek.js', '02c_adcs.js', '03b_ble.js', '03_serial.js', '04_estimator.js', '05_cam.js', '05_fit.js', '06_cfgdefs.js', '06b_rules.js', '07_sim.js']) require(path.join(js, f));
 const NS = globalThis.NS;
 
 let fails = 0;
@@ -1072,6 +1072,150 @@ console.log('simulator end-to-end (virtual firmware + physics)');
       check('Client.sendNow (STOP) works over Bluetooth too', sn.ok && f.text().endsWith('STOP\n'));
       await tr.disconnect();
     }
+  }
+  // ---- ADCS tuning (02c_adcs.js): TEAM_C lines, step metrics, step-test plan, CSV, Ground Station log ----
+  console.log('adcs tuning: TEAM_C stream, step metrics, step plan');
+  {
+    const P = NS.ss.parse;
+    const A = NS.adcs;
+    const line = 'TM,TEAM_C,T,123456,M,1,TGT,-30.0,ANG,-12.35,EST,-12.1,ERR,-17.9,GZ,-3.25,U,35.2,I,4.1,K,0.0,RW,35,LIT,1,H,0,SR,0';
+    const c = A.parseC(P(line));
+    check('parseC: every field of a TM,TEAM_C line (T in ms, M, TGT, ANG, EST, ERR, GZ, U, I, K, RW, LIT, H, SR)',
+      c && c.T === 123456 && c.M === 1 && c.TGT === -30 && c.ANG === -12.35 && c.EST === -12.1 && c.ERR === -17.9 && c.GZ === -3.25 && c.U === 35.2 && c.I === 4.1 && c.K === 0 && c.RW === 35 && c.LIT === 1 && c.H === 0 && c.SR === 0 && Object.keys(c.extra).length === 0);
+    const c2 = A.parseC(P(line + ',VB,7.41,NEWKEY,3'));
+    check('parseC: keys appended at the end by a newer firmware are kept in .extra and do not disturb the rest', c2 && c2.RW === 35 && c2.SR === 0 && c2.extra.VB === 7.41 && c2.extra.NEWKEY === 3);
+    const c3 = A.parseC(P('TM,TEAM_C,T,5000,M,0,ANG,1.5,EST,1.4'));
+    check('parseC: a shorter line (older firmware) is fine as long as T and an angle are there', c3 && c3.T === 5000 && c3.ANG === 1.5 && c3.RW === undefined);
+    check('parseC: not TEAM_C / no T / no angle / text value / other kinds -> null', [A.parseC(P('TM,TEAM_T,T,1,ANG,2')), A.parseC(P('TM,TEAM_C,M,1,ANG,2')), A.parseC(P('TM,TEAM_C,T,5,M,1')), A.parseC(P('TM,TEAM_C,T,abc,ANG,2')), A.parseC(P('ACK,TEAM_CSTREAM,10')), A.parseC(null), A.parseC({})].every((x) => x === null));
+    const e1 = A.parseEvt(P('EVT,TEAM_AUTO,ON,TGT,-30,EST,-18.4,ANG,-18.9,LIT,1,KP,2,KD,0.5,KI,0.02,SIGN,1,RSIGN,-1,MAX,80'));
+    check('parseEvt TEAM_AUTO: target, estimator, angle, lamp and the parameters the controller had', e1.type === 'auto' && e1.on && e1.TGT === -30 && e1.EST === -18.4 && e1.LIT === 1 && e1.KP === 2 && e1.KD === 0.5 && e1.KI === 0.02 && e1.SIGN === 1 && e1.RSIGN === -1 && e1.MAX === 80);
+    const e2 = A.parseEvt(P('EVT,TEAM_AUTO,ON,TGT,0,EST,5,ANG,5,LIT,0'));
+    check('parseEvt TEAM_AUTO without the parameter keys (older firmware)', e2.type === 'auto' && e2.LIT === 0 && e2.KP === undefined);
+    const k = A.parseEvt(P('EVT,TEAM_KICK,12,ERR,-8.5'));
+    const h1 = A.parseEvt(P('EVT,TEAM_HOLD,ON,ERR,0.8'));
+    const h2 = A.parseEvt(P('EVT,TEAM_HOLD,OFF,ERR,2.6'));
+    const s1 = A.parseEvt(P('EVT,TEAM_SUN_SEARCH,START,DIR,-1'));
+    const s2 = A.parseEvt(P('EVT,TEAM_SUN_SEARCH,FOUND,ANGLE,-33.5'));
+    check('parseEvt: KICK / HOLD ON,OFF / SUN_SEARCH START,FOUND', k.type === 'kick' && k.k === 12 && k.ERR === -8.5 && h1.type === 'hold' && h1.on && h1.ERR === 0.8 && !h2.on && s1.type === 'search' && s1.what === 'START' && s1.DIR === -1 && s2.what === 'FOUND' && s2.ANGLE === -33.5);
+    check('parseEvt: other events and junk -> null', A.parseEvt(P('EVT,SAFE')) === null && A.parseEvt(P('TM,A,1')) === null && A.parseEvt(null) === null && A.parseEvt(P('EVT,TEAM_GYRO_ZERO,BZ,0.1')) === null);
+
+    // ---- metrics on analytic step responses (the answers are worked out from the formulas, not from the code) ----
+    const mk = (f, dur = 20, hz = 20, extra = {}) => { const r = []; for (let i = 0; i <= dur * hz; i++) { const t = i / hz; r.push({ t, TGT: 10, ANG: f(t), EST: f(t), LIT: 1, M: 1, ...extra }); } return r; };
+    const exp1 = A.metrics(mk((t) => 10 * (1 - Math.exp(-t))), { tol: 2, hold: 3 });
+    check('metrics: first-order step 0 -> 10 (tau 1 s): enters ±2° at ln5 = 1.61 s, settles there, no overshoot', Math.abs(exp1.tEnter - Math.log(5)) < 0.06 && Math.abs(exp1.tSettle - Math.log(5)) < 0.06 && exp1.overshoot === 0 && exp1.overshootPct === 0 && !exp1.wrong, `enter ${exp1.tEnter} settle ${exp1.tSettle}`);
+    check('metrics: steady error of that response over the last 3 s is 0 (mean and SD)', Math.abs(exp1.ssMean) < 1e-4 && exp1.ssSD < 1e-4 && exp1.ssN >= 60 && exp1.step === 10 && exp1.a0 === 0);
+    const z = 0.3; const wn = 2; const wd = wn * Math.sqrt(1 - z * z);
+    const f2 = (t) => 10 * (1 - Math.exp(-z * wn * t) * (Math.cos(wd * t) + (z / Math.sqrt(1 - z * z)) * Math.sin(wd * t)));
+    const und = A.metrics(mk(f2, 30), { tol: 2, hold: 3 });
+    const ovTh = Math.exp(-Math.PI * z / Math.sqrt(1 - z * z)); // 0.3723
+    check('metrics: second-order step (zeta 0.3): overshoot = exp(-pi z / sqrt(1-z^2)) = 37.2 % of the 10° step', Math.abs(und.overshootPct - ovTh * 100) < 0.5 && Math.abs(und.overshoot - 10 * ovTh) < 0.05, `${und.overshootPct.toFixed(2)} % (theory ${(ovTh * 100).toFixed(2)})`);
+    let lastOut = 0; for (let i = 0; i <= 600; i++) { const t = i / 20; if (Math.abs(10 - f2(t)) > 2) lastOut = t; }
+    check('metrics: settle time = the start of the last stretch inside ±2° (brute force on the formula)', und.tSettle !== null && und.tSettle >= lastOut - 0.06 && und.tSettle <= lastOut + 0.12 && und.tEnter < und.tSettle, `settle ${und.tSettle} brute force ${lastOut}`);
+    const never = A.metrics(mk((t) => 10 * (1 - Math.exp(-t / 30)), 20), { tol: 2, hold: 3 });
+    check('metrics: a response that never gets inside the band -> enter and settle are null, steady error is the distance left', never.tEnter === null && never.tSettle === null && never.ssMean > 4);
+    const brief = A.metrics(mk((t) => (t > 5 && t < 7 ? 10 : 0), 12), { tol: 2, hold: 3 });
+    check('metrics: inside the band for 2 s only (hold 3 s) -> entered at 5 s but not settled; with hold 1.5 s settled at 5 s', Math.abs(brief.tEnter - 5.05) < 0.06 && brief.tSettle === null && Math.abs(A.metrics(mk((t) => (t > 5 && t < 7 ? 10 : 0), 12), { tol: 2, hold: 1.5 }).tSettle - 5.05) < 0.06);
+    const gap = mk(() => 10, 10).filter((r) => r.t < 2 || r.t > 4.5);
+    check('metrics: a hole of 2.5 s in the data does not count as "stayed inside" (hold 3 s): the stretch starts again after the hole', Math.abs(A.metrics(gap, { tol: 2, hold: 3 }).tSettle - 4.55) < 1e-6);
+    check('metrics: overshoot is measured in the direction of travel (a 20° step down from 30 to 10 with the same dynamics: 37.2 % of 20°)', (() => { const r = mk((t) => 30 - 20 * f2(t) / 10, 30); const m = A.metrics(r, { tol: 2, hold: 3 }); return m.step === -20 && Math.abs(m.overshootPct - ovTh * 100) < 0.5 && Math.abs(m.overshoot - 20 * ovTh) < 0.1; })());
+    check('metrics: a start inside the band has no direction: overshoot is null, enter is 0', (() => { const m = A.metrics(mk(() => 9.5, 5), { tol: 2, hold: 3 }); return m.tEnter === 0 && m.overshoot === null && m.tSettle === 0; })());
+    const ww1 = A.metrics(mk((t) => (t < 0.5 ? -3 * t : -1.5 + 4 * (t - 0.5)), 8), { tol: 2, hold: 3 });
+    const ww2 = A.metrics(mk((t) => (t < 0.5 ? -1.6 * t : -0.8 + 4 * (t - 0.5)), 8), { tol: 2, hold: 3 });
+    check('metrics: WRONG-WAY = in the first 0.7 s the angle moves away from the target by more than 1° (1.5° yes, 0.8° no)', ww1.wrong === true && Math.abs(ww1.wrongDev - 1.5) < 0.1 && ww2.wrong === false && exp1.wrong === false);
+    check('metrics: moving away only AFTER 0.7 s is not flagged', A.metrics(mk((t) => (t < 1 ? 0 : -5 * (t - 1)), 4), { tol: 2, hold: 3 }).wrong === false);
+
+    const sat = mk((t) => 10 * (1 - Math.exp(-t)), 20, 20).map((r) => ({ ...r, RW: r.t >= 3 && r.t < 5 ? 80 : r.t >= 8 && r.t < 9 ? -79 : 20 }));
+    const ms = A.metrics(sat, { tol: 2, hold: 3, satLevel: 79 });
+    check('metrics: time with |RW| >= adcs.max - 1 (here 80 for 2 s and -79 for 1 s = 3 s)', Math.abs(ms.tSat - 3) < 0.06 && A.metrics(sat, { satLevel: 90 }).tSat === 0 && A.metrics(sat, {}).tSat === null);
+    const gzr = mk((t) => 10 * (1 - Math.exp(-t))).map((r) => ({ ...r, GZ: r.t === 1 ? -42.5 : r.t === 2 ? 40 : 1 }));
+    check('metrics: max |GZ|', A.metrics(gzr, {}).maxGZ === 42.5 && A.metrics(mk(() => 0, 3), {}).maxGZ === null);
+    const kr = mk((t) => 10 * (1 - Math.exp(-t / 3))).map((r) => ({ ...r, K: (r.t >= 1 && r.t < 1.5) || (r.t >= 4 && r.t < 4.2) || (r.t >= 9 && r.t < 9.1) ? 12 : 0 }));
+    const evs = [{ t: 1, type: 'kick' }, { t: 4, type: 'kick' }, { t: 9, type: 'kick' }, { t: 9.5, type: 'hold' }, { t: 50, type: 'kick' }];
+    check('metrics: kicks = EVT,TEAM_KICK inside the stretch (3 of 5 events), else rising edges of the K term (3), else null', A.metrics(kr, { events: evs }).kicks === 3 && A.metrics(kr, {}).kicks === 3 && A.metrics(mk(() => 5, 3), {}).kicks === null && A.metrics(mk(() => 5, 3), { events: [] }).kicks === 0);
+    {
+      const spike = mk(() => 0, 4).map((x, i) => ({ ...x, ANG: i === 20 ? 50 : 0, EST: undefined }));
+      check('metrics: a one-sample spike beyond the target counts as overshoot, unless the median filter (used for GS logs) removes it', A.metrics(spike, {}).overshoot > 35 && A.metrics(spike, { median: true }).overshoot === 0);
+      const a = { t: 0, ANG: 30, EST: 10, LIT: 0 };
+      const b = { t: 0, ANG: 30, EST: 10, LIT: 1 };
+      check('angleOf: the sun-sensor angle while the lamp is seen, the estimator when it is not; src est = always the estimator; no EST -> ANG', A.angleOf(a) === 10 && A.angleOf(b) === 30 && A.angleOf(b, 'est') === 10 && A.angleOf({ ANG: 3 }, 'est') === 3 && A.angleOf({ EST: 4 }) === 4);
+    }
+    check('metrics: fewer than 2 usable rows -> ok false, never throws', A.metrics([], {}).ok === false && A.metrics(null).ok === false && A.metrics([{ t: 0, ANG: 1 }]).ok === false && A.metrics([{ t: 0 }, { t: 1 }]).ok === false);
+
+    // ---- stretches of constant target ----
+    const rows3 = [];
+    for (let i = 0; i < 100; i++) rows3.push({ t: i / 10, M: i < 5 ? 0 : i < 95 ? 1 : 0, TGT: i < 35 ? -20 : i < 65 ? 10 : -20, ANG: 0 });
+    const seg = A.segments(rows3);
+    check('segments: A -> B -> A without leaving AUTO = three stretches; rows before AUTO (M 0) and after STOP are left out', seg.length === 3 && seg[0].tgt === -20 && seg[1].tgt === 10 && seg[2].tgt === -20 && seg[0].rows.length === 30 && seg[1].rows.length === 30 && seg[2].rows.length === 30 && seg[0].rows[0].M === 1);
+    check('segments: labels', A.segLabel(seg, 0) === '→ -20°' && A.segLabel(seg, 1) === '-20° → 10°' && A.segLabel(seg, 2) === '10° → -20°');
+    check('segments: a stretch shorter than 5 rows is dropped, nothing at all gives []', A.segments([{ t: 0, M: 1, TGT: 0 }, { t: 1, M: 1, TGT: 0 }]).length === 0 && A.segments([]).length === 0 && A.segments(null).length === 0);
+
+    // ---- the step test as a list of commands ----
+    const p1 = A.plan({ mode: 'single', A: -30, durS: 20, hz: 20 });
+    const cmds1 = p1.steps.filter((s) => s.cmd).map((s) => s.cmd);
+    check('plan single: STOP, strategy, stream on, reference SUN, target, [record] AUTO, wait 20 s, STOP, [stop recording], stream off', cmds1.join('|') === 'STOP|ADCS_STRATEGY,REACTION|TEAM_CSTREAM,20|ADCS_REFERENCE,SUN|SET_TARGET,-30|ADCS_MODE,AUTO|STOP|TEAM_CSTREAM,0' && p1.steps.find((s) => s.wait === 20) && p1.steps.findIndex((s) => s.mark === 'rec') < p1.steps.findIndex((s) => s.cmd === 'ADCS_MODE,AUTO') && p1.steps.findIndex((s) => s.mark === 'stop') > p1.steps.map((s) => s.cmd).lastIndexOf('STOP') && p1.bad.length === 0);
+    check('plan: the first and the last command are STOP, only the strategy and the stream-off are soft (an ERR is a warning)', p1.steps[0].cmd === 'STOP' && p1.steps.filter((s) => s.soft).map((s) => s.cmd).join() === 'ADCS_STRATEGY,REACTION,TEAM_CSTREAM,0' && p1.steps.filter((s) => s.cmd === 'STOP').length === 2);
+    const p2 = A.plan({ mode: 'abab', A: 0, B: 20, durS: 30, retarget: 0, hz: 10 });
+    const seq2 = p2.steps.filter((s) => s.cmd || s.wait).map((s) => s.cmd || `wait${s.wait}`);
+    check('plan A->B->A: retarget is switched on first, targets A, B, A inside AUTO every third of the time, retarget back to 0 at the end',
+      seq2.join('|') === 'STOP|ADCS_STRATEGY,REACTION|TEAM_SET,adcs.retarget,1|TEAM_CSTREAM,10|ADCS_REFERENCE,SUN|SET_TARGET,0|ADCS_MODE,AUTO|wait10|SET_TARGET,20|wait10|SET_TARGET,0|wait10|STOP|wait0.4|TEAM_CSTREAM,0|TEAM_SET,adcs.retarget,0', seq2.join('|'));
+    check('plan A->B->A with adcs.retarget already 1: no TEAM_SET of it before or after', !A.plan({ mode: 'abab', A: 0, B: 20, retarget: 1 }).steps.some((s) => /retarget/.test(s.cmd || '')));
+    check('plan: targets outside ±80° or A = B are refused with a reason, durations and rates are clamped', A.plan({ mode: 'single', A: 95 }).bad.length === 1 && A.plan({ mode: 'abab', A: 5, B: 5.5 }).bad.length === 1 && A.plan({ mode: 'abab', A: 0, B: -120 }).bad.length === 1 && A.plan({ A: 0, durS: 1000, hz: 99 }).dur === 120 && A.plan({ A: 0, durS: 1, hz: 0 }).hz === 1 && A.plan({ A: 0, hz: 99 }).hz === 20 && A.plan({ A: '', durS: '' }).A === 0);
+    check('plan: keepStream leaves the stream on', !A.plan({ A: 0, keepStream: true }).steps.some((s) => s.cmd === 'TEAM_CSTREAM,0'));
+
+    // ---- parameters and CSV ----
+    check('paramInfo: ranges of the firmware table (adcs.kp 0..20, adcs.kickMs 100..10000), unknown key null, isRunParam picks adcs.* rw.* imu.rsign', A.paramInfo('adcs.kp').max === 20 && A.paramInfo('adcs.kickMs').min === 100 && A.paramInfo('sun.gamma') === null && A.isRunParam('adcs.ki') && A.isRunParam('rw.slew') && A.isRunParam('imu.rsign') && !A.isRunParam('sun.gamma') && !A.isRunParam('team.tm'));
+    check('paramText / autoText for the table', A.paramText({ 'adcs.kp': 2, 'adcs.kd': 0.5, 'adcs.max': 80 }) === 'kp 2 · kd 0.5 · max 80' && A.autoText({ EST: -18.4, ANG: -19, LIT: 1, KP: 2, RSIGN: -1, MAX: 80 }) === 'EST -18.4 · ANG -19 · KP 2 · RSIGN -1 · MAX 80' && A.autoText(null) === '');
+    const csv = A.toCSV([
+      { id: 1, source: 'board', wall: Date.UTC(2026, 9, 6, 12, 0, 0), seg: '→ 0°', m: { tgt: 0, a0: -24.5, tol: 2, hold: 3, tEnter: 2.4, tSettle: 3.1, overshoot: 4.2, overshootPct: 17.1, ssMean: 0.12, ssSD: 0.3, maxGZ: 31.4, tSat: 0.8, kicks: 2, wrong: false, n: 400, dur: 20 }, params: { 'adcs.kp': 2, 'adcs.kd': 0.5 }, auto: { KP: 2, KD: 0.5, MAX: 80 }, note: 'first, "good"' },
+      { id: 2, source: 'GS', seg: 'GS 12:06:17', m: { tgt: 0, a0: -18.4, tol: 2, hold: 3, tEnter: 21, tSettle: 26.5, overshoot: 7, wrong: true, n: 1100, dur: 41 }, params: { 'adcs.ki': 0.02 } },
+    ]);
+    const rowsCsv = csv.split('\n');
+    const head = rowsCsv[0].split(',');
+    check('toCSV: header, one line per stretch, parameter columns p.<key> for every key seen, auto.* columns, quotes in notes escaped', rowsCsv.length === 3 && head.slice(0, 5).join() === 'run,source,time,step,target_deg' && head.includes('p.adcs.kp') && head.includes('p.adcs.ki') && head.includes('auto.KP') && head[head.length - 1] === 'note' && rowsCsv[1].includes('"first, ""good"""') && rowsCsv[1].split(',')[2] === '2026-10-06T12:00:00.000Z' && rowsCsv[2].includes(',1,') && rowsCsv[2].split(',')[0] === '2', rowsCsv[1]);
+    check('toCSV: empty list gives only the header', A.toCSV([]).split('\n').length === 1);
+  }
+
+  console.log('adcs tuning: Ground Station log analyzer');
+  {
+    const A = NS.adcs;
+    const fs = require('fs');
+    const fx = (n) => fs.readFileSync(path.join(__dirname, 'fixtures', n), 'utf8');
+    // 3 seconds with 2, 4 and 1 rows: rows of a second are spread evenly over it
+    const mini = 'timestamp,sun_l,sun_r,sun_ndv,sun_angle_deg,mag_x_uT,mag_y_uT,mag_z_uT,mag_heading_deg,gyro_x_dps,gyro_y_dps,gyro_z_dps,rw_cmd\n'
+      + '2000-01-01 10:00:00,1,1,0,5,0,0,0,0,0,0,-1.5,0\n2000-01-01 10:00:00,1,1,0,6,0,0,0,0,0,0,2,0\n'
+      + [1, 2, 3, 4].map((i) => `2000-01-01 10:00:01,1,1,0,${6 + i},0,0,0,0,0,0,0.5,10`).join('\n') + '\n2000-01-01 10:00:02,1,1,0,9,0,0,0,0,0,0,3,-20\n';
+    const g0 = A.gsParse(mini);
+    check('gsParse: rows of one second are spread evenly (2 rows -> .0 .5, 4 rows -> .0 .25 .5 .75, 1 row -> .0), times counted from the first row',
+      g0.n === 7 && g0.rows.map((r) => +r.t.toFixed(3)).join() === '0,0.5,1,1.25,1.5,1.75,2' && g0.secs === 3 && g0.from === '10:00:00' && g0.to === '10:00:02');
+    check('gsParse: gyro_z is kept as |gyro_z| (the sign of old logs is a mix of two sources), rw_cmd and the angle as numbers', g0.rows[0].GZ === 1.5 && g0.rows[1].GZ === 2 && g0.rows[6].RW === -20 && g0.rows[6].ANG === 9);
+    check('gsParse: columns are found by name (any order), CRLF and a BOM are fine, bad rows are counted and skipped', (() => {
+      const g = A.gsParse('﻿timestamp,rw_cmd,sun_angle_deg\r\n2000-01-01 10:00:00,5,1.5\r\nnot a row\r\n2000-01-01 10:00:01,,2\r\n2000-01-01 10:00:01,7,3\r\n');
+      return g.n === 2 && g.bad === 2 && g.rows[1].RW === 7 && g.rows[1].ANG === 3 && g.rows[0].GZ === undefined;
+    })());
+    check('gsParse: a file that is not a GS log is refused with a Thai message', (() => { try { A.gsParse('a,b\n1,2\n'); return false; } catch (e) { return /Ground Station/.test(e.message); } })() && (() => { try { A.gsParse(''); return false; } catch (e) { return /ว่าง/.test(e.message); } })());
+    // runs: nonzero rw_cmd stretches, zero gaps up to 3 s stay inside
+    const mkRows = (spec) => spec.flatMap(([n, rw]) => Array.from({ length: n }, () => rw)).map((rw, i) => ({ t: i / 10, RW: rw, ANG: 0, clock: 'x' }));
+    const R = A.gsRuns(mkRows([[50, 0], [60, 30], [20, 0], [40, -20], [80, 0], [30, 25], [50, 0]]));
+    check('gsRuns: a zero gap of 2 s stays inside one run, a gap of 8 s starts a new one (run 1: 5.0..16.9 s, run 2 from 25.0 s)', R.length === 2 && R[0].nz === 100 && Math.abs(R[0].t0 - 5) < 1e-9 && Math.abs(R[0].t1 - 16.9) < 1e-9 && R[1].nz === 30 && Math.abs(R[1].t0 - 25) < 1e-9, R.map((r) => `${r.t0}-${r.t1}`).join(' '));
+    check('gsRuns: a blip shorter than 2 s or with fewer than 10 non-zero rows is not a run; a gap option; no rows -> []', A.gsRuns(mkRows([[20, 0], [5, 40], [20, 0]])).length === 0 && A.gsRuns(mkRows([[20, 0], [30, 40], [20, 0], [30, 40]]), { gap: 1 }).length === 2 && A.gsRuns(mkRows([[20, 0], [30, 40], [20, 0], [30, 40]]), { gap: 3 }).length === 1 && A.gsRuns([]).length === 0);
+
+    // the real 15:36 AUTO run (excerpt, every 6th row, anonymised): the numbers a person reads off the log
+    const g = A.gsParse(fx('gs_auto_excerpt.csv'));
+    const runs = A.gsRuns(g.rows);
+    check('GS excerpt of 15:36: one run, starting at the first non-zero rw_cmd (clock 12:06:17 after the anonymising shift = 15:36:17), 40 s long', g.n > 150 && runs.length === 1 && runs[0].clock === '12:06:17' && runs[0].t1 - runs[0].t0 > 38 && runs[0].t1 - runs[0].t0 < 43, `${runs.length} runs, ${runs[0] && runs[0].clock}`);
+    const m = A.gsMetrics(runs[0], { tgt: 0, tol: 2, hold: 3 });
+    check('GS excerpt: the run starts at about -18.4° (sun angle) and the wheel goes to -40 at once', Math.abs(m.a0 + 18.4) < 2.5 && runs[0].rows.slice(0, 12).some((r) => r.RW === -40), `a0 ${m.a0}`);
+    check('GS excerpt: WRONG-WAY is true (it turned away from the lamp in the first 0.7 s)', m.wrong === true && m.wrongDev > 1, `dev ${m.wrongDev.toFixed(2)}`);
+    check('GS excerpt: it enters ±2° only near the end (after about 20 s) and settles for 3 s later', m.tEnter > 15 && m.tEnter < 25 && m.tSettle > m.tEnter && m.tSettle < 32, `enter ${m.tEnter} settle ${m.tSettle}`);
+    check('GS excerpt: overshoot past the target is about +7° (the spin through other angles before it is not counted)', m.overshoot > 5.5 && m.overshoot < 8.5, `overshoot ${m.overshoot.toFixed(2)}`);
+    check('GS excerpt: ends near 0° (mean error of the last 3 s under 0.7°, SD under 1°) with the wheel at 12..15', Math.abs(m.ssMean) < 0.7 && m.ssSD < 1 && runs[0].rows.slice(-10).every((r) => r.RW >= 12 && r.RW <= 15), `ss ${m.ssMean.toFixed(2)} ± ${m.ssSD.toFixed(2)}`);
+    check('GS excerpt: max |gyro_z| is a few hundred °/s (236 in the full log) and the wheel sits at its largest command (40) for more than 10 s', m.maxGZ > 200 && m.maxGZ < 250 && m.tSat > 10 && m.tSat < 17, `gz ${m.maxGZ} sat ${m.tSat}`);
+    check('GS metrics: another target is respected (editable): the same run against target -5 starts nearer and has no kicks info', (() => { const m5 = A.gsMetrics(runs[0], { tgt: -5 }); return m5.tgt === -5 && Math.abs(m5.step) < Math.abs(m.step) && m5.kicks === null; })());
+    check('GS metrics: adcs.max given -> the saturated time uses max - 1 (|rw| >= 79 never happens here: 0 s)', A.gsMetrics(runs[0], { tgt: 0, satLevel: 79 }).tSat === 0);
+    const gm = A.gsParse(fx('gs_manual_excerpt.csv'));
+    const rm = A.gsRuns(gm.rows);
+    const mm = rm.length ? A.gsMetrics(rm[0], { tgt: 0 }) : null;
+    check('GS excerpt of the earlier log (15:32, wheel driven but the angle stuck near -19.5°): one run, never inside ±2°, not wrong-way, small gyro', rm.length === 1 && mm.tEnter === null && mm.tSettle === null && mm.wrong === false && mm.maxGZ < 10 && mm.ssMean > 15, JSON.stringify(mm && { e: mm.tEnter, w: mm.wrong, g: mm.maxGZ, s: mm.ssMean }));
   }
   console.log(`\n${passes} passed, ${fails} failed`);
   process.exit(fails ? 1 : 0);

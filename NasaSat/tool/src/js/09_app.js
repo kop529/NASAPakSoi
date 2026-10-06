@@ -31,6 +31,7 @@
     const ts = Date.now();
     S.log.push([ts, dir, text]);
     if (S.log.length > 300000) S.log.splice(0, 50000);
+    if (dir === 'rx' && text.startsWith('TM,TEAM_C,')) return; // the ADCS stream (up to 20 lines a second) goes to the session log and the ADCS page, not the console
     const ss = S.proto === 'sunseek'; // the organizer's lines: ACK ok, ERR error, EVT event, TM muted (and hideable like our T, lines)
     const isT = dir === 'rx' && (ss ? text.startsWith('TM,') : (text.startsWith('T,') || text.startsWith('IMG C') || text.includes('"type":"pins"')));
     let cls = dir === 'tx' ? 'tx' : dir === 'sys' ? 'sys' : '';
@@ -64,6 +65,7 @@
   const channel = (kind) => { document.body.dataset.ch = kind || ''; };
 
   const onStatus = (st, info) => {
+    NS.bus.emit('link', st);
     if (st === 'open') {
       S.connected = true;
       if (S.tr.kind === 'serial' && info && info.usbVendorId) S.portInfo = info;
@@ -403,6 +405,7 @@
     const p = S.ss.client.feed(raw); // parses, keeps the State, completes the command that waits for this line
     if (p.kind === 'tm') S.ss.tmCount++;
     if (S.ss.rec && p.kind === 'tm' && p.tm.group === 'TEAM_T') S.ss.rec.push({ ...p.tm.num }); // a sign check is recording
+    NS.bus.emit('ss:line', p);
     if (p.kind === 'err') {
       const text = ['ERR', p.err.code, ...p.err.args].join(' ');
       const t = Date.now();
@@ -1592,6 +1595,7 @@
     // STOP everywhere: Esc always, Space unless the cursor is in a box where you type text.
     // A focused button must not swallow Space: the browser would press that button again (e.g. M1 START).
     const stop = () => {
+      NS.bus.emit('stop');
       if (S.scan) S.scan.stop = true;
       rejectImageWaits('หยุดแล้ว (STOP)');
       if (S.tr && S.connected) {
@@ -1955,6 +1959,8 @@
     $('#conErrOnly').addEventListener('change', (e) => conOut.classList.toggle('errs', e.target.checked));
     $('#conErrN').addEventListener('click', () => { $('#conErrOnly').checked = true; conOut.classList.add('errs'); conOpen(true); });
   }
+
+  NS.app = { addEvidence, ssWhy, armConfirm, setTab: (t) => { const b = $(`#tabs button[data-tab="${t}"]`); if (b) b.click(); } };
 
   // ------------------------------------------------------------------ boot
   makeCharts();
