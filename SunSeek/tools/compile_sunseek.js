@@ -1,4 +1,4 @@
-// Real compile check for the SunSeek platform firmware (organizer v2.1 baseline and our team copy),
+// Real compile check for the SunSeek platform firmware (organizer v3.0 baseline and our team copy; --v21 = the old v2.1 pair),
 // using the same arduino-cli + esp32 core as firmware/tools/compile_check.js in the NasaSat project.
 //   node SunSeek/tools/compile_sunseek.js            team copy only
 //   node SunSeek/tools/compile_sunseek.js --both     organizer baseline + team copy (to compare sizes)
@@ -11,7 +11,8 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const both = process.argv.includes('--both');
-const SKETCH = 'SunSeek_Platform_Firmware_v2_1';
+const v21 = process.argv.includes('--v21');
+const SKETCH = v21 ? 'SunSeek_Platform_Firmware_v2_1' : 'SunSeek_Platform_Firmware_v3_0';
 
 function findCli() {
   const local = process.env.LOCALAPPDATA;
@@ -36,7 +37,7 @@ if (!cli) {
 // SunSeek v1.3 talks over a CP210x USB-UART chip, so USB CDC On Boot stays off.
 const FQBN = 'esp32:esp32:esp32s3:CDCOnBoot=default';
 const builds = [['team', path.join(root, 'team', SKETCH)]];
-if (both) builds.unshift(['organizer v2.1', path.join(root, 'organizer_v2_1', SKETCH)]);
+if (both) builds.unshift(v21 ? ['organizer v2.1', path.join(root, 'organizer_v2_1', SKETCH)] : ['organizer v3.0', path.join(root, 'organizer_v3_0', 'platform', SKETCH)]);
 
 const ver = spawnSync(cli, ['core', 'list'], { encoding: 'utf8' });
 const coreLine = (ver.stdout || '').split(/\r?\n/).find((l) => /^esp32:esp32\s/.test(l));

@@ -3,6 +3,7 @@
 //   #WAIT <ms>          run the firmware for <ms> of simulated time (loop() every 1 ms)
 //   #SET <key> <value>  change the world (see SimWorld::set)
 //   #STATE              print "#STATE t=... body=... rate=... wheel=... cmd=... sun=..."
+//   #BLE 0|1            a BLE central connected: telemetry lines cost delay(3) each, like the board with the GS
 //   anything else       typed into the USB serial port (a telecommand)
 // stdout: every line the firmware prints, plus "#..." harness lines.
 // $SUNSEEK_NVS = file that keeps the NVS (Preferences) between runs (a "reset" = run the program again).
@@ -195,6 +196,8 @@ int main() {
       continue;
     }
     if (line == "#STATE") { std::cout << world.state() << "\n"; continue; }
+    // a BLE central (the Ground Station) connected: every sendTelemetry() then also notifies and waits delay(3)
+    if (line.rfind("#BLE ", 0) == 0) { _ttcConnected = line.substr(5) == "1"; std::cout << "#OK ble\n"; continue; }
     Serial.feed(line + "\n");
     advance(2, true);
   }

@@ -58,10 +58,19 @@ static unsigned long _aInSince = 0;  // last time |error| was outside adcs.lock
 static float _aK = 0;                // kick term (PWM %), fades
 static unsigned long _aMovedAt = 0;  // start of the current "still" window (the body turned, or nothing had to move)
 static float _aKickE0 = 0;           // |error| at the start of that window
+// TEAM NasaPakSoi diagnostics (TM,TEAM_C / EVT,TEAM_AUTO) + anti-windup
+static float _aAng = 0;              // sun-sensor angle of the last read
+static float _aSatDir = 0;           // wheel command at +-adcs.max in the last step: +1 / -1 (u domain), 0 = not saturated
+// TEAM NasaPakSoi ratchet (adcs.ratchet): stuck with the wheel already at +-adcs.max toward the target
+static bool _aRat = false;
+static unsigned long _aRatT0 = 0;
+static float _aRatDir = 0;
 inline bool adcsTeamHold() { return _aHold; }
 inline bool adcsTeamSearching() { return _aSearch; }
 
 inline float adcsWrap180(float x){ while(x>180)x-=360; while(x<=-180)x+=360; return x; }
+// TEAM NasaPakSoi cam.off: the controller points (target + cam.off); 0 = the organizer target as given
+inline float adcsTargetEff(){ return TP.camOff==0.0f?_a.target:(_a.ref==ADCS_MAG?fmodf(_a.target+TP.camOff+720.0f,360.0f):adcsWrap180(_a.target+TP.camOff)); }
 inline const char* adcsModeText(){return _a.mode==ADCS_AUTO?"AUTO":"MANUAL";}
 inline const char* adcsRefText(){return _a.ref==ADCS_MAG?"MAG":"SUN";}
 
@@ -73,7 +82,13 @@ inline void adcsBegin(){
 }
 
 inline ADCSState adcsGet(){return _a;}
-inline void adcsManual(){_a.mode=ADCS_MANUAL;_a.u=0;}
+// TEAM NasaPakSoi: end of an AUTO run in the log (what the controller saw last)
+inline void adcsTeamAutoOff(const char* why){
+  char b[120];
+  snprintf(b,sizeof(b),"EVT,TEAM_AUTO,%s,ERR,%.2f,EST,%.2f,ANG,%.2f,I,%.1f",why,_a.error,_a.estimatedAngle,_aAng,_aI);
+  sendTelemetry(b);
+}
+inline void adcsManual(){if(_a.mode==ADCS_AUTO)adcsTeamAutoOff("OFF");_a.mode=ADCS_MANUAL;_a.u=0;}
 
 inline bool adcsReference(ADCSReference r){
   if(_a.mode==ADCS_AUTO&&!TP.adcsRetarget)return false;  // TEAM NasaPakSoi: adcs.retarget=1 allows a new target in AUTO (wheel keeps running)
@@ -87,7 +102,7 @@ inline bool adcsTarget(float t){
   if(_a.ref==ADCS_SUN&&(t < -90 || t > 90))return false;
   if(_a.ref==ADCS_MAG&&(t<0||t>=360))return false;
   _a.target=t;
-  if(_a.mode==ADCS_AUTO){_aK=0;_aMovedAt=millis();_aKickE0=1e9f;_aHold=false;_aInSince=millis();}  // TEAM: fresh kick/hold state for the new target
+  if(_a.mode==ADCS_AUTO){_aK=0;_aMovedAt=millis();_aKickE0=1e9f;_aHold=false;_aInSince=millis();_aRat=false;}  // TEAM: fresh kick/hold state for the new target
   return true;
 }
 
@@ -114,6 +129,7 @@ inline bool adcsRead(){
   // TEAM NasaPakSoi F7: is the lamp really seen? (team flags: S >= sun.minS, not clipped, |D| <= sun.dmax)
   _aSunSeen = s.light && !s.edge;
   if (_aSunSeen) { _aLastSeenAngle = s.angleDeg; _aEverSeen = true; }
+  _aAng = s.angleDeg;
 
   _a.sunError = _a.target - s.angleDeg;
   _a.magError = adcsWrap180(_a.target - p.heading);
@@ -139,12 +155,38 @@ inline bool adcsRead(){
 
   // Controller now consumes the estimator output.
   // With LPF=OFF and Fusion=OFF this is equivalent to the verified v0.2 path.
-  _a.error = (_a.ref==ADCS_MAG)
-    ? adcsWrap180(_a.target - _a.estimatedAngle)
-    : (_a.target - _a.estimatedAngle);
+  // TEAM NasaPakSoi adcs.wrap: the SUN estimate is never wrapped (the estimator integrates the gyro through every
+  // turn, also in MANUAL, and its correction toward the sun angle is taken mod 360) -> after whole turns it stays
+  // k*360 off and the organizer error (target - estimate) makes AUTO unwind them: 6 Oct 15:36 the body turned
+  // ~-1040 deg (3 turns) at rw -40 before it pointed. adcs.wrap 1 takes the error the short way round.
+  const float tEff = adcsTargetEff();
+  _a.error = (_a.ref==ADCS_MAG || TP.adcsWrap)
+    ? adcsWrap180(tEff - _a.estimatedAngle)
+    : (tEff - _a.estimatedAngle);
 
   _a.valid=true;
   return true;
+}
+
+// ---- TEAM NasaPakSoi flight recorder: every AUTO run in RAM (the GS holds the only BLE link and its CSV log has no
+// controller values) -> TEAM_CDUMP afterwards over BLE/USB. Cleared at each AUTO entry, recorded every TEAM_CREC-th
+// control step (default 2 = 25 Hz), stops when full (keeps the start of the run). Lost on reset/power-off. ----
+#define TEAM_REC_MAX 2400
+struct TeamRecSample { uint32_t t; int16_t tgt, ang, est, err, gz, u, i, k; int8_t rw; uint8_t fl; };  // x10 except t, rw
+static TeamRecSample _recBuf[TEAM_REC_MAX];
+static int _recN = 0, _recDiv = 2, _recTick = 0;
+static bool _recFull = false;
+static char _recEntry[180] = "";  // the EVT,TEAM_AUTO,ON line of the recorded run
+inline int16_t _recQ(float v){ v*=10.0f; return (int16_t)(v>32767.0f?32767:(v<-32767.0f?-32767:lroundf(v))); }
+inline void teamRecPush(){
+  if(_recDiv<=0||_recFull)return;
+  if(++_recTick<_recDiv)return;
+  _recTick=0;
+  if(_recN>=TEAM_REC_MAX){_recFull=true;return;}
+  TeamRecSample& r=_recBuf[_recN++];
+  r.t=millis(); r.tgt=_recQ(adcsTargetEff()); r.ang=_recQ(_aAng); r.est=_recQ(_a.estimatedAngle); r.err=_recQ(_a.error);
+  r.gz=_recQ(_a.rate); r.u=_recQ(_a.u); r.i=_recQ(_aI); r.k=_recQ(_aK); r.rw=(int8_t)constrain(rwGetAppliedCommand(),-100,100);
+  r.fl=(_aSunSeen?1:0)|(_aHold?2:0)|(_aSearch?4:0)|(_aSatDir>0?8:0)|(_aSatDir<0?16:0);
 }
 
 inline bool adcsAuto(){
@@ -152,18 +194,39 @@ inline bool adcsAuto(){
   if(rwGetMode()==RW_MODE_MOMENTUM && !rwMomentumProfileReady())return false;
   rwStop();
   if(rwGetMode()==RW_MODE_MOMENTUM && !rwApplyProfileBias())return false;
+  // TEAM NasaPakSoi adcs.wrap: start from the sun angle itself when the lamp is seen (a fast turn just before AUTO
+  // leaves the fused estimate up to ~1 s behind; whole turns are already handled by the wrapped error)
+  bool sync=false;
+  if(TP.adcsWrap&&_a.ref==ADCS_SUN&&_aSunSeen){estimatorReset();if(!adcsRead())return false;sync=true;}
   _a.mode=ADCS_AUTO;
   _aLast=0;
+  _aSatDir=0;
+  {
+    char b[180];
+    snprintf(b,sizeof(b),"EVT,TEAM_AUTO,ON,TGT,%.2f,EST,%.2f,ANG,%.2f,LIT,%d,ERR,%.2f,KP,%g,KD,%g,KI,%g,SIGN,%d,RSIGN,%d,MAX,%g,DB,%g,WRAP,%d,SYNC,%d,STRAT,%s",
+      adcsTargetEff(),_a.estimatedAngle,_aAng,_aSunSeen?1:0,_a.error,_a.kp,_a.kd,TP.adcsKi,(int)TP.adcsSign,(int)TP.imuRsign,
+      TP.adcsMax,TP.adcsDb,TP.adcsWrap,sync?1:0,rwGetMode()==RW_MODE_MOMENTUM?"MOM":"RW");
+    sendTelemetry(b);
+    strncpy(_recEntry,b,sizeof(_recEntry)-1);_recN=0;_recTick=_recDiv;_recFull=false;  // new recording, first sample at once
+  }
   _aI=0;  // TEAM NasaPakSoi
   _aSearch=false;_aS=0;_aLostSince=_aSeenSince=millis();  // TEAM NasaPakSoi F7
   _aHold=false;_aInSince=millis();  // TEAM NasaPakSoi F5
   _aK=0;_aMovedAt=millis();_aKickE0=1e9f;  // TEAM NasaPakSoi F4 stiction kick
+  _aRat=false;
   return true;
 }
 
-inline void adcsFault(){rwStop();_a.mode=ADCS_MANUAL;_a.u=0;_a.valid=false;}
+inline void adcsFault(){if(_a.mode==ADCS_AUTO)adcsTeamAutoOff("FAULT");rwStop();_a.mode=ADCS_MANUAL;_a.u=0;_a.valid=false;}
 
+inline void _adcsStep();
 inline void adcsUpdate(){
+  const unsigned long l0=_aLast;
+  _adcsStep();
+  if(_aLast!=l0&&_a.mode==ADCS_AUTO)teamRecPush();  // TEAM NasaPakSoi: one sample per control step that ran in AUTO
+}
+
+inline void _adcsStep(){
   unsigned long n=millis(); if(n-_aLast<ADCS_CONTROL_PERIOD_MS)return; _aLast=n;
   if(!adcsRead()){ if(_a.mode==ADCS_AUTO)adcsFault(); else _a.valid=false; return; }
   if(_a.mode!=ADCS_AUTO)return;
@@ -177,7 +240,7 @@ inline void adcsUpdate(){
     if(_aSunSeen)_aLostSince=n; else _aSeenSince=n;  // lost since = last time seen, and the other way round
     if(!_aSearch&&!_aSunSeen&&n-_aLostSince>=300){
       _aSearch=true;_aS=_a.u;
-      sendTelemetry("EVT,TEAM_SUN_SEARCH,START,DIR,"+String(!_aEverSeen||_a.target-_aLastSeenAngle>=0?1:-1));
+      sendTelemetry("EVT,TEAM_SUN_SEARCH,START,DIR,"+String(!_aEverSeen||adcsTargetEff()-_aLastSeenAngle>=0?1:-1));
     }else if(_aSearch&&_aSunSeen&&n-_aSeenSince>=200){
       _aSearch=false;
       if(TP.adcsKi>0)_aI=constrain(_aS-(_a.kp*_a.error-_a.kd*_a.rate),-TP.adcsMax,TP.adcsMax);
@@ -199,23 +262,37 @@ inline void adcsUpdate(){
   float u=0;
   bool pd=false;  // the PD law runs (outside the deadband, not searching)
   if(_aSearch){
-    const float dir=(!_aEverSeen||_a.target-_aLastSeenAngle>=0)?1.0f:-1.0f;  // d(angle)/dt = +BODY_RATE (W3 check)
+    const float dir=(!_aEverSeen||adcsTargetEff()-_aLastSeenAngle>=0)?1.0f:-1.0f;  // d(angle)/dt = +BODY_RATE (W3 check)
     _aS=constrain(_aS+TP.adcsSk*(dir*TP.adcsSrate-_a.rate)*dtS,-TP.adcsMax,TP.adcsMax);
     u=_aS;
   }else if(fabsf(_a.error)>=(_aHold&&TP.adcsLock>TP.adcsDb?TP.adcsLock:TP.adcsDb)){  // F5: in HOLD the deadband is adcs.lock
     pd=true;
-    // TEAM NasaPakSoi F4: integral term (adcs.ki); clamped to +-adcs.max so it cannot wind up
-    if(TP.adcsKi>0)_aI=constrain(_aI+hg*TP.adcsKi*_a.error*dtS,-TP.adcsMax,TP.adcsMax);
+    // TEAM NasaPakSoi F4: integral term (adcs.ki); clamped to +-adcs.max. adcs.aw 1: no integrating further into a
+    // saturated wheel command (15:36: I ran up to the limit while the body stuck at -5 deg, then held the wheel at +40
+    // past the target -> +7 deg overshoot)
+    if(TP.adcsKi>0){
+      const float dI=hg*TP.adcsKi*_a.error*dtS;
+      if(!(TP.adcsAw&&_aSatDir*dI>0)&&!_aRat)_aI=constrain(_aI+dI,-TP.adcsMax,TP.adcsMax);
+    }
     u=hg*(_a.kp*_a.error-_a.kd*_a.rate)+_aI;  // hg: F5 hold gain
     // TEAM NasaPakSoi F4 stiction kick: still for adcs.kickMs although outside the deadband -> step toward the target
-    if(TP.adcsKick>0){
+    if(TP.adcsKick>0&&!_aRat){
       if(fabsf(_a.rate)>=TP.adcsKrate){_aMovedAt=n;_aKickE0=fabsf(_a.error);}
       else if(n-_aMovedAt>=(unsigned long)TP.adcsKickMs){
         // stuck = slow AND the error did not shrink 0.2 deg in the window (a body creeping toward the target on a
         // slippery platform is left alone: a kick there only overshoots)
         if(fabsf(_a.error)>_aKickE0-0.2f){
-          _aK=constrain(_aK+(_a.error>0?1.0f:-1.0f)*TP.adcsKick,-TP.adcsMax,TP.adcsMax);
-          sendTelemetry("EVT,TEAM_KICK,"+String(_aK,1)+",ERR,"+String(_a.error,2));
+          const float ed=_a.error>0?1.0f:-1.0f;
+          if(TP.adcsAw&&_aSatDir==ed){
+            // the wheel is already at +-adcs.max toward the target: a kick adds nothing now and, piled up (15:36 sim: K 37 %),
+            // drives an overshoot once the body breaks free. Ratchet instead: back the wheel off by adcs.kick % slowly
+            // (over adcs.ratchet ms: a small torque that the platform friction holds), then let it jump back to the
+            // limit (rw.slew: ~40 ms) = a torque step toward the target that breaks the static friction.
+            if(TP.adcsRatchet>0){_aRat=true;_aRatT0=n;_aRatDir=ed;_aK=0;sendTelemetry("EVT,TEAM_RATCHET,"+String((int)ed)+",ERR,"+String(_a.error,2));}
+          }else{
+            _aK=constrain(_aK+ed*TP.adcsKick,-TP.adcsMax,TP.adcsMax);
+            sendTelemetry("EVT,TEAM_KICK,"+String(_aK,1)+",ERR,"+String(_a.error,2));
+          }
         }
         _aMovedAt=n;_aKickE0=fabsf(_a.error);
       }
@@ -227,6 +304,11 @@ inline void adcsUpdate(){
   }
   if(_aSearch||TP.adcsKick<=0)_aK=0;
   else{u+=_aK;_aK*=expf(-dtS/2.0f);}  // the kick step fades (2 s): its slow return gives only a small reverse torque
+  if(_aRat){  // TEAM ratchet back-off; ends after adcs.ratchet ms or as soon as the body moves (then the step helps it on)
+    const float fr=(float)(n-_aRatT0)/TP.adcsRatchet;
+    if(!pd||_aSearch||fr>=1.0f||fabsf(_a.rate)>=TP.adcsKrate||TP.adcsRatchet<=0){_aRat=false;_aMovedAt=n;_aKickE0=fabsf(_a.error);}
+    else u=_aRatDir*(TP.adcsMax-TP.adcsKick*fr);
+  }
   if(!pd){_aMovedAt=n;_aKickE0=fabsf(_a.error);}  // inside the deadband / hold band or searching: nothing has to move
   _a.u=u;
 
@@ -239,6 +321,7 @@ inline void adcsUpdate(){
       float lo=(rwGetMotorCommand()==0)?TP.rwMinStart:TP.rwMinStable;
       cu=(cu>0?1.0f:-1.0f)*(lo+fabsf(cu));
     }
+    _aSatDir=fabsf(cu)>=TP.adcsMax&&TP.adcsMax>0?(cu>0?1.0f:-1.0f)*TP.adcsSign:0.0f;  // TEAM: u-domain direction
     int c=(int)roundf(constrain(
       cu,
       -TP.adcsMax,

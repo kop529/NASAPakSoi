@@ -248,7 +248,9 @@ console.log('F5 hold at the target (adcs.lock / unlock / hgain): noise 6 mV + fl
   const b = hold(['TEAM_SET,adcs.lock,1', 'TEAM_SET,adcs.unlock,2', 'TEAM_SET,adcs.hgain,0.5']);
   console.log(`       lock off: wheel activity ${a.act.toFixed(2)} %/step, rms ${a.rms.toFixed(2)} deg, after push ${a.back.toFixed(2)} · lock 1/2: activity ${b.act.toFixed(2)}, rms ${b.rms.toFixed(2)}, after push ${b.back.toFixed(2)}`);
   check('HOLD ON when settled, OFF on the push, ON again', all(b.out, /^EVT,TEAM_HOLD,ON,/).length >= 2 && !!find(b.out, /^EVT,TEAM_HOLD,OFF,/));
-  check('in HOLD the wheel moves less and pointing stays inside the lock', b.act < a.act && b.rms < 1, `${b.act.toFixed(2)} vs ${a.act.toFixed(2)}`);
+  // before adcs.aw (6 Oct) HOLD was calmer than the plain law (0.26 vs 0.29 %/step); with anti-windup the plain law is as
+  // calm (0.17), so only check that HOLD stays quiet and inside the lock
+  check('in HOLD the wheel stays quiet and pointing stays inside the lock', b.act < 0.3 && b.rms < 1, `${b.act.toFixed(2)} vs ${a.act.toFixed(2)}`);
   check('recovers from the push', b.back < 1.5, `${b.back.toFixed(2)}`);
   check('lock 0 = no HOLD events (organizer behaviour)', !find(a.out, /^EVT,TEAM_HOLD/));
 }
@@ -369,6 +371,8 @@ console.log('v3.0 momentum profile (MOM_PROFILE_*, MOMENTUM AUTO)');
   console.log(`       uncharacterized profile: sun ${end.sun.toFixed(1)} deg after 20 s (info)`);
   check('STOP -> wheel 0', s[s.length - 1].cmd === 0);
 }
+
+require('./e2e_auto_diag.js')({ run, check, find, all, kv, states, CAL });
 
 console.log(`\n${passes} passed, ${fails} failed`);
 process.exitCode = fails ? 1 : 0;

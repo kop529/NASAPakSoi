@@ -18,7 +18,7 @@
 #include "Config_Sensor.h"
 #include "Team_SunModel.h"
 
-#define TEAM_FW_VERSION "NasaPakSoi-team-2"
+#define TEAM_FW_VERSION "NasaPakSoi-team-3"
 #define TEAM_NVS_NAMESPACE "nps"
 
 struct TeamParams {
@@ -71,6 +71,15 @@ struct TeamParams {
   float adcsKrate = 1;
   int adcsGhold = 0;     // F8: lamp not seen (SUN reference) -> the angle continues on the gyro alone (adcs.ghold)
   int adcsRetarget = 0;  // SET_TARGET accepted in AUTO (adcs.retarget)
+  // 1 = SUN pointing error the short way round (wrap +-180) + estimate re-synced to the sun angle at AUTO entry when the
+  // lamp is seen. 0 = organizer: error = target - estimate, and the estimate keeps every whole turn made since boot
+  // (6 Oct 15:36: AUTO unwound 3 turns first). Default ON: a fix, it changes nothing while the body never turned a full turn.
+  int adcsWrap = 1;
+  int adcsAw = 1;        // anti-windup: no integrating further while the wheel command is at +-adcs.max (only with adcs.ki > 0)
+  // stuck with the wheel at +-adcs.max toward the target (kick on): back off adcs.kick % over adcs.ratchet ms, then jump
+  // back to the limit (a torque step). 0 = off (kicks are then just skipped while saturated, with adcs.aw 1)
+  float adcsRatchet = 1500;
+  float camOff = 0;      // the controller points (target + cam.off) deg: camera fixed 90 deg from the sun sensor (fallback)
   // team telemetry over USB, 0 = off
   int tmHz = 0;
 };
@@ -132,6 +141,10 @@ static TeamParamDef _tpDefs[] = {
   {"adcs.krate",  TPT_FLOAT,  &TP.adcsKrate,     0, 0, 30},
   {"adcs.ghold",  TPT_INT,    &TP.adcsGhold,      0, 0, 1},
   {"adcs.retarget", TPT_INT,  &TP.adcsRetarget,   0, 0, 1},
+  {"adcs.wrap",   TPT_INT,    &TP.adcsWrap,      0, 0, 1},
+  {"adcs.aw",     TPT_INT,    &TP.adcsAw,        0, 0, 1},
+  {"adcs.ratchet",TPT_FLOAT,  &TP.adcsRatchet,   0, 0, 10000},
+  {"cam.off",     TPT_FLOAT,  &TP.camOff,        0, -180, 180},
   {"team.tm",     TPT_INT,    &TP.tmHz,          0, 0, 20},
 };
 static const int TEAM_PARAM_COUNT = sizeof(_tpDefs) / sizeof(_tpDefs[0]);

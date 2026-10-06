@@ -18,6 +18,20 @@
      TEAM_LUT_CLEAR / TEAM_LUT_INFO
      TEAM_SUN                         one TM,TEAM_T line now
      TEAM_STREAM,<0..20>              TM,TEAM_T at that rate over USB only (0 = off) = TEAM_SET,team.tm
+     TEAM_CSTREAM,<0..20>             TM,TEAM_C (what the controller sees and does) at that rate over BLE + USB, RAM only,
+                                      not stopped by STOP (0 = off):
+                                      TM,TEAM_C,T,<ms>,M,<AUTO 0|1>,TGT,<target+cam.off>,ANG,<sun angle>,EST,<estimate>,
+                                      ERR,<error>,GZ,<body rate>,U,<u %>,I,<integral %>,K,<kick %>,RW,<applied %>,LIT,<0|1>,
+                                      H,<hold 0|1>,SR,<search 0|1>,SAT,<wheel at +-max: 1|-1|0>
+     TEAM_CREC,<0..50>                flight recorder: every n-th 20 ms AUTO step (0 = off, default 2 = 25 Hz, 2400 samples)
+                                      -> ACK,TEAM_CREC,<n>,N,<samples>,FULL,<0|1>
+     TEAM_CDUMP[,<step>]              (MANUAL) the last AUTO run, every <step>-th sample, ~100 lines/s over BLE + USB:
+                                      ACK,TEAM_CDUMP,<lines> / TM,TEAM_CR_AUTO,<the EVT,TEAM_AUTO,ON fields> /
+                                      TM,TEAM_CR_HEAD,N,<n>,DIV,<d>,COLS,i;t;tgt;ang;est;err;gz;u;I;K;rw;fl /
+                                      TM,TEAM_CR,<i>,<ms>,<tgt>,<ang>,<est>,<err>,<gz>,<u>,<I>,<K>,<rw>,<fl> ... /
+                                      EVT,TEAM_CDUMP,END,<lines>   (fl: 1 LIT, 2 HOLD, 4 SEARCH, 8 wheel at +max, 16 at -max)
+   Events: EVT,TEAM_AUTO,ON,TGT,..,EST,..,ANG,..,LIT,..,ERR,..,KP,..,KD,..,KI,..,SIGN,..,RSIGN,..,MAX,..,DB,..,WRAP,..,SYNC,..,STRAT,..
+           at every AUTO entry; EVT,TEAM_AUTO,OFF|FAULT,ERR,..,EST,..,ANG,..,I,.. when it ends.
      TEAM_GYRO_ZERO[,<ms 500..10000>] ACK now, then EVT,TEAM_GYRO_ZERO,BZ,<dps>,SD,..  (imu.gbz in RAM; TEAM_SAVE keeps it)
                                       or ERR,TEAM_GYRO_ZERO_MOVING / _WHEEL_ON / _NO_GYRO / _ABORTED (MANUAL, wheel stopped)
 
@@ -34,9 +48,33 @@
 
 // USB Development Link only: high-rate team telemetry must not crowd the BLE TT&C link.
 inline void teamSendUsb(const String& text) { Serial.println(text); }
+static int _teamCHz = 0;  // TEAM_CSTREAM rate (RAM only)
+static bool _tdOn = false;  // TEAM_CDUMP in progress
+static int _tdI = 0, _tdStep = 1, _tdLines = 0;
+static unsigned long _tdLast = 0;
+
+// one recorded sample per call, ~100 lines/s: 80-byte lines stay under the 115200-baud USB port (11.5 kB/s)
+inline void teamDumpUpdate() {
+  if (!_tdOn) return;
+  const unsigned long now = millis();
+  if (now - _tdLast < 10) return;
+  _tdLast = now;
+  if (adcsGet().mode == ADCS_AUTO || _tdI >= _recN) {  // finished, or a new AUTO run started (the buffer restarts)
+    _tdOn = false;
+    sendTelemetry("EVT,TEAM_CDUMP,END," + String(_tdLines));
+    return;
+  }
+  const TeamRecSample& r = _recBuf[_tdI];
+  char b[120];
+  snprintf(b, sizeof(b), "TM,TEAM_CR,%d,%lu,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%d,%u", _tdI, (unsigned long)r.t, r.tgt / 10.0, r.ang / 10.0,
+           r.est / 10.0, r.err / 10.0, r.gz / 10.0, r.u / 10.0, r.i / 10.0, r.k / 10.0, (int)r.rw, (unsigned)r.fl);
+  sendTelemetry(b);
+  _tdLines++;
+  _tdI += _tdStep;
+}
 
 inline bool _teamNeedsManual(const String& key) {
-  return key == "sun.model" || key == "adcs.sign" || key == "imu.rsign";
+  return key == "sun.model" || key == "adcs.sign" || key == "imu.rsign" || key == "adcs.wrap" || key == "cam.off";
 }
 
 inline String teamTelemetryLine() {
@@ -49,6 +87,17 @@ inline String teamTelemetryLine() {
     (unsigned long)millis(), (unsigned long)s.seq, s.mvL, s.mvR, s.teamS, s.teamD, s.teamAngle, s.angleDeg,
     s.noiseDeg, s.sat ? 1 : 0, s.light ? 1 : 0, a.estimatedAngle, a.rate, rwGetAppliedCommand(),
     a.mode == ADCS_AUTO ? 1 : 0);
+  return String(b);
+}
+
+// what the controller sees and does (Module_ADCS.h state of the last 20 ms step)
+inline String teamControlLine() {
+  const ADCSState a = adcsGet();
+  char b[200];
+  snprintf(b, sizeof(b),
+    "TM,TEAM_C,T,%lu,M,%d,TGT,%.2f,ANG,%.2f,EST,%.2f,ERR,%.2f,GZ,%.1f,U,%.1f,I,%.1f,K,%.1f,RW,%d,LIT,%d,H,%d,SR,%d,SAT,%d",
+    (unsigned long)millis(), a.mode == ADCS_AUTO ? 1 : 0, adcsTargetEff(), _aAng, a.estimatedAngle, a.error, a.rate, a.u, _aI, _aK,
+    rwGetAppliedCommand(), _aSunSeen ? 1 : 0, _aHold ? 1 : 0, _aSearch ? 1 : 0, (int)_aSatDir);
   return String(b);
 }
 
@@ -274,14 +323,43 @@ inline void teamHandleCommand(const String& command) {
     return;
   }
 
+  if (command.startsWith("TEAM_CREC,")) {
+    double d;
+    if (!teamParseNum(command.substring(10), d) || d < 0 || d > 50 || d != floor(d)) { sendTelemetry("ERR,TEAM_CREC_RANGE_0_TO_50"); return; }
+    _recDiv = (int)d;
+    sendTelemetry("ACK,TEAM_CREC," + String(_recDiv) + ",N," + String(_recN) + ",FULL," + String(_recFull ? 1 : 0));
+    return;
+  }
+
+  if (command == "TEAM_CDUMP" || command.startsWith("TEAM_CDUMP,")) {
+    double st = 1;
+    if (command.length() > 10 && (!teamParseNum(command.substring(11), st) || st < 1 || st > 50 || st != floor(st))) { sendTelemetry("ERR,TEAM_CDUMP_STEP_1_TO_50"); return; }
+    if (!manual) { sendTelemetry("ERR,TEAM_REQUIRES_MANUAL,TEAM_CDUMP"); return; }
+    _tdStep = (int)st; _tdI = 0; _tdOn = true; _tdLines = 0; _tdLast = millis();
+    sendTelemetry("ACK,TEAM_CDUMP," + String((_recN + _tdStep - 1) / _tdStep));
+    if (_recEntry[0]) sendTelemetry(String("TM,TEAM_CR_AUTO,") + (_recEntry + 14));  // drop "EVT,TEAM_AUTO,"
+    sendTelemetry("TM,TEAM_CR_HEAD,N," + String(_recN) + ",DIV," + String(_recDiv) + ",COLS,i;t;tgt;ang;est;err;gz;u;I;K;rw;fl");
+    return;
+  }
+
+  if (command.startsWith("TEAM_CSTREAM,")) {
+    double hz;
+    if (!teamParseNum(command.substring(13), hz) || hz < 0 || hz > 20 || hz != floor(hz)) { sendTelemetry("ERR,TEAM_CSTREAM_RANGE_0_TO_20"); return; }
+    _teamCHz = (int)hz;
+    sendTelemetry("ACK,TEAM_CSTREAM," + String(_teamCHz));
+    return;
+  }
+
   sendTelemetry("ERR,TEAM_UNKNOWN_COMMAND");
 }
 
-static unsigned long _teamTmLast = 0;
+static unsigned long _teamTmLast = 0, _teamCLast = 0;
 inline void teamTelemetryUpdate() {
   teamGyroZeroUpdate();  // F6 (here so the organizer's loop() keeps one team call)
-  if (TP.tmHz <= 0) return;
   const unsigned long now = millis();
+  teamDumpUpdate();
+  if (_teamCHz > 0 && now - _teamCLast >= 1000UL / (unsigned long)_teamCHz) { _teamCLast = now; sendTelemetry(teamControlLine()); }
+  if (TP.tmHz <= 0) return;
   if (now - _teamTmLast < 1000UL / (unsigned long)TP.tmHz) return;
   _teamTmLast = now;
   teamSendUsb(teamTelemetryLine());
