@@ -49,9 +49,33 @@ const er = err(hRaw), ec = err(hCal);
 const radii = spin.map((p) => Math.hypot(p.x - c.cx, p.y - c.cy));
 console.log(`mag points ${pts.length}, while turning ${spin.length}, turn range ${Math.min(...spin.map((p) => p.turn)).toFixed(0)}..${Math.max(...spin.map((p) => p.turn)).toFixed(0)} deg`);
 console.log(`circle centre (${c.cx.toFixed(2)}, ${c.cy.toFixed(2)}) uT, radius ${c.r.toFixed(2)} uT (min ${Math.min(...radii).toFixed(1)} max ${Math.max(...radii).toFixed(1)}), z ${Math.min(...spin.map((p) => p.z)).toFixed(1)}..${Math.max(...spin.map((p) => p.z)).toFixed(1)}`);
-console.log(`heading vs gyro: raw rms ${er.rms.toFixed(1)} max ${er.max.toFixed(1)} deg (sign ${er.sg}) · centred rms ${ec.rms.toFixed(1)} max ${ec.max.toFixed(1)} deg (sign ${ec.sg})`);
+console.log(`geometric max heading error with the (0,0) centre: asin(d/r) = ${(Math.asin(Math.min(1, Math.hypot(c.cx, c.cy) / c.r)) * 180 / Math.PI).toFixed(1)} deg (d ${Math.hypot(c.cx, c.cy).toFixed(1)} uT)`);
+console.log(`heading vs gyro (GS whole-second stamps: timing dominates this): raw rms ${er.rms.toFixed(1)} max ${er.max.toFixed(1)} deg (sign ${er.sg}) · centred rms ${ec.rms.toFixed(1)} max ${ec.max.toFixed(1)} deg (sign ${ec.sg})`);
 for (const lim of [0, 20, 39]) {
   const s = spin.filter((p) => Math.abs(p.rw) >= lim);
   if (s.length > 10) { const f = fit(s); console.log(`  |rw| >= ${lim}: n ${s.length} centre (${f.cx.toFixed(2)}, ${f.cy.toFixed(2)}) r ${f.r.toFixed(2)}`); }
 }
 module.exports = { pts, spin, c, er, ec };
+
+// chart c7: mag x/y while the body turned 3 times - a circle that is NOT around (0, 0)
+{
+  const C = { lime: '#8E9E1F', blue: '#4F8FE8', text: '#F1F3EE', muted: '#A3AA9C', grid: '#2C3328', bg: '#0A0C09' };
+  const W = 890, H = 900, ML = 110, MT = 60, S = 750, lo = -30, hi = 80;
+  const X = (v) => ML + (v - lo) / (hi - lo) * S, Y = (v) => MT + S - (v - lo) / (hi - lo) * S;
+  const k = S / (hi - lo);
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="'IBM Plex Sans Thai',sans-serif"><rect width="${W}" height="${H}" fill="${C.bg}"/>`;
+  for (let v = -20; v <= 80; v += 20) {
+    svg += `<line x1="${X(v)}" x2="${X(v)}" y1="${MT}" y2="${MT + S}" stroke="${C.grid}" stroke-width="${v === 0 ? 2 : 1}"/><line x1="${ML}" x2="${ML + S}" y1="${Y(v)}" y2="${Y(v)}" stroke="${C.grid}" stroke-width="${v === 0 ? 2 : 1}"/>`;
+    svg += `<text x="${X(v)}" y="${MT + S + 34}" font-size="26" fill="${C.muted}" text-anchor="middle">${v}</text><text x="${ML - 14}" y="${Y(v) + 9}" font-size="26" fill="${C.muted}" text-anchor="end">${v}</text>`;
+  }
+  svg += `<text x="${ML + S / 2}" y="${H - 14}" font-size="26" fill="${C.muted}" text-anchor="middle">แม่เหล็กแกน x (µT)</text>`;
+  svg += `<text x="${ML}" y="${MT - 22}" font-size="26" fill="${C.muted}">แม่เหล็กแกน y (µT) · ยานหมุน 3 รอบ 15:36</text>`;
+  svg += `<circle cx="${X(c.cx)}" cy="${Y(c.cy)}" r="${c.r * k}" fill="none" stroke="${C.lime}" stroke-width="2" stroke-dasharray="8 8"/>`;
+  for (const p of spin) svg += `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="5" fill="${C.blue}" opacity="0.8"/>`;
+  svg += `<circle cx="${X(0)}" cy="${Y(0)}" r="10" fill="${C.bg}" stroke="${C.text}" stroke-width="3"/><text x="${X(0) + 16}" y="${Y(0) + 38}" font-size="26" fill="${C.text}">(0, 0) ที่โค้ดใช้</text>`;
+  svg += `<circle cx="${X(c.cx)}" cy="${Y(c.cy)}" r="10" fill="${C.lime}" stroke="${C.bg}" stroke-width="3"/><text x="${X(c.cx) + 16}" y="${Y(c.cy) - 16}" font-size="26" fill="${C.text}">ศูนย์จริง (${c.cx.toFixed(0)}, ${c.cy.toFixed(0)})</text>`;
+  svg += '</svg>';
+  fs.writeFileSync(path.join(__dirname, 'c7_compass.svg'), svg);
+  fs.writeFileSync(path.join(__dirname, 'c7_compass.html'), `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400&display=swap" rel="stylesheet"><style>html,body{margin:0;background:${C.bg}}svg{display:block;width:${W}px;height:${H}px}</style>${svg}`);
+  console.log('chart c7_compass');
+}

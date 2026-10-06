@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>NasaPakSoi · สิ่งที่เราสร้าง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<section class="slide ">
+  <img class="logo" src="img/tysc_logo_lime.png" alt="Thailand Young Satellite Challenge">
+  <div class="head">
+    <div class="eyebrow">สิ่งที่เราสร้างเอง</div>
+    <h2>โครงของผู้จัด <em>สมองของเรา</em></h2>
+  </div>
+  <div class="legend"><i class="g"></i>โค้ดผู้จัด <i class="l"></i>ทีมทำเอง</div>
+  <div class="pipe">
+      <div class="stage"><div class="adds"><span>โมเดล LDR + ตารางแก้ค่า</span><span>เข็มทิศ calibrate ใช้ได้จริง</span></div><div class="box">เซนเซอร์แสง<br>gyro · เข็มทิศ</div></div>
+      <div class="stage"><div class="adds"><span>ตั้งมุมใหม่ตอนเข้า AUTO</span><span>เห็นเร็วขึ้น 90 ms</span></div><div class="box">มุมของยาน</div></div>
+      <div class="stage"><div class="adds"><span>HOLD ใกล้เป้าแล้วนิ่ง</span><span>เตะเมื่อติด · กันล้นเพดาน</span></div><div class="box">ตัวคุม</div></div>
+      <div class="stage"><div class="adds"><span>ชดเชยช่วงที่ล้อไม่หมุน</span><span>ไม่กระชาก</span></div><div class="box">ล้อปฏิกิริยา</div></div>
+      <div class="stage"><div class="adds"><span>จูนไร้สาย TEAM_SET</span><span>กล่องดำ 96 วิ</span></div><div class="box">บลูทูธ ↔ GS</div></div>
+  </div>
+  <div class="tools">
+    <div><b>เว็บ NasaSat Lab</b>คาลิเบรต · จูน · ดึงกล่องดำ ผ่านบลูทูธจากเบราว์เซอร์</div>
+    <div><b>ตัวจำลองบนคอม</b>รันโค้ดเฟิร์มแวร์ตัวจริง 118 เทสต์ + สุ่มประวัติการหมุน</div>
+  </div>
+  <div class="source">แก้และเพิ่มรวม 32 เรื่อง (ภาคผนวก B2) · ทุกอย่างยังสั่งผ่าน GS ของผู้จัดได้เหมือนเดิม</div>
+  <div class="page">05</div>
+</section>
+<script>
+  const s = document.querySelector('.slide');
+  const fit = () => { s.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; };
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>

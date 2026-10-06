@@ -25,7 +25,23 @@ ${body}
 </html>
 `;
 const slides = [
-  [11, 's11_tuning', 'ปรับ 2 ค่า', '', `  <div class="head">
+  [9, 'compass', 'เข็มทิศ', 'has-vs', `  <div class="head">
+    <div class="eyebrow">สิ่งที่เราค้นพบในโค้ดผู้จัด</div>
+    <h2>เข็มทิศเบี้ยวได้ถึง 55° เพราะค่าที่ calibrate <em>ไม่เคยถูกใช้</em></h2>
+  </div>
+  <div class="vs">
+    <div><span>คาดไว้</span>สั่ง MAG_CAL หมุนยาน 1 รอบ แล้วเข็มทิศจะตรง</div>
+    <div class="found"><span>เจอจริง</span>คำสั่งแค่บอกค่าแล้วให้ไปแก้โค้ดเอง ค่าในโค้ดเป็น 0 ตลอด</div>
+  </div>
+  <figure class="chart" style="width:560px"><img src="../charts/c7_compass.png" alt="ค่าแม่เหล็ก x y ตอนยานหมุน 3 รอบ เป็นวงกลมรอบจุด (28, 20) ไม่ใช่รอบ (0, 0)"></figure>
+  <div class="notes" style="left:760px;width:1048px">
+    <p>ยานหมุน 3 รอบ (15:36) ค่าแม่เหล็กควรวนรอบ (0, 0) แต่วนรอบ <b>(28, 20) µT</b></p>
+    <p>โค้ดคิดมุมจาก (0, 0) ซึ่งห่างศูนย์จริง 34 µT → บางทิศผิดได้ถึง <b>55°</b></p>
+    <p>ล้อหมุนหรือหยุด วงแทบไม่ขยับ (~1 µT) → ชดเชยค่าคงที่ครั้งเดียวพอ</p>
+    <p class="key"><b>แก้ (team-4):</b> MAG_CAL เอาค่ากลางไปใช้จริง + เก็บด้วย TEAM_SAVE<br>ตัวจำลอง: คลาด 84° → 0° · รอทดสอบบนแท่น</p>
+  </div>
+  <div class="source">ข้อมูล: log ของ GS 15:36 (198 จุดตอนยานหมุน) · เส้นประ = วงกลมที่ fit ได้ รัศมี 42 µT</div>`],
+  [10, 'tuning', 'ปรับ 2 ค่า', '', `  <div class="head">
     <div class="eyebrow">ผลบนแท่นจริง · 6 ต.ค. 2569</div>
     <h2>ปรับ 2 ค่าผ่านไร้สาย แล้ว<em>นิ่งทั้งนาที</em></h2>
   </div>
@@ -37,7 +53,7 @@ const slides = [
     <p>ไม่ต้องอัปโค้ดใหม่ สั่ง <b>TEAM_SET</b> ผ่านบลูทูธ</p>
   </div>
   <div class="source">ข้อมูล: กล่องดำของยาน รอบ 20:13 และ 20:30</div>`],
-  [12, 's12_filter_lag', 'ตัวกรองช้า', 'has-vs', `  <div class="head">
+  [8, 'filter', 'ตัวกรองช้า', 'has-vs', `  <div class="head">
     <div class="eyebrow">สิ่งที่ไม่เป็นไปตามคาด</div>
     <h2>ตัวกรองที่ใส่ไว้ให้ค่านิ่ง ทำให้ยาน<em>เห็นช้าไป 90 มิลลิวินาที</em></h2>
   </div>
@@ -52,7 +68,7 @@ const slides = [
     <p class="key"><b>แก้:</b> เฉลี่ย 1 ค่า (team-4)<br>รอวัดผลบนแท่น</p>
   </div>
   <div class="source">ข้อมูล: กล่องดำ รอบ 20:13 · เส้นชมพู = อินทิเกรตอัตราหมุนจาก gyro อย่างเดียว</div>`],
-  [13, 's13_kicks', 'เตะแล้วกระเด็น', '', `  <div class="head">
+  ['B1', 'kicks', 'เตะแล้วกระเด็น', '', `  <div class="head">
     <div class="eyebrow">สิ่งที่ไม่เป็นไปตามคาด</div>
     <h2>เตะตอนเกือบถึงเป้า = ยาน<em>กระเด็นเลยไปอีกฝั่ง</em></h2>
   </div>
@@ -63,7 +79,24 @@ const slides = [
     <p class="key"><b>แก้:</b> ใกล้เป้าแล้วเลิกเตะ (HOLD, team-3) และห้ามเตะใน HOLD เลย (team-4)</p>
   </div>
   <div class="source">ข้อมูล: กล่องดำ รอบ 20:13 · จุดชมพู = ตอนที่ kick</div>`],
-  [8, 's08_three_turns', 'หมุน 3 รอบ', 'has-vs', `  <div class="head">
+  [5, 'ours', 'สิ่งที่เราสร้าง', '', `  <div class="head">
+    <div class="eyebrow">สิ่งที่เราสร้างเอง</div>
+    <h2>โครงของผู้จัด <em>สมองของเรา</em></h2>
+  </div>
+  <div class="legend"><i class="g"></i>โค้ดผู้จัด <i class="l"></i>ทีมทำเอง</div>
+  <div class="pipe">
+      <div class="stage"><div class="adds"><span>โมเดล LDR + ตารางแก้ค่า</span><span>เข็มทิศ calibrate ใช้ได้จริง</span></div><div class="box">เซนเซอร์แสง<br>gyro · เข็มทิศ</div></div>
+      <div class="stage"><div class="adds"><span>ตั้งมุมใหม่ตอนเข้า AUTO</span><span>เห็นเร็วขึ้น 90 ms</span></div><div class="box">มุมของยาน</div></div>
+      <div class="stage"><div class="adds"><span>HOLD ใกล้เป้าแล้วนิ่ง</span><span>เตะเมื่อติด · กันล้นเพดาน</span></div><div class="box">ตัวคุม</div></div>
+      <div class="stage"><div class="adds"><span>ชดเชยช่วงที่ล้อไม่หมุน</span><span>ไม่กระชาก</span></div><div class="box">ล้อปฏิกิริยา</div></div>
+      <div class="stage"><div class="adds"><span>จูนไร้สาย TEAM_SET</span><span>กล่องดำ 96 วิ</span></div><div class="box">บลูทูธ ↔ GS</div></div>
+  </div>
+  <div class="tools">
+    <div><b>เว็บ NasaSat Lab</b>คาลิเบรต · จูน · ดึงกล่องดำ ผ่านบลูทูธจากเบราว์เซอร์</div>
+    <div><b>ตัวจำลองบนคอม</b>รันโค้ดเฟิร์มแวร์ตัวจริง 118 เทสต์ + สุ่มประวัติการหมุน</div>
+  </div>
+  <div class="source">แก้และเพิ่มรวม 32 เรื่อง (ภาคผนวก B2) · ทุกอย่างยังสั่งผ่าน GS ของผู้จัดได้เหมือนเดิม</div>`],
+  [6, 'turns', 'หมุน 3 รอบ', 'has-vs', `  <div class="head">
     <div class="eyebrow">สิ่งที่ไม่เป็นไปตามคาด · 6 ต.ค. 15:36</div>
     <h2>เป้าห่างแค่ 18° แต่ยาน<em>หมุนไปเกือบ 3 รอบ</em>ก่อนเข้าเป้า</h2>
   </div>
@@ -78,7 +111,7 @@ const slides = [
     <p class="key"><b>แก้:</b> คิด error ทางสั้น ±180° + ตั้งมุมใหม่ตอนเข้า AUTO (team-3) ยืนยันบนแท่นแล้ว</p>
   </div>
   <div class="source">ข้อมูล: log ของ GS 15:36 · GS ประทับเวลาเป็นวินาที ตัวเลขสะสมคลาดได้ ~6%</div>`],
-  [10, 's10_black_box', 'กล่องดำ', '', `  <div class="head">
+  [7, 'blackbox', 'กล่องดำ', '', `  <div class="head">
     <div class="eyebrow">เครื่องมือที่ทีมสร้าง</div>
     <h2>เราให้ยาน<em>จดกล่องดำเอง</em> แล้วเปิดดูทีหลัง</h2>
   </div>
@@ -102,5 +135,51 @@ EVT,TEAM_CDUMP,END,2400</pre>
     <tr><td>gyro ลอย 0.12 °/วิ ตอนยานนิ่ง</td><td>ตั้งศูนย์ gyro ก่อนทุกภารกิจ</td></tr>
   </table>
   <div class="source">log ของ GS มีแค่มุมกับคำสั่งล้อ — ค่าที่ตัวคุม "คิด" อยู่ในกล่องดำเท่านั้น</div>`],
+  ['B2', 'fixes', 'แก้ 32 เรื่อง', '', `  <div class="head">
+    <div class="eyebrow">ภาคผนวก · โค้ดผู้จัด → ของเรา</div>
+    <h2>ทั้ง 32 เรื่องที่แก้ แยกตามหน้าที่</h2>
+  </div>
+  <div class="fixlist">
+    <section><h3>เซนเซอร์และการวัด</h3><ul>
+      <li>อ่านแสงครั้งเดียว <i>→</i> เฉลี่ยในหน้าต่าง 20 ms</li>
+      <li>มุม = 90 × ผลต่างแสง <i>→</i> โมเดล LDR + ตารางแก้ค่า</li>
+      <li>ไม่รู้ว่าแสงจ้าเกินหรือมืด <i>→</i> ธงบอกสถานะ</li>
+      <li>gyro bias ฝังโค้ด, ตั้งศูนย์บล็อก 3 วิ <i>→</i> TEAM_GYRO_ZERO</li>
+      <li>GYRO_Z ส่ง 2 ความหมาย <i>→</i> ส่งค่าเดียว</li>
+      <li>ตัวกรอง 10 ค่าช้า 90 ms <i>→</i> 1 ค่า</li>
+    </ul></section>
+    <section><h3>ตัวคุม</h3><ul>
+      <li>สั่งต่ำกว่า deadzone ของล้อ <i>→</i> ชดเชย</li>
+      <li>ล้อกระโดด +100 → −100 ทันที <i>→</i> จำกัดอัตราเปลี่ยน</li>
+      <li>แท่นฝืดแล้วค้าง <i>→</i> เตะช่วย</li>
+      <li>ไม่เห็นหลอดก็ไล่ค่าขยะ <i>→</i> ค้นหาหลอด</li>
+      <li>หลุดไฟแล้วมุมเป็นขยะ <i>→</i> นับมุมด้วย gyro</li>
+      <li>เปลี่ยนเป้าใน AUTO ไม่ได้ <i>→</i> เปลี่ยนได้ ล้อไม่หยุด</li>
+      <li>มุมประมาณจำทุกรอบ <i>→</i> error ทางสั้น + ตั้งมุมใหม่</li>
+      <li>I สะสมตอนล้อเต็มเพดาน <i>→</i> anti-windup</li>
+      <li>เต็มเพดาน + ฝืด = ค้าง <i>→</i> ผ่อนล้อแล้วกระชาก</li>
+      <li>เตะใกล้เป้าแล้วไถล <i>→</i> ห้ามเตะใน HOLD</li>
+    </ul></section>
+    <section><h3>ใช้งานในสนาม</h3><ul>
+      <li>ค่าจูนฝังโค้ด <i>→</i> TEAM_SET / TEAM_SAVE</li>
+      <li>ข้อมูลส่งออกน้อย <i>→</i> สตรีม 20 Hz</li>
+      <li>RW_CMD, GYRO_OFFSET, MAG_CAL เรียกไม่ได้ <i>→</i> ต่อคำสั่ง</li>
+      <li>มองไม่เห็นข้างในตัวคุม <i>→</i> กล่องดำ</li>
+      <li>v3.0 ออกกลางงาน <i>→</i> รวมโค้ด 3 ทาง</li>
+      <li>TEAM_SAVE ระหว่าง AUTO <i>→</i> ห้าม</li>
+      <li>เซฟลง flash พลาดแต่ตอบ ACK <i>→</i> ตอบ ERR</li>
+    </ul></section>
+    <section><h3>กล้องและการสื่อสาร</h3><ul>
+      <li>ข้อความไดรเวอร์กล้องท่วม BLE <i>→</i> กรองทิ้ง</li>
+      <li>GS รอ STREAM_URL ที่กล้องไม่ส่ง <i>→</i> ส่งให้</li>
+      <li>ทุกทีมชื่อ Wi-Fi กล้องเดียวกัน <i>→</i> ใส่ชื่อทีม</li>
+      <li>เช็ค SD แค่ตอนเปิด <i>→</i> mount ใหม่ตอนถ่าย</li>
+      <li>กล้องห่างเซนเซอร์ 90° <i>→</i> ตั้งมุมชดเชย</li>
+      <li>STOP จากบลูทูธถูกลูปเขียนทับ <i>→</i> เช็คโหมดก่อนสั่งล้อ</li>
+      <li>Serial ไม่มีบัฟเฟอร์ส่ง <i>→</i> 4 KB</li>
+      <li>บรรทัดยาวเกินที่ BLE ส่งได้ <i>→</i> ตัดที่ 160</li>
+    </ul></section>
+  </div>
+  <div class="source">ที่มา: TEAM_FIRMWARE_CHANGES_TH.md แถว 1–26 (แถว 26 = team-4 รวม 7 เรื่อง → รวม 32)</div>`],
 ];
 for (const [n, file, title, cls, body] of slides) { fs.writeFileSync(D + file + '.html', page(n, title, cls, body)); console.log(file); }

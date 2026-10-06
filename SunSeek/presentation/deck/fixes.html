@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>NasaPakSoi · แก้ 32 เรื่อง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<section class="slide ">
+  <img class="logo" src="img/tysc_logo_lime.png" alt="Thailand Young Satellite Challenge">
+  <div class="head">
+    <div class="eyebrow">ภาคผนวก · โค้ดผู้จัด → ของเรา</div>
+    <h2>ทั้ง 32 เรื่องที่แก้ แยกตามหน้าที่</h2>
+  </div>
+  <div class="fixlist">
+    <section><h3>เซนเซอร์และการวัด</h3><ul>
+      <li>อ่านแสงครั้งเดียว <i>→</i> เฉลี่ยในหน้าต่าง 20 ms</li>
+      <li>มุม = 90 × ผลต่างแสง <i>→</i> โมเดล LDR + ตารางแก้ค่า</li>
+      <li>ไม่รู้ว่าแสงจ้าเกินหรือมืด <i>→</i> ธงบอกสถานะ</li>
+      <li>gyro bias ฝังโค้ด, ตั้งศูนย์บล็อก 3 วิ <i>→</i> TEAM_GYRO_ZERO</li>
+      <li>GYRO_Z ส่ง 2 ความหมาย <i>→</i> ส่งค่าเดียว</li>
+      <li>ตัวกรอง 10 ค่าช้า 90 ms <i>→</i> 1 ค่า</li>
+    </ul></section>
+    <section><h3>ตัวคุม</h3><ul>
+      <li>สั่งต่ำกว่า deadzone ของล้อ <i>→</i> ชดเชย</li>
+      <li>ล้อกระโดด +100 → −100 ทันที <i>→</i> จำกัดอัตราเปลี่ยน</li>
+      <li>แท่นฝืดแล้วค้าง <i>→</i> เตะช่วย</li>
+      <li>ไม่เห็นหลอดก็ไล่ค่าขยะ <i>→</i> ค้นหาหลอด</li>
+      <li>หลุดไฟแล้วมุมเป็นขยะ <i>→</i> นับมุมด้วย gyro</li>
+      <li>เปลี่ยนเป้าใน AUTO ไม่ได้ <i>→</i> เปลี่ยนได้ ล้อไม่หยุด</li>
+      <li>มุมประมาณจำทุกรอบ <i>→</i> error ทางสั้น + ตั้งมุมใหม่</li>
+      <li>I สะสมตอนล้อเต็มเพดาน <i>→</i> anti-windup</li>
+      <li>เต็มเพดาน + ฝืด = ค้าง <i>→</i> ผ่อนล้อแล้วกระชาก</li>
+      <li>เตะใกล้เป้าแล้วไถล <i>→</i> ห้ามเตะใน HOLD</li>
+    </ul></section>
+    <section><h3>ใช้งานในสนาม</h3><ul>
+      <li>ค่าจูนฝังโค้ด <i>→</i> TEAM_SET / TEAM_SAVE</li>
+      <li>ข้อมูลส่งออกน้อย <i>→</i> สตรีม 20 Hz</li>
+      <li>RW_CMD, GYRO_OFFSET, MAG_CAL เรียกไม่ได้ <i>→</i> ต่อคำสั่ง</li>
+      <li>มองไม่เห็นข้างในตัวคุม <i>→</i> กล่องดำ</li>
+      <li>v3.0 ออกกลางงาน <i>→</i> รวมโค้ด 3 ทาง</li>
+      <li>TEAM_SAVE ระหว่าง AUTO <i>→</i> ห้าม</li>
+      <li>เซฟลง flash พลาดแต่ตอบ ACK <i>→</i> ตอบ ERR</li>
+    </ul></section>
+    <section><h3>กล้องและการสื่อสาร</h3><ul>
+      <li>ข้อความไดรเวอร์กล้องท่วม BLE <i>→</i> กรองทิ้ง</li>
+      <li>GS รอ STREAM_URL ที่กล้องไม่ส่ง <i>→</i> ส่งให้</li>
+      <li>ทุกทีมชื่อ Wi-Fi กล้องเดียวกัน <i>→</i> ใส่ชื่อทีม</li>
+      <li>เช็ค SD แค่ตอนเปิด <i>→</i> mount ใหม่ตอนถ่าย</li>
+      <li>กล้องห่างเซนเซอร์ 90° <i>→</i> ตั้งมุมชดเชย</li>
+      <li>STOP จากบลูทูธถูกลูปเขียนทับ <i>→</i> เช็คโหมดก่อนสั่งล้อ</li>
+      <li>Serial ไม่มีบัฟเฟอร์ส่ง <i>→</i> 4 KB</li>
+      <li>บรรทัดยาวเกินที่ BLE ส่งได้ <i>→</i> ตัดที่ 160</li>
+    </ul></section>
+  </div>
+  <div class="source">ที่มา: TEAM_FIRMWARE_CHANGES_TH.md แถว 1–26 (แถว 26 = team-4 รวม 7 เรื่อง → รวม 32)</div>
+  <div class="page">B2</div>
+</section>
+<script>
+  const s = document.querySelector('.slide');
+  const fit = () => { s.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; };
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>

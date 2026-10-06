@@ -41,3 +41,31 @@ h2 em { font-style: normal; color: var(--lime); }
 .found-table th { text-align: left; font-family: var(--head); font-weight: 500; font-size: 22px; color: var(--muted); padding: 0 0 14px; }
 .found-table td { padding: 16px 16px 16px 0; border-top: 1px solid var(--line); vertical-align: top; line-height: 1.35; }
 .found-table td:last-child { color: var(--lime); padding-right: 0; }
+
+/* L09 problem / fix table */
+.fix-table { position: absolute; left: 112px; top: 300px; width: 1696px; border-collapse: collapse; font-size: 25px; }
+.fix-table th { text-align: left; font-family: var(--head); font-weight: 500; font-size: 22px; color: var(--muted); padding: 0 24px 14px 0; }
+.fix-table td { padding: 18px 24px 18px 0; border-top: 1px solid var(--line); vertical-align: top; line-height: 1.35; }
+.fix-table td:nth-child(1) { width: 25%; } .fix-table td:nth-child(2) { width: 25%; color: var(--muted); }
+.fix-table td:nth-child(3) { width: 30%; color: var(--lime); } .fix-table td:nth-child(4) { width: 20%; font-size: 21px; color: var(--muted); }
+
+/* L14 dense backup list */
+.fixlist { position: absolute; left: 112px; top: 250px; width: 1696px; columns: 2; column-gap: 72px; }
+.fixlist section { break-inside: avoid; margin-bottom: 22px; }
+.fixlist h3 { font-family: var(--head); font-weight: 500; font-size: 24px; color: var(--lime); margin-bottom: 6px; }
+.fixlist li { list-style: none; font-size: 21px; line-height: 1.55; }
+.fixlist i { font-style: normal; color: var(--muted); }
+
+/* "ours" diagram: organizer pipeline (grey) + what the team added (lime) */
+.legend { position: absolute; right: 112px; top: 262px; display: flex; align-items: center; gap: 14px; font-size: 22px; color: var(--muted); }
+.legend i { display: inline-block; width: 22px; height: 22px; margin-left: 18px; }
+.legend .g { background: #3A4236; } .legend .l { background: var(--lime); }
+.pipe { position: absolute; left: 112px; top: 330px; width: 1696px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 56px; }
+.stage { position: relative; display: flex; flex-direction: column; gap: 14px; }
+.stage + .stage::before { content: '→'; position: absolute; left: -46px; bottom: 34px; font-size: 40px; color: var(--muted); }
+.adds { display: grid; gap: 10px; min-height: 170px; align-content: end; }
+.adds span { padding: 10px 14px; background: var(--lime); color: var(--bg); font-family: var(--head); font-weight: 500; font-size: 22px; line-height: 1.25; }
+.box { height: 116px; display: grid; place-items: center; text-align: center; background: #20261D; border: 2px solid #3A4236; font-family: var(--head); font-weight: 500; font-size: 28px; line-height: 1.2; color: var(--text); }
+.tools { position: absolute; left: 112px; top: 720px; width: 1696px; display: grid; grid-template-columns: 1fr 1fr; gap: 56px; }
+.tools div { padding: 26px 30px; border: 2px solid var(--lime); font-size: 24px; color: var(--muted); line-height: 1.4; }
+.tools b { display: block; font-family: var(--head); font-weight: 600; font-size: 34px; color: var(--lime); margin-bottom: 6px; }
