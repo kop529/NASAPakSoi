@@ -162,7 +162,10 @@ size_t Preferences::putBytes(const char* key, const void* buf, size_t len) {
 }
 
 // ---------------- the sketch ----------------
-#include "SunSeek_Platform_Firmware_v2_1.ino"
+#ifndef TEAM_INO
+#define TEAM_INO "SunSeek_Platform_Firmware_v3_0.ino"
+#endif
+#include TEAM_INO
 
 // ---------------- time stepping ----------------
 static void advance(uint32_t ms, bool runLoop) {

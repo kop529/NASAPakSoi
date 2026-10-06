@@ -35,7 +35,7 @@ const states = (out) => all(out, /^#STATE /).map((l) => Object.fromEntries(l.sli
 console.log('boot + link');
 {
   const out = run(['PING', 'STATUS', '#WAIT 200', 'TEAM_INFO', '#WAIT 50']);
-  check('boot banner', !!find(out, /^SUNSEEK PLATFORM v2\.1/));
+  check('boot banner', !!find(out, /^SUNSEEK PLATFORM v3\.0/));
   check('spacecraft id SUNSEEK-NasaPakSoi', !!find(out, /^Spacecraft ID: SUNSEEK-NasaPakSoi$/));
   check('team firmware banner', !!find(out, /^TEAM FIRMWARE: NasaPakSoi-team-/));
   check('PING -> PONG', !!find(out, /^PONG$/));
@@ -279,7 +279,8 @@ console.log('RW_CMD (T02 assist, ported from the workshop firmware)');
   check('ACK,RW_CMD,20,80,300', !!find(out, /^ACK,RW_CMD,20,80,300$/));
   check('assist drives 80 % first', s[0].cmd > 79 && s[0].cmd < 81, `cmd ${s[0].cmd}`);
   check('then bias 60 % + EVT,RW_MANEUVER_COMPLETE,60', s[1].cmd > 59 && s[1].cmd < 61 && !!find(out, /^EVT,RW_MANEUVER_COMPLETE,60$/), `cmd ${s[1].cmd}`);
-  check('out of range / syntax / duration refused', !!find(out, /^ERR,RW_CMD_OUT_OF_RANGE$/) && all(out, /^ERR,RW_CMD_SYNTAX$/).length === 2);
+  // organizer v3.0: one error code for range + syntax; duration limit 10 s (so 6000 ms is accepted)
+  check('out of range / syntax refused', all(out, /^ERR,RW_CMD_INVALID_OR_RANGE$/).length === 2);
 }
 
 console.log('wheel slew limit (rw.slew): RW,100 then RW,-100');

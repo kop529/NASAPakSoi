@@ -23,6 +23,7 @@ typedef uint8_t byte;
 #define LOW 0x0
 #define HIGH 0x1
 #define constrain(amt, low, high) ((amt) < (low) ? (low) : ((amt) > (high) ? (high) : (amt)))
+using std::min; using std::max;  // the ESP32 core brings these in (organizer v3.0 uses them)
 inline long map(long x, long in_min, long in_max, long out_min, long out_max) {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
