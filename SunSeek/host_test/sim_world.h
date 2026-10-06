@@ -19,7 +19,8 @@ struct SimWorld {
   double flicker = 0.0;   // 100 Hz flicker depth (0..1)
   double noiseMv = 2.0;   // ADC noise (mV rms)
   double magNorthDeg = 0; // world direction of magnetic north
-  double magOx = 0, magOy = 0, magSy = 1;  // hard-iron offset (LSB) + y scale, like the rig (15:36 log: centre ~(28, 20) uT)
+  double magOx = 0, magOy = 0, magSy = 1;
+  double i2cDownUntilMs = 0;  // #SET i2cDown <ms>: the gyro does not answer for that long (NACK)  // hard-iron offset (LSB) + y scale, like the rig (15:36 log: centre ~(28, 20) uT)
 
   // ---- sensor truth (the team model with these values is exact) ----
   double alpha = 30, gamma = 0.6, q = 1.0, r10 = 15000, rf = 10000, vcc = 3300, fov = 85;

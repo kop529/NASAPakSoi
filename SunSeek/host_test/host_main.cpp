@@ -67,6 +67,7 @@ uint8_t TwoWire::requestFrom(uint8_t addr, uint8_t n) {
   rx_.clear();
   rxPos_ = 0;
   if (!i2cPresent(addr)) return 0;
+  if (addr == 0x6B && millis() < world.i2cDownUntilMs) return 0;  // injected I2C glitch
   uint8_t reg = ptr_[addr & 0x7F];
   uint8_t regs[256] = {0};
   if (addr == 0x1D) {
@@ -192,7 +193,8 @@ int main() {
     if (line.rfind("#SET ", 0) == 0) {
       std::istringstream ss(line.substr(5));
       std::string k; double v;
-      if (ss >> k >> v && world.set(k, v)) std::cout << "#OK " << k << "\n"; else std::cout << "#BADSET " << line << "\n";
+      if (ss >> k >> v && k == "i2cDown") { world.i2cDownUntilMs = millis() + v; std::cout << "#OK i2cDown\n"; continue; }
+      if (!ss.fail() && world.set(k, v)) std::cout << "#OK " << k << "\n"; else std::cout << "#BADSET " << line << "\n";
       continue;
     }
     if (line == "#STATE") { std::cout << world.state() << "\n"; continue; }

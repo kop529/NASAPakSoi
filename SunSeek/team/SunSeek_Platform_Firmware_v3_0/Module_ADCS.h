@@ -228,7 +228,16 @@ inline void adcsUpdate(){
 
 inline void _adcsStep(){
   unsigned long n=millis(); if(n-_aLast<ADCS_CONTROL_PERIOD_MS)return; _aLast=n;
-  if(!adcsRead()){ if(_a.mode==ADCS_AUTO)adcsFault(); else _a.valid=false; return; }
+  // TEAM NasaPakSoi F6 (team-4): up to adcs.miss failed reads in a row keep the last wheel command (one I2C glitch = 20 ms)
+  static int _aMiss=0;
+  if(!adcsRead()){
+    if(_a.mode==ADCS_AUTO){
+      if(++_aMiss<=TP.adcsMiss){ if(_aMiss==1)sendTelemetry("EVT,TEAM_ADCS_MISS,START"); return; }
+      sendTelemetry("EVT,TEAM_ADCS_MISS,FAULT,"+String(_aMiss)); _aMiss=0; adcsFault();
+    } else _a.valid=false;
+    return;
+  }
+  if(_aMiss){ sendTelemetry("EVT,TEAM_ADCS_MISS,RECOVERED,"+String(_aMiss)); _aMiss=0; }
   if(_a.mode!=ADCS_AUTO)return;
 
   // TEAM NasaPakSoi: deadband / output limit / control sign are team parameters (TEAM_SET adcs.db,

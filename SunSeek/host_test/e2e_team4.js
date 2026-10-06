@@ -46,6 +46,20 @@ module.exports = ({ run, check, find, all, kv, states, CAL }) => {
     check('TEAM_SAVE after STOP -> ACK', !!find(out, /^ACK,TEAM_SAVE,\d+$/));
     check('STOP: wheel command 0 within 5 ms', s[0].cmd !== 0 && s[1].cmd === 0, `before ${s[0].cmd}, after ${s[1].cmd}`);
   }
+  console.log('team-4: F6 - a short I2C glitch in AUTO keeps the wheel command instead of FAULT (wheel coast -> body spins)');
+  {
+    const go = (miss) => {
+      const out = run(['#SET drag 0.05', '#SET rateSign -1', '#SET lamp 0', '#SET body 0', '#WAIT 300', ...CAL, ...BOARD, `TEAM_SET,adcs.miss,${miss}`,
+        'ADCS_STRATEGY,REACTION', 'ADCS_MODE,AUTO', '#WAIT 4000', '#SET i2cDown 60', '#WAIT 3000', '#STATE', 'STOP', '#WAIT 10']);
+      return { out, fault: !!find(out, /^EVT,TEAM_AUTO,FAULT/), rec: find(out, /^EVT,TEAM_ADCS_MISS,RECOVERED/) || '', s: states(out)[0] };
+    };
+    const org = go(0), team = go(5);
+    console.log(`       60 ms glitch: adcs.miss 0 -> FAULT ${org.fault} · adcs.miss 5 -> FAULT ${team.fault}, ${team.rec}, sun ${team.s.sun.toFixed(2)}`);
+    check('adcs.miss 0 = organizer: one glitch -> FAULT', org.fault);
+    check('adcs.miss 5: a 60 ms glitch -> no FAULT, RECOVERED, still on target', !team.fault && /RECOVERED/.test(team.rec) && Math.abs(team.s.sun) < 2);
+    const long = run(['#SET lamp 0', '#WAIT 300', ...CAL, ...BOARD, 'ADCS_STRATEGY,REACTION', 'ADCS_MODE,AUTO', '#WAIT 1000', '#SET i2cDown 500', '#WAIT 1000', 'STOP', '#WAIT 10']);
+    check('a long outage (500 ms) still ends in FAULT', !!find(long, /^EVT,TEAM_ADCS_MISS,FAULT,6$/) && !!find(long, /^EVT,TEAM_AUTO,FAULT/));
+  }
   console.log('team-4: compass - MAG_CAL_STOP now applies the hard-iron offset (organizer: only reported, #define offsets 0)');
   {
     const at = [0, 90, 180, 270];
