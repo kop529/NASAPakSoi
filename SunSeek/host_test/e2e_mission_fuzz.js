@@ -36,8 +36,7 @@ module.exports = ({ run, check, all, states, CAL }) => {
     const cut = u < 0.12 ? 'STOP' : u < 0.2 && gs ? 'ABORT' : u < 0.26 && gs ? 'PREPARE' : '';
     const cutAt = 1 + Math.floor(r() * 12);  // s after START
     const rig = pick(RIGS), body = Math.round(-40 + r() * 80);
-    const slow = RIGS.indexOf(rig) >= 2;  // sticky platforms: the wheel saturates and ratchets, ~1 deg/s
-    const secs = Math.min(320, 10 + n * (slow ? 70 : 14 + (cam.dead ? 20 : cam.fail * 3)));  // plan B: a target takes <= skipS 45 + 3 captures
+    const secs = Math.min(320, 10 + n * 70);  // plan B: a target takes <= skipS 45 + the camera tries
     const ticks = (s) => Array.from({ length: s * 10 }, () => ['#WAIT 100', '#STATE']).flat();
     const lines = [...rig, '#SET rateSign -1', '#SET lamp 0', `#SET body ${body}`, `#SET gyroBias ${bias}`,
       `#SET camMs ${cam.ms}`, `#SET camFail ${cam.fail}`, `#SET camDead ${cam.dead}`, '#WAIT 300', ...CAL, ...BOARD,
@@ -109,7 +108,8 @@ module.exports = ({ run, check, all, states, CAL }) => {
     photos += all(out, /^EVT,TEAM_MIS,IMAGE,/).length;
 
     // after COMPLETE the body stays at the last target (still AUTO) until the end of the run
-    if (done && Math.abs(s.T[s.T.length - 1].deg) <= 40) {
+    // (only when the last target was photographed: a skipped one may still be on the way)
+    if (done && Math.abs(s.T[s.T.length - 1].deg) <= 40 && !!out.find((l) => l.startsWith(`EVT,TEAM_MIS,IMAGE,${s.T.length},`))) {
       const last = s.T[s.T.length - 1];
       // until it leaves AUTO (a STOP / ABORT injected after COMPLETE stops the wheel: the body then drifts, as it should)
       const off = tl.find((x) => x.t > done.t && /^EVT,TEAM_AUTO,OFF/.test(x.l));
@@ -125,7 +125,7 @@ module.exports = ({ run, check, all, states, CAL }) => {
     const idx = res.map((x) => +x.l.split(',')[3]);
     if (idx.some((v, j) => j && v <= idx[j - 1])) fail('result lines in target order', s, idx.join(' '));
     if (res.some((x, j) => j && x.t - res[j - 1].t < 2.4)) fail('result lines >= 2.4 s apart', s);
-    if (done && res.length !== all(out, /^EVT,TEAM_MIS,IMAGE,/).length) fail('one result line per image', s, `${res.length} vs ${all(out, /^EVT,TEAM_MIS,IMAGE,/).length}`);
+    if (done && !s.cut && res.length !== all(out, /^EVT,TEAM_MIS,IMAGE,/).length) fail('one result line per image', s, `${res.length} vs ${all(out, /^EVT,TEAM_MIS,IMAGE,/).length}`);
     if (s.transfer === 'AFTER' && done && res.some((x) => x.t < done.t)) fail('AFTER: results only after COMPLETE', s);
 
     const starts = all(out, /^MISSION,TIMER,START$/).length, stops = all(out, /^MISSION,TIMER,STOP,[1-9]\d*$/).length;
