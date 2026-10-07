@@ -37,7 +37,7 @@ module.exports = ({ run, check, all, states, CAL }) => {
     const cutAt = 1 + Math.floor(r() * 12);  // s after START
     const rig = pick(RIGS), body = Math.round(-40 + r() * 80);
     const slow = RIGS.indexOf(rig) >= 2;  // sticky platforms: the wheel saturates and ratchets, ~1 deg/s
-    const secs = Math.min(320, 10 + n * ((slow ? 75 : 14) + (cam.dead ? 20 : cam.fail * 3)));
+    const secs = Math.min(320, 10 + n * (slow ? 70 : 14 + (cam.dead ? 20 : cam.fail * 3)));  // plan B: a target takes <= skipS 45 + 3 captures
     const ticks = (s) => Array.from({ length: s * 10 }, () => ['#WAIT 100', '#STATE']).flat();
     const lines = [...rig, '#SET rateSign -1', '#SET lamp 0', `#SET body ${body}`, `#SET gyroBias ${bias}`,
       `#SET camMs ${cam.ms}`, `#SET camFail ${cam.fail}`, `#SET camDead ${cam.dead}`, '#WAIT 300', ...CAL, ...BOARD,
@@ -85,6 +85,10 @@ module.exports = ({ run, check, all, states, CAL }) => {
 
     const done = tl.find((x) => x.l === 'MISSION,STATE,COMPLETE'), aborted = tl.find((x) => x.l === 'MISSION,STATE,ABORTED');
     if (!s.cut && !done) fail('ends COMPLETE when nothing interrupts it', s, `last state ${(all(out, /^MISSION,STATE,/).pop() || '-')}`);
+    if (done) {  // plan B: every target ends with an image, CAPTURE_FAILED or SKIP
+      const ended = new Set(all(out, /^EVT,TEAM_MIS,(IMAGE|CAPTURE_FAILED|SKIP),/).map((l) => +l.split(',')[3]));
+      if (s.T.some((_, i) => !ended.has(i + 1))) fail('every target ends: image, CAPTURE_FAILED or SKIP', s, [...ended].join(' '));
+    }
     if (done) completes++;
     if (s.cut && !done) {
       if (!aborted) fail(`${s.cut} mid-mission -> ABORTED`, s);
@@ -133,7 +137,7 @@ module.exports = ({ run, check, all, states, CAL }) => {
   console.log(`       ${completes} complete, ${photos} photos; |target| <= 40: worst photo error ${worst.toFixed(2)} deg; |target| > 40 (gyro, not checked): ${fs2.length} shots, error median ${q(0.5)} / 90% ${q(0.9)} / max ${q(1)} deg`);
   const keys = ['no unexpected ERR', 'only GS state names', 'ends COMPLETE when nothing interrupts it', 'STOP mid-mission -> ABORTED', 'ABORT mid-mission -> ABORTED',
     'PREPARE mid-mission -> ABORTED', 'wheel 0 after STOP / ABORT', 'a new PREPARE mid-mission -> READY again', 'photo within tol + 1 deg (true angle)',
-    'stays at the last target after COMPLETE', 'no wild spin (|rate| <= 200 deg/s)', 'result lines in target order', 'result lines >= 2.4 s apart',
+    'stays at the last target after COMPLETE', 'every target ends: image, CAPTURE_FAILED or SKIP', 'no wild spin (|rate| <= 200 deg/s)', 'result lines in target order', 'result lines >= 2.4 s apart',
     'one result line per image', 'AFTER: results only after COMPLETE', 'TIMER,STOP once per started mission'];
   for (const k of keys) check(`mission fuzz: ${k}`, !bad[k], bad[k] ? `seeds ${bad[k].slice(0, 4).join(', ')}${bad[k].length > 4 ? ` +${bad[k].length - 4}` : ''}` : '');
 };

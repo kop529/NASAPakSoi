@@ -61,6 +61,10 @@ struct TeamParams {
   // team-7: 1 = the gyro hold (adcs.ghold) is on while a team mission runs (also after COMPLETE while still in AUTO).
   // Sim: adcs.ghold 0 + target 75 / 85 deg (past the sun sensor) -> the body spins and never captures; on -> within 1.5 deg
   int misGhold = 1;
+  // team-7 plan B (a target never stalls the mission): mis.targetS without an image -> shoot at the first sample inside the
+  // tolerance (no hold, no capture gate); mis.skipS -> give the target up, next one. Both counted from the target start;
+  // with a GS time limit the skip comes earlier so every remaining target gets a share (>= 8 s). 0 = off.
+  float misTargetS = 30, misSkipS = 45;
   float misTrust = 45;  // deg: with mis.ghold, sun readings beyond this are left to the gyro (0 = trust every lit reading)
   // reaction wheel characterization from T01
   float rwMinStart = RW_MIN_START_PERCENT;
@@ -161,6 +165,8 @@ static TeamParamDef _tpDefs[] = {
   {"adcs.keepTune",TPT_INT,   &TP.adcsKeepTune,  0, 0, 1},
   {"mis.ghold",   TPT_INT,    &TP.misGhold,      0, 0, 1},
   {"mis.trust",   TPT_FLOAT,  &TP.misTrust,      0, 0, 90},
+  {"mis.targetS", TPT_FLOAT,  &TP.misTargetS,    0, 0, 600},
+  {"mis.skipS",   TPT_FLOAT,  &TP.misSkipS,      0, 0, 600},
   {"mag.ox",      TPT_FLOAT,  &TP.magOx,         0, -20000, 20000},
   {"mag.oy",      TPT_FLOAT,  &TP.magOy,         0, -20000, 20000},
   {"mag.oz",      TPT_FLOAT,  &TP.magOz,         0, -20000, 20000},

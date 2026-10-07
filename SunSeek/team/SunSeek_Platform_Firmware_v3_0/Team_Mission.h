@@ -32,6 +32,8 @@ static bool _tmEach = true, _tmLimitSaid = false, _tmStarted = false;
 static String _tmName = "MISSION";
 static unsigned long _tmEndAt = 0, _tmLimitMs = 0, _tmT0 = 0, _tmHold0 = 0, _tmCap0 = 0, _tmSaidMs = 0, _tmResMs = 0;
 static uint32_t _tmImg0 = 0, _tmErr0 = 0;
+static unsigned long _tmTgt0 = 0, _tmRescueMs = 0, _tmSkipMs = 0;  // team-7 plan B: target start, rescue / skip after (0 = off)
+static bool _tmRescue = false;
 static uint8_t _tmQ[TEAM_MIS_MAX];  // targets whose MISSION,RESULT,IMAGE line is still to send
 static uint8_t _tmQn = 0, _tmQi = 0;
 
@@ -56,8 +58,9 @@ inline void _tmFlush() {
 }
 inline bool _tmAngleOk(float d) { return adcsGet().ref == ADCS_MAG ? (d >= 0 && d < 360) : (d >= -90 && d <= 90); }
 inline void _tmTargetEvt() {
-  char b[96];
-  snprintf(b, sizeof(b), "EVT,TEAM_MIS,TARGET,%u,%u,DEG,%.1f,TOL,%.1f,HOLD,%.1f", _tmI + 1, _tmN, _tmT[_tmI].deg, _tmT[_tmI].tol, _tmT[_tmI].hold);
+  char b[128];
+  snprintf(b, sizeof(b), "EVT,TEAM_MIS,TARGET,%u,%u,DEG,%.1f,TOL,%.1f,HOLD,%.1f,RESCUE_S,%.0f,SKIP_S,%.0f", _tmI + 1, _tmN, _tmT[_tmI].deg,
+           _tmT[_tmI].tol, _tmT[_tmI].hold, _tmRescueMs / 1000.0f, _tmSkipMs / 1000.0f);
   sendTelemetry(b);
 }
 inline void _tmEnd(TeamMisState s) {
@@ -124,6 +127,23 @@ inline bool _tmPrepare() {
   return true;
 }
 
+// team-7 plan B: the time this target may take. mis.skipS, shortened so that every target still to do gets a share of what
+// is left of the GS time limit (never under 8 s); the rescue (shoot without the hold) starts at mis.targetS or 2/3 of it.
+inline void _tmTargetBegin() {
+  const unsigned long now = millis();
+  _tmTgt0 = now; _tmRescue = false; _tmTry = 0;
+  float skip = TP.misSkipS;
+  if (_tmLimitMs) {
+    const float left = ((float)_tmLimitMs - (float)(now - _tmT0)) / 1000.0f, share = left / (float)(_tmN - _tmI);
+    const float cap = share > 8.0f ? share : 8.0f;
+    if (skip <= 0 || skip > cap) skip = cap;
+  }
+  float rescue = TP.misTargetS;
+  if (skip > 0 && (rescue <= 0 || rescue > skip * 2.0f / 3.0f) && TP.misTargetS > 0) rescue = skip * 2.0f / 3.0f;
+  _tmSkipMs = skip > 0 ? (unsigned long)(skip * 1000.0f) : 0;
+  _tmRescueMs = rescue > 0 ? (unsigned long)(rescue * 1000.0f) : 0;
+}
+
 inline bool _tmStart() {
   String why = "";
   if (_tmS != TMS_READY) why = "NOT_READY";
@@ -134,6 +154,7 @@ inline bool _tmStart() {
   _tmI = 0; _tmTry = 0; _tmQn = _tmQi = 0; _tmResMs = 0; _tmLimitSaid = false;
   for (uint8_t i = 0; i < _tmN; i++) _tmT[i].img = "";
   _tmT0 = millis(); _tmEndAt = 0; _tmStarted = true;
+  _tmTargetBegin();
   adcsTeamMissionGhold(TP.misGhold);
   sendTelemetry("ACK,START_MISSION");
   sendTelemetry("MISSION,TIMER,START");
@@ -144,7 +165,7 @@ inline bool _tmStart() {
 }
 
 inline void _tmNext() {
-  _tmI++; _tmTry = 0;
+  _tmI++;
   if (_tmI >= _tmN) {
     _tmI = _tmN - 1;
     _tmEnd(TMS_DONE);  // stays in AUTO on the last target; STOP ends it
@@ -152,6 +173,7 @@ inline void _tmNext() {
     return;
   }
   adcsTeamSetTarget(_tmT[_tmI].deg);
+  _tmTargetBegin();
   _tmTargetEvt();
   _tmS = TMS_ACQ;
 }
@@ -182,10 +204,23 @@ inline void teamMissionUpdate() {
     const ADCSState a = adcsGet();
     const TeamMisTarget& t = _tmT[_tmI];
     const bool in = a.valid && fabsf(a.error) <= t.tol;
+    // team-7 plan B: a target never stalls the mission (fuzz seed 8437: the camera failed twice, then the body kept leaving the
+    // tolerance before 2 s in a row -> stuck on target 1 for ever). Fewer points beat none.
+    const unsigned long onT = now - _tmTgt0;
+    if (_tmS != TMS_CAP && _tmSkipMs && onT >= _tmSkipMs) {
+      sendTelemetry("EVT,TEAM_MIS,SKIP," + String(_tmI + 1) + ",ERR," + String(a.error, 2));
+      _tmNext();
+    } else {
+    if (!_tmRescue && _tmRescueMs && onT >= _tmRescueMs && !_tmT[_tmI].img.length()) {
+      _tmRescue = true;  // from now on: shoot at the first sample inside the tolerance
+      sendTelemetry("EVT,TEAM_MIS,RESCUE," + String(_tmI + 1) + ",ERR," + String(a.error, 2));
+    }
     if (_tmS == TMS_ACQ) {
-      if (in) { _tmS = TMS_STAB; _tmHold0 = now; }
+      if (in && _tmRescue) _tmCapture();
+      else if (in) { _tmS = TMS_STAB; _tmHold0 = now; }
     } else if (_tmS == TMS_STAB) {
       if (!in) _tmS = TMS_ACQ;  // the hold restarts after any sample outside the tolerance (organizer rule)
+      else if (_tmRescue) _tmCapture();
       else if (now - _tmHold0 >= (unsigned long)(t.hold * 1000.0f)) {
         // team-7: shoot when close and still (sim: the hold ended while the body coasted to the tolerance edge)
         const bool good = (TP.misCapErr <= 0 || fabsf(a.error) <= TP.misCapErr) && (TP.misCapRate <= 0 || fabsf(a.rate) <= TP.misCapRate);
@@ -204,6 +239,7 @@ inline void teamMissionUpdate() {
         } else if (in) _tmCapture();
         else _tmS = TMS_ACQ;  // off target again: hold first, then retry
       }
+    }
     }
   }
   adcsTeamMissionGhold(TP.misGhold && (teamMisActive() || (_tmS == TMS_DONE && adcsGet().mode == ADCS_AUTO)));

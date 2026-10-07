@@ -103,6 +103,24 @@ module.exports = ({ run, check, find, all, states, CAL }) => {
       `(sim body at the end ${states(off).slice(-1)[0].sun.toFixed(1)} deg)`);
   }
 
+  console.log('team-7 plan B: a target never stalls the mission (rescue shot, skip, GS time limit share)');
+  {
+    const tlOf = (out) => timed(out);
+    const r = run([...RIG, 'TEAM_SET,mis.hold,30', 'TEAM_SET,mis.targetS,5', 'TEAM_SET,mis.skipS,20', 'TEAM_MIS_GO,10', ...ticks(12), 'STOP', '#WAIT 20']);
+    const tl = tlOf(r);
+    const st = tl.find((x) => x.l === 'MISSION,TIMER,START'), cap = tl.find((x) => x.l === '#PAYLOAD_TX CAPTURE');
+    check('hold 30 s can never finish in time -> EVT,TEAM_MIS,RESCUE at 5 s, CAPTURE inside the tolerance, image, COMPLETE',
+      !!find(r, /^EVT,TEAM_MIS,RESCUE,1,/) && !!cap && cap.t - st.t >= 4.9 && cap.t - st.t < 8 && !!find(r, /^EVT,TEAM_MIS,IMAGE,1,/) &&
+      !!find(r, /^MISSION,STATE,COMPLETE$/) && Math.abs(+find(r, /^EVT,TEAM_MIS,CAPTURE,/).split(',')[6]) <= 3, cap ? `capture ${(cap.t - st.t).toFixed(1)} s` : 'no capture');
+    const k = run([...RIG, '#SET stick 1000000', 'TEAM_SET,mis.targetS,3', 'TEAM_SET,mis.skipS,6', 'TEAM_MIS_GO,30,0', ...ticks(14), 'STOP', '#WAIT 20']);
+    check('body cannot move: target 1 rescued at 3 s (never inside), SKIP at 6 s, target 2 photographed, COMPLETE',
+      !!find(k, /^EVT,TEAM_MIS,RESCUE,1,/) && !!find(k, /^EVT,TEAM_MIS,SKIP,1,/) && !find(k, /^EVT,TEAM_MIS,IMAGE,1,/) &&
+      !!find(k, /^EVT,TEAM_MIS,IMAGE,2,/) && !!find(k, /^MISSION,STATE,COMPLETE$/), all(k, /^EVT,TEAM_MIS,(RESCUE|SKIP|IMAGE)/).join(' | '));
+    const g = run(['TEAM_SET,mis.on,1', 'ADCS_REFERENCE,SUN', 'MISSION_CLEAR_TARGETS', 'MISSION_TIME_LIMIT,30', 'MISSION_TARGET,1,0,3,2', 'MISSION_TARGET,2,10,3,2',
+      'MISSION_TARGET,3,-10,3,2', 'PREPARE', 'START_MISSION', '#WAIT 50', 'STOP', '#WAIT 20']);
+    check('GS time limit 30 s, 3 targets -> each target gets 10 s (SKIP_S 10, RESCUE_S 7)', !!find(g, /^EVT,TEAM_MIS,TARGET,1,3,.*,RESCUE_S,7,SKIP_S,10$/), find(g, /^EVT,TEAM_MIS,TARGET,1,/));
+  }
+
   console.log('team-6: camera trouble and the way out');
   {
     const out = run([...RIG, '#SET camFail 2', 'TEAM_SET,mis.capMs,1500', 'TEAM_MIS_GO,15', ...ticks(15), 'TEAM_MIS_STATUS', '#WAIT 20', 'STOP', '#WAIT 20']);
