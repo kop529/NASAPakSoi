@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>NasaPakSoi · ยานของเรา</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<section class="slide ">
+  <img class="logo" src="img/tysc_logo_lime.png" alt="Thailand Young Satellite Challenge">
+  <div class="head">
+    <div class="eyebrow">ยานของเรา</div>
+    <h2>ยานต้องหันเข้าหาหลอดไฟเอง ด้วย<em>ล้อหมุนล้อเดียว</em></h2>
+  </div>
+  <div class="task">
+    <div><span>ภารกิจ 1</span>หันเข้าหาหลอดไฟ แล้วค้างให้นิ่ง</div>
+    <div><span>ภารกิจ 2</span>หันไปตามมุมที่กำหนด แล้วถ่ายภาพ</div>
+  </div>
+  <figure class="vphoto"><img src="img/sat_20261006.jpg" alt="ยานของทีมบนแท่นหมุน เห็นด้านหน้า: ชิ้นงานพิมพ์ 3 มิติสีดำมี LDR 4 ตัว บอร์ด SunSeek สีเขียว และล้อด้านล่าง"></figure>
+<svg class="callouts" viewBox="0 0 1920 1080"><polyline points="591.4,450.7 631.4,444 1236,444" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="7" stroke-linejoin="round"/><polyline points="591.4,450.7 631.4,444 1236,444" fill="none" stroke="#A9B92A" stroke-width="3" stroke-linejoin="round"/><circle cx="591.4" cy="450.7" r="9" fill="#A9B92A" stroke="#0A0C09" stroke-width="3"/><polyline points="724.1,602.4 764.1,594 1236,594" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="7" stroke-linejoin="round"/><polyline points="724.1,602.4 764.1,594 1236,594" fill="none" stroke="#A9B92A" stroke-width="3" stroke-linejoin="round"/><circle cx="724.1" cy="602.4" r="9" fill="#A9B92A" stroke="#0A0C09" stroke-width="3"/><polyline points="645.5,699.9 685.5,724 1236,724" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="7" stroke-linejoin="round"/><polyline points="645.5,699.9 685.5,724 1236,724" fill="none" stroke="#A9B92A" stroke-width="3" stroke-linejoin="round"/><circle cx="645.5" cy="699.9" r="9" fill="#A9B92A" stroke="#0A0C09" stroke-width="3"/></svg>
+  <div class="part" style="top:425px"><b>เซนเซอร์แสง</b><span>ชิ้นงานพิมพ์ 3 มิติสีดำของผู้จัด ติดหน้ายาน มี LDR 4 ตัว ซ้าย 2 ขวา 2</span></div>
+  <div class="part" style="top:575px"><b>บอร์ด SunSeek</b><span>ESP32-S3 อยู่บนบอร์ดนี้ เฟิร์มแวร์ที่เราแก้ก็รันที่นี่</span></div>
+  <div class="part" style="top:705px"><b>ล้อปฏิกิริยา</b><span>มอเตอร์ DC + วงเหล็กถ่วง เป็นสิ่งเดียวที่ทำให้ยานหมุน</span></div>
+  <div class="absent"><b>ไม่เห็นในภาพนี้</b> · กล้อง ESP32-CAM อยู่ด้านซ้ายของยาน ห่างเซนเซอร์แสง ~90° · IMU GY-89 (บอร์ดแดง) อยู่ใต้กล้อง · แบตเตอรี่ และสวิตช์ไฟ</div>
+  <div class="source">ภาพถ่ายจริง 6 ต.ค. 2569</div>
+  <div class="page">03</div>
+</section>
+<script>
+  const s = document.querySelector('.slide');
+  const fit = () => { s.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; };
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>

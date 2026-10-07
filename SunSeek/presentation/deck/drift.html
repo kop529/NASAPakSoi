@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>NasaPakSoi · gyro ลอย</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<section class="slide has-vs">
+  <img class="logo" src="img/tysc_logo_lime.png" alt="Thailand Young Satellite Challenge">
+  <div class="head">
+    <div class="eyebrow">ภาคผนวก · ที่เจอไม่ตรงที่คาด</div>
+    <h2>ยานนิ่งอยู่เฉย ๆ แต่ gyro บอกว่า<em>หมุนไป 4.7° ใน 56 วินาที</em></h2>
+  </div>
+  <div class="vs">
+    <div><span>คาดไว้</span>ยานนิ่งใน HOLD gyro ก็ควรอ่านได้ค่าเกือบ 0 ตลอด</div>
+    <div class="found"><span>เจอจริง</span>gyro อย่างเดียวลอยไป +4.7° ขณะที่เซนเซอร์แสงบอก −2.0° (bias ≈ 0.12 °/วิ)</div>
+  </div>
+  <figure class="chart" style="top:420px;width:1080px"><img src="../charts/c5_gyro_drift.png" alt="มุมจากเซนเซอร์แสงกับมุมจาก gyro อย่างเดียว ตอนยานนิ่งใน HOLD 56 วินาที gyro ลอยไป +4.7 องศา"></figure>
+  <div class="notes" style="left:1250px;width:558px">
+    <p>ลอยไม่เป็นเส้นตรง ต้องวัดตอนยานนิ่งก่อนใช้</p>
+    <p>ภารกิจ 2 หันด้วย gyro ล้วน ถ้าไม่ตั้งศูนย์จะคลาดราว 3° ต่อ 30 วินาที</p>
+    <p class="key"><b>แก้:</b> ตั้งศูนย์ gyro (TEAM_GYRO_ZERO) ก่อนทุกภารกิจ</p>
+  </div>
+  <div class="source">ข้อมูล: กล่องดำ รอบ 20:30 · ยานนิ่งใน HOLD · gyro เริ่มที่ค่าเดียวกับเซนเซอร์แสง</div>
+  <div class="page">B5</div>
+</section>
+<script>
+  const s = document.querySelector('.slide');
+  const fit = () => { s.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; };
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>NasaPakSoi · บทเรียน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<section class="slide ">
+  <img class="logo" src="img/tysc_logo_lime.png" alt="Thailand Young Satellite Challenge">
+  <div class="head">
+    <div class="eyebrow">สรุป</div>
+    <h2>สิ่งที่เราได้เรียนรู้ <em>3 ข้อ</em></h2>
+  </div>
+  <div class="team-ph">[รูปทีมหน้าแท่น]</div>
+  <p class="team-cap">ทีมนาซ่าหน้าปากซอย · โรงเรียนชลราษฎรอำรุง จ.ชลบุรี</p>
+  <div class="lessons">
+    <div class="lesson"><i>1</i><div><b>ตัวจำลองต้องจำลองจังหวะเวลาเหมือนของจริง</b><span>บั๊ก 3 รอบไม่ขึ้นในตัวจำลอง จนเราใส่หน่วง BLE 3 ms และสุ่มประวัติการหมุนก่อนกด AUTO โค้ดผู้จัดพัง 4 จาก 8 โค้ดของเราผ่าน 8 จาก 8 (จำลอง)</span></div></div>
+    <div class="lesson"><i>2</i><div><b>ให้ยานจดเอง ดีกว่าเดาจาก log ของ GS</b><span>กล่องดำ 25 แถว/วิ เห็นสิ่งที่ตัวคุมคิดจริง ข้อที่เจอหลัง 6 ต.ค. เกือบทั้งหมดมาจากไฟล์นี้</span></div></div>
+    <div class="lesson"><i>3</i><div><b>ตัวเลขที่ขัดกันคือเบาะแส ดูข้อมูลดิบก่อนสรุป</b><span>ยานหมุน 200 °/วิ แต่เบรกไม่ทำงาน ทั้งที่เป้าห่างแค่ 18° ที่แท้คือมุมประมาณเกินมา 3 รอบ</span></div></div>
+  </div>
+  <div class="thanks">
+    <h3>ขอบคุณ</h3>
+    <div><small>ผู้จัดงาน</small><span class="real">TYSC 2026</span></div>
+    <div><small>ครูที่ปรึกษา</small><span class="fill">[ชื่ออาจารย์ที่ปรึกษา]</span></div>
+    <div><small>พี่เลี้ยง / วิทยากร / ผู้ช่วยเหลือ</small><span class="fill">[ชื่อ-หน่วยงานที่ต้องการขอบคุณ]</span></div>
+  </div>
+  <div class="bye">ยินดีตอบคำถาม</div>
+  <div class="page">11</div>
+</section>
+<script>
+  const s = document.querySelector('.slide');
+  const fit = () => { s.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; };
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>

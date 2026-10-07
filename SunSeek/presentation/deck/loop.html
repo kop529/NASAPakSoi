@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>NasaPakSoi · รอบคุมช้า</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<section class="slide has-vs">
+  <img class="logo" src="img/tysc_logo_lime.png" alt="Thailand Young Satellite Challenge">
+  <div class="head">
+    <div class="eyebrow">ภาคผนวก · ที่เจอไม่ตรงที่คาด</div>
+    <h2>รอบคุมที่ตั้งไว้ 40 ms แต่บางรอบ<em>ช้าถึง 97 ms</em></h2>
+  </div>
+  <div class="vs">
+    <div><span>คาดไว้</span>ลูปคุมรันทุก 40 ms แถวในกล่องดำห่างเท่ากันทุกแถว</div>
+    <div class="found"><span>เจอจริง</span>ราว 63% ตรง 40 ms ที่เหลือมีหางยาว p95 60–69 ms ช้าสุด 85–97 ms</div>
+  </div>
+  <figure class="chart" style="top:420px;width:960px"><img src="../charts/c4_loop_spacing.png" alt="ฮิสโทแกรมระยะห่างระหว่างแถวของกล่องดำ 2 รอบ ส่วนใหญ่อยู่ที่ 40 ms มีหางยาวถึง 97 ms"></figure>
+  <div class="notes" style="left:1150px;width:658px">
+    <p><b>ที่ทำให้ลูปช้า:</b> Serial ไม่มีบัฟเฟอร์ส่ง · delay 3 ms ต่อบรรทัด BLE · BLE หลุดแล้วหยุด 200 ms · TEAM_SAVE เขียน flash</p>
+    <p>ถ้าค้างเกิน 250 ms ตัวประมาณมุมจะรีเซ็ตเป็นค่าแสงดิบ</p>
+    <p class="key"><b>แก้ (team-4):</b> บัฟเฟอร์ส่ง Serial 4 KB + ห้าม TEAM_SAVE ใน AUTO · บนแท่น 7 ต.ค. ช้าสุด 97 → 55 ms</p>
+  </div>
+  <div class="source">ข้อมูล: กล่องดำ รอบ 20:13 และ 20:30 (6 ต.ค.) · แถบเทา = 38–42 ms</div>
+  <div class="page">B4</div>
+</section>
+<script>
+  const s = document.querySelector('.slide');
+  const fit = () => { s.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; };
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>

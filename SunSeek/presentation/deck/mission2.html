@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>NasaPakSoi · ภารกิจ 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<section class="slide has-vs">
+  <img class="logo" src="img/tysc_logo_lime.png" alt="Thailand Young Satellite Challenge">
+  <div class="head">
+    <div class="eyebrow">ภาคผนวก · <span class="sim">จำลอง — ยังไม่ได้ลองบนแท่นจริง</span></div>
+    <h2>ภารกิจ 2: อ่านโปรแกรม GS แล้ว<em>เขียนโหมดภารกิจเอง</em></h2>
+  </div>
+  <div class="vs">
+    <div><span>GS ส่งมา</span><code class="mono">PREPARE</code> (12+ บรรทัด)<br><code class="mono">MISSION_TARGET</code> (4 ค่า) · <code class="mono">START_MISSION</code> · <code class="mono">ABORT</code></div>
+    <div class="found"><span>เฟิร์มแวร์ผู้จัด v3.0</span>ใช้ไม่ได้ 5 จุด: อ่านเป้าแค่ 3 ค่า (ERR ทุกเป้า) · ชื่อคำสั่งไม่ตรง · ไม่ถ่ายรูป · ไม่ไปเป้าถัดไป · ไม่เข้า AUTO เอง</div>
+  </div>
+  <div class="flow">
+    <div class="stp"><div class="box">หมุนไปที่เป้า</div><small>อยู่ใน AUTO ตลอด</small></div>
+    <div class="stp"><div class="box">ค้างในระยะคลาดจนครบเวลา</div></div>
+    <div class="stp"><div class="box new">รอให้นิ่ง<br>|error| ≤ 1.5°<br>|rate| ≤ 3°/s</div><small>รอไม่เกิน 4 วิ ไม่นิ่งก็ถ่ายเลย · เพิ่มใน team-7</small></div>
+    <div class="stp"><div class="box">CAPTURE แล้วรอรูป</div><small>กล้องพลาดลองใหม่ 3 ครั้ง</small></div>
+    <div class="stp"><div class="box">ไปเป้าถัดไป</div><small>STOP / ABORT ชนะเสมอ</small></div>
+  </div>
+<svg class="svgfig res" style="left:112px;top:640px" width="800" height="350" viewBox="0 0 800 350"><text class="m" x="0" y="26" font-size="23">error ตอนกดชัตเตอร์ (องศา)</text><text class="k" x="0" y="92" font-size="26">เป้า 1</text><rect x="110" y="52" width="590" height="32" fill="#4A5345"/><text x="688" y="77" font-size="24" text-anchor="end">2.95</text><rect x="110" y="90" width="298" height="32" fill="#A9B92A"/><text x="420" y="115" font-size="24" style="fill:#A9B92A">1.49</text><text class="k" x="0" y="184" font-size="26">เป้า 2</text><rect x="110" y="144" width="584" height="32" fill="#4A5345"/><text x="682" y="169" font-size="24" text-anchor="end">2.92</text><rect x="110" y="182" width="84" height="32" fill="#A9B92A"/><text x="206" y="207" font-size="24" style="fill:#A9B92A">0.42</text><text class="k" x="0" y="276" font-size="26">เป้า 3</text><rect x="110" y="236" width="520" height="32" fill="#4A5345"/><text x="618" y="261" font-size="24" text-anchor="end">2.60</text><rect x="110" y="274" width="56.00000000000001" height="32" fill="#A9B92A"/><text x="178" y="299" font-size="24" style="fill:#A9B92A">0.28</text><line x1="710" y1="40" x2="710" y2="322" stroke="#D0689C" stroke-width="3" stroke-dasharray="8 6"/><text x="700" y="314" text-anchor="end" font-size="22" style="fill:#D0689C">ขอบระยะคลาด 3°</text><rect x="110" y="330" width="18" height="12" fill="#4A5345"/><text class="m" x="136" y="342" font-size="21">team-6</text><rect x="240" y="330" width="18" height="12" fill="#A9B92A"/><text x="266" y="342" font-size="21" style="fill:#A9B92A">team-7</text></svg>
+  <div class="mnotes">
+    <p><b>เจอตอนจำลอง:</b> HOLD เริ่มตอนยานยังหมุน ~4°/s ไม่มีแรงเบรกใน HOLD ยานไหลเลยไป ~3° แล้วถ่ายตรงขอบระยะคลาดพอดี</p>
+    <p class="key"><b>แก้ที่ภารกิจ ไม่แตะตัวคุม:</b> รอให้นิ่งก่อนกดชัตเตอร์<br>error ตอนถ่าย 2.95 / 2.92 / 2.60° → 1.49 / 0.42 / 0.28°</p>
+    <p>ตัวจำลองมีกล้องปลอม: 3 เป้าจบใน 12.8 วินาที ได้ 3 รูป · e2e 143/143</p>
+  </div>
+  <div class="source">ผลจำลองทั้งหมด (team-6 → team-7) · ยังไม่ได้ลองบนแท่นจริง</div>
+  <div class="page">B8</div>
+</section>
+<script>
+  const s = document.querySelector('.slide');
+  const fit = () => { s.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; };
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>
