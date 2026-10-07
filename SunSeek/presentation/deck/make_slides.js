@@ -58,11 +58,11 @@ const callouts = (() => {
 // ---------- p4 physics diagram ----------
 const physicsSvg = (() => {
   const panels = [
-    { ox: 0, n: '1', title: 'ล้อเร่งขึ้น', rot: -14, w: [-70, 170, 8], b: [38, -38, 8], bl: 'ยาน', sub: 'ยานหมุนสวนทิศล้อ' },
-    { ox: 578, n: '2', title: 'ล้อหมุนคงที่', rot: -28, w: [-70, 170, 4], b: null, bl: 'ยาน นิ่ง', sub: 'ไม่มีแรงบิดเพิ่ม ยานหยุดหมุนเอง' },
-    { ox: 1156, n: '3', title: 'ล้อไหลจนหยุด', rot: -20, w: [-70, 40, 4], b: [-38, 38, 8], bl: 'ยาน', sub: 'ยานหมุนกลับตามทิศล้อ' },
+    { ox: 0, n: '1', title: 'ล้อเร่งขึ้น', rot: -14, w: [-70, 170, 8], b: [38, -38, 8], bl: 'ยาน', sub: ['ยานหมุนสวนทิศล้อ'] },
+    { ox: 578, n: '2', title: 'ล้อหมุนคงที่', rot: -28, w: [-70, 170, 4], b: [38, -38, 5], bl: 'ยาน หมุนต่อ', sub: ['ไม่มีแรงบิด ยานหมุนต่อด้วยความเร็วเดิม', 'บนแท่นจริง แรงเสียดทานค่อย ๆ หน่วงให้ช้าลง'] },
+    { ox: 1156, n: '3', title: 'ล้อไหลจนหยุด', rot: -22, w: [-70, 40, 4], b: [-38, 38, 8], bl: 'ยาน', sub: ['ล้อคืนโมเมนตัม ยานถูกดันตามทิศล้อ', 'บนแท่น ยานที่หยุดแล้วจึงหมุนกลับ'] },
   ];
-  let s = `<svg class="svgfig" style="top:300px" width="1696" height="548" viewBox="0 0 1696 548"><defs>${marker('aL', LIME)}${marker('aB', BLUE)}</defs>`;
+  let s = `<svg class="svgfig" style="top:296px" width="1696" height="582" viewBox="0 0 1696 582"><defs>${marker('aL', LIME)}${marker('aB', BLUE)}</defs>`;
   for (const p of panels) {
     s += `<g transform="translate(${p.ox},0)">`;
     s += `<text class="k" x="270" y="32" text-anchor="middle" font-size="34"><tspan fill="${LIME}">${p.n}</tspan>  ${p.title}</text>`;
@@ -76,10 +76,12 @@ const physicsSvg = (() => {
     if (p.b) s += `<path d="${arc(0, 0, 124, p.b[0], p.b[1])}" fill="none" stroke="${BLUE}" stroke-width="${p.b[2]}" marker-end="url(#aB)"/>`;
     s += `<text class="k" x="146" y="9" font-size="26" style="fill:${BLUE}">${p.bl}</text>`;
     s += `</g>`;
-    s += `<text x="270" y="284" text-anchor="middle" font-size="26">${p.sub}</text></g>`;
+    s += `<text x="270" y="284" text-anchor="middle" font-size="26">${p.sub[0]}</text>`;
+    if (p.sub[1]) s += `<text class="m" x="270" y="314" text-anchor="middle" font-size="22">${p.sub[1]}</text>`;
+    s += `</g>`;
   }
   // wheel speed + torque on the body, same time axis as the three panels (schematic, not measured)
-  s += `<g transform="translate(0,-36)">`;
+  s += `<g transform="translate(0,-4)">`;
   const dec = []; for (let x = 1156; x <= 1696; x += 20) dec.push(`${x},${(400 - 60 * Math.exp(-(x - 1156) / 150)).toFixed(1)}`);
   s += `<line x1="559" y1="346" x2="559" y2="566" stroke="${LINE}" stroke-dasharray="4 6"/><line x1="1137" y1="346" x2="1137" y2="566" stroke="${LINE}" stroke-dasharray="4 6"/>`;
   s += `<text class="m" x="0" y="352" font-size="22">ความเร็วล้อ</text>`;
@@ -174,7 +176,7 @@ ${callouts}
     <div class="eyebrow">ฟิสิกส์ที่ใช้</div>
     <h2>ล้อเร่งไปทางหนึ่ง ยาน<em>หมุนสวนไปอีกทาง</em></h2>
   </div>
-  <div class="eq"><div class="f">I<sub>ยาน</sub> · ω<sub>ยาน</sub> + I<sub>ล้อ</sub> · ω<sub>ล้อ</sub> = ค่าคงที่</div><div class="why">โมเมนตัมเชิงมุมรวมคงที่ ยานเริ่มจากนิ่ง ผลรวมจึงเป็น 0</div></div>
+  <div class="eq"><div class="f">I<sub>ยาน</sub> · ω<sub>ยาน</sub> + I<sub>ล้อ</sub> · ω<sub>ล้อ</sub> = ค่าคงที่</div><div class="why">ใช้ได้เมื่อไม่มีแรงบิดจากภายนอก (แรงเสียดทานของแท่นนับเป็นแรงภายนอก)<br>ยานเริ่มจากนิ่ง ผลรวมจึงเป็น 0</div></div>
 ${physicsSvg}
   <div class="chips">
     <div><b>±10 %</b>คำสั่งที่ล้อเริ่มหมุน</div>
@@ -198,7 +200,7 @@ ${physicsSvg}
   </div>
   <div class="tools">
     <div><b>เว็บ NasaSat Lab</b>คาลิเบรต · จูน · ดึงกล่องดำ ผ่านบลูทูธจากเบราว์เซอร์</div>
-    <div><b>ตัวจำลองบนคอม</b>รันโค้ดเฟิร์มแวร์ตัวจริง e2e 143 เทสต์ + สุ่มประวัติการหมุน</div>
+    <div><b>ตัวจำลองบนคอม</b>รันโค้ดเฟิร์มแวร์ตัวจริง e2e 162 เทสต์ + สุ่มประวัติการหมุน</div>
   </div>
   <div class="source">แก้และเพิ่มรวม 32 เรื่อง (ภาคผนวก B2) · ยังสั่งผ่าน GS ของผู้จัดได้เหมือนเดิม</div>`],
 
@@ -471,7 +473,8 @@ ${capSvg}
   <div class="mnotes">
     <p><b>เจอตอนจำลอง:</b> HOLD เริ่มตอนยานยังหมุน ~4°/s ไม่มีแรงเบรกใน HOLD ยานไหลเลยไป ~3° แล้วถ่ายตรงขอบระยะคลาดพอดี</p>
     <p class="key"><b>แก้ที่ภารกิจ ไม่แตะตัวคุม:</b> รอให้นิ่งก่อนกดชัตเตอร์<br>error ตอนถ่าย 2.95 / 2.92 / 2.60° → 1.49 / 0.42 / 0.28°</p>
-    <p>ตัวจำลองมีกล้องปลอม: 3 เป้าจบใน 12.8 วินาที ได้ 3 รูป · e2e 143/143</p>
+    <p>ตัวจำลองมีกล้องปลอม: 3 เป้าจบใน 12.8 วินาที ได้ 3 รูป · e2e 162/162</p>
+    <p><b>เป้านอกช่วงที่เซนเซอร์แสงเห็น:</b> ใช้ gyro นับต่อ (<code class="mono">mis.ghold</code>) · สุ่มทดสอบ 800 ภารกิจ (จำลอง) เจอเพิ่ม 2 เรื่อง แก้แล้ว: เซนเซอร์อ่านเกินตั้งแต่ ~45° แล้วค้างที่ 60° · HOLD กว้างกว่าระยะคลาด ยานค้างห่างเป้า 2.2°</p>
   </div>
   <div class="source">ผลจำลองทั้งหมด (team-6 → team-7) · ยังไม่ได้ลองบนแท่นจริง</div>`],
 ];
