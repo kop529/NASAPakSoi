@@ -8,8 +8,10 @@
 #define PAYLOAD_WIFI_PASSWORD      "sunseek01"   // >= 8 chars
 // NasaPakSoi 7 Oct: every SunSeek camera AP starts on channel 1 (softAP default); at the hotel channel 1 also carried the
 // hotel Wi-Fi and another team's camera, and our link dropped 3 times in 20 min while streaming (camera did not reboot).
-// 1..13 allowed in Thailand; 13 had no network in the scan.
-#define PAYLOAD_WIFI_CHANNEL       13
+// 13 was empty but this laptop's Wi-Fi card does not see 12-13 (flashed and checked 22:50). The phone scan also showed the AP
+// 40 MHz wide (channels 1-5). Now 20 MHz on channel 11: the weakest group at the hotel (-61..-90 dBm on the phone),
+// same channel = the radios take turns instead of hearing each other as noise. Pick from a scan in the contest room.
+#define PAYLOAD_WIFI_CHANNEL       11
 #define PAYLOAD_STA_SSID           "YOUR_WIFI"
 #define PAYLOAD_STA_PASSWORD       "YOUR_PASSWORD"
 #define PAYLOAD_UART_BAUD          115200
