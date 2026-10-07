@@ -28,6 +28,7 @@ void setup(){
   Serial.println("Spacecraft ID: "+getSpacecraftID());
   Serial.println("Payload UART: TX=GPIO41 RX=GPIO42 @115200");
   Serial.println("TEAM FIRMWARE: " TEAM_FW_VERSION);  // TEAM NasaPakSoi
+  Serial.println("EVT,TEAM_BOOT,REASON," + teamResetReason());  // TEAM NasaPakSoi team-7 (also in TEAM_INFO)
   sensorSendHealth();
   ttcSendADCSConfig();
   payloadSendCommand("STATUS");

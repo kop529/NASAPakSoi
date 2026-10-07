@@ -41,7 +41,7 @@ console.log('boot + link');
   check('PING -> PONG', !!find(out, /^PONG$/));
   check('STATUS -> ACK,STATUS', !!find(out, /^ACK,STATUS$/));
   check('STATUS keeps the organizer lines', !!find(out, /^TM,SAT_ID,SUNSEEK-NasaPakSoi,BLE,DISCONNECTED/) && !!find(out, /^TM,ADCS_MODE,MANUAL,ADCS_REFERENCE,SUN,TARGET,0\.00,KP,2\.000,KD,0\.500,MOMENTUM_BIAS,40,DEADBAND,2\.00,MAX_RW_COMMAND,80,CONTROL_SIGN,1\.0$/));
-  check('STATUS adds TM,TEAM_FW', !!find(out, /^TM,TEAM_FW,NasaPakSoi-team-[^,]+,SUN_MODEL,0,UNSAVED,0,LUT_N,0$/));
+  check('STATUS adds TM,TEAM_FW', !!find(out, /^TM,TEAM_FW,NasaPakSoi-team-[^,]+,SUN_MODEL,0,UNSAVED,0,LUT_N,0,BOOT,HOST,UP_S,\d+$/));
   check('IMU detected in the simulated GY-89', !!find(out, /^TM,SENSOR_GYRO,READY$/) && !!find(out, /^TM,SENSOR_MAG,READY$/));
   const long = out.filter((l) => !l.startsWith('#') && l.length > 182);
   check('every line fits one BLE notification (<= 182 chars)', long.length === 0, long[0] || '');

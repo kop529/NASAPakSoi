@@ -152,7 +152,7 @@ inline void _tmCapture() {
   _tmImg0 = payloadImageSeq(); _tmErr0 = payloadCaptureErrSeq(); _tmCap0 = millis(); _tmTry++;
   payloadSendCommand("CAPTURE");
   // pointing at the shutter (the HOLD band lets the body sit up to adcs.unlock off: check it on the rig)
-  sendTelemetry("EVT,TEAM_MIS,CAPTURE," + String(_tmI + 1) + "," + String(_tmTry) + ",ERR," + String(adcsGet().error, 2) + ",TGT," + String(_tmT[_tmI].deg, 1));
+  sendTelemetry("EVT,TEAM_MIS,CAPTURE," + String(_tmI + 1) + "," + String(_tmTry) + ",ERR," + String(adcsGet().error, 2) + ",RATE," + String(adcsGet().rate, 1) + ",TGT," + String(_tmT[_tmI].deg, 1));
   _tmS = TMS_CAP;
 }
 
@@ -178,7 +178,11 @@ inline void teamMissionUpdate() {
       if (in) { _tmS = TMS_STAB; _tmHold0 = now; }
     } else if (_tmS == TMS_STAB) {
       if (!in) _tmS = TMS_ACQ;  // the hold restarts after any sample outside the tolerance (organizer rule)
-      else if (now - _tmHold0 >= (unsigned long)(t.hold * 1000.0f)) _tmCapture();
+      else if (now - _tmHold0 >= (unsigned long)(t.hold * 1000.0f)) {
+        // team-7: shoot when close and still (sim: the hold ended while the body coasted to the tolerance edge)
+        const bool good = (TP.misCapErr <= 0 || fabsf(a.error) <= TP.misCapErr) && (TP.misCapRate <= 0 || fabsf(a.rate) <= TP.misCapRate);
+        if (good || now - _tmHold0 >= (unsigned long)(t.hold * 1000.0f + TP.misWaitMs)) _tmCapture();
+      }
     } else if (_tmS == TMS_CAP) {
       if (payloadImageSeq() != _tmImg0) {
         _tmT[_tmI].img = payloadLastImageName();

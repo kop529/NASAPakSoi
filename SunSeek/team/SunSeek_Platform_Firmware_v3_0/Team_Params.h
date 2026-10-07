@@ -18,7 +18,7 @@
 #include "Config_Sensor.h"
 #include "Team_SunModel.h"
 
-#define TEAM_FW_VERSION "NasaPakSoi-team-6"
+#define TEAM_FW_VERSION "NasaPakSoi-team-7"
 #define TEAM_NVS_NAMESPACE "nps"
 
 struct TeamParams {
@@ -52,6 +52,12 @@ struct TeamParams {
   float misTol = 3, misHold = 2;  // TEAM_MIS_GO tolerance (deg) / hold (s) per target (the GS sends its own)
   float misCapMs = 6000;          // no IMAGE_READY after this -> CAPTURE again (3 tries)
   float misGap = 2500;            // ms between MISSION,RESULT,IMAGE lines (the GS reads the name back 300 ms later)
+  // team-7: after the hold, CAPTURE only when |error| <= mis.capErr deg and |rate| <= mis.capRate deg/s (0 = no check);
+  // still not there mis.waitMs later -> CAPTURE anyway (inside the tolerance)
+  float misCapErr = 1.5, misCapRate = 3, misWaitMs = 4000;
+  // team-7: 1 = ADCS_TUNE (sent by every GS PREPARE / RUN / Competition PREPARE) keeps our adcs.kp/kd/bias and answers
+  // ACK with them + EVT,TEAM_KEEP_TUNE,IGNORED,<their values>; 0 = organizer (the GS numbers replace ours in RAM)
+  int adcsKeepTune = 0;
   // reaction wheel characterization from T01
   float rwMinStart = RW_MIN_START_PERCENT;
   float rwMinStable = RW_MIN_START_PERCENT;
@@ -145,6 +151,10 @@ static TeamParamDef _tpDefs[] = {
   {"mis.hold",    TPT_FLOAT,  &TP.misHold,       0, 0, 60},
   {"mis.capMs",   TPT_FLOAT,  &TP.misCapMs,      0, 1000, 20000},
   {"mis.gap",     TPT_FLOAT,  &TP.misGap,        0, 500, 10000},
+  {"mis.capErr",  TPT_FLOAT,  &TP.misCapErr,     0, 0, 30},
+  {"mis.capRate", TPT_FLOAT,  &TP.misCapRate,    0, 0, 100},
+  {"mis.waitMs",  TPT_FLOAT,  &TP.misWaitMs,     0, 0, 60000},
+  {"adcs.keepTune",TPT_INT,   &TP.adcsKeepTune,  0, 0, 1},
   {"mag.ox",      TPT_FLOAT,  &TP.magOx,         0, -20000, 20000},
   {"mag.oy",      TPT_FLOAT,  &TP.magOy,         0, -20000, 20000},
   {"mag.oz",      TPT_FLOAT,  &TP.magOz,         0, -20000, 20000},

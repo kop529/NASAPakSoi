@@ -6,7 +6,7 @@
    replies use the organizer's line format (ACK / ERR / TM key,value) so the Ground Station terminal
    shows them like any other line.
 
-     TEAM_INFO                        TM,TEAM_FW,<version>,SUN_MODEL,<0|1>,UNSAVED,<n>,LUT_N,<n>
+     TEAM_INFO                        TM,TEAM_FW,<version>,SUN_MODEL,<0|1>,UNSAVED,<n>,LUT_N,<n>,BOOT,<reset reason>,UP_S,<s>
      TEAM_LIST                        one TM,TEAM_PARAM,<key>,<value> per parameter
      TEAM_GET,<key>                   TM,TEAM_PARAM,<key>,<value>
      TEAM_SET,<key>,<value>           ACK,TEAM_SET,<key>,<value>   (RAM only until TEAM_SAVE)
@@ -119,9 +119,33 @@ inline String teamControlLine() {
   return String(b);
 }
 
+// team-7: why the board last started (BROWNOUT = battery / wheel current dip, PANIC / *_WDT = crash)
+#ifdef TEAM_HOST_TEST
+inline String teamResetReason() { return "HOST"; }
+#else
+#include <esp_system.h>
+inline String teamResetReason() {
+  const esp_reset_reason_t r = esp_reset_reason();
+  switch (r) {
+    case ESP_RST_POWERON: return "POWERON";
+    case ESP_RST_EXT: return "EXT";
+    case ESP_RST_SW: return "SW";
+    case ESP_RST_PANIC: return "PANIC";
+    case ESP_RST_INT_WDT: return "INT_WDT";
+    case ESP_RST_TASK_WDT: return "TASK_WDT";
+    case ESP_RST_WDT: return "WDT";
+    case ESP_RST_DEEPSLEEP: return "DEEPSLEEP";
+    case ESP_RST_BROWNOUT: return "BROWNOUT";
+    case ESP_RST_SDIO: return "SDIO";
+    default: return "OTHER_" + String((int)r);
+  }
+}
+#endif
+
 inline void teamSendInfo() {
   sendTelemetry("TM,TEAM_FW," TEAM_FW_VERSION ",SUN_MODEL," + String(TP.sunModel) + ",UNSAVED," +
-                String(teamParamUnsaved() + (_teamLutDirty ? 1 : 0)) + ",LUT_N," + String(TP.sun.lutN));
+                String(teamParamUnsaved() + (_teamLutDirty ? 1 : 0)) + ",LUT_N," + String(TP.sun.lutN) +
+                ",BOOT," + teamResetReason() + ",UP_S," + String(millis() / 1000));
 }
 
 inline void teamSendLutInfo() {

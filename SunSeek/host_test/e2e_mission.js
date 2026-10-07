@@ -43,6 +43,8 @@ module.exports = ({ run, check, find, all, states, CAL }) => {
     const at = caps.map((c, i) => ({ t: c.t, sun: sAt(c.t).sun, want: T[i] ? T[i][0] : NaN }));
     console.log(`       captures: ${at.map((a) => `${a.t.toFixed(1)}s sun ${a.sun.toFixed(2)} (target ${a.want})`).join(' | ')}`);
     check('one CAPTURE per target, each while the body is within tolerance of that target', caps.length === 3 && at.every((a) => Math.abs(a.sun - a.want) <= 3.2));
+    const ce = all(out, /^EVT,TEAM_MIS,CAPTURE,/).map((l) => +l.split(',')[6]);
+    check('team-7: CAPTURE waits until |error| <= mis.capErr 1.5 (team-6 shot at 2.9 deg, the tolerance edge)', ce.length === 3 && ce.every((e) => Math.abs(e) <= 1.5), ce.join(' '));
     const res = tl.filter((x) => /^MISSION,RESULT,IMAGE,/.test(x.l));
     check('MISSION,RESULT,IMAGE,<i>,<name> for targets 1..3 in order', res.map((x) => x.l).join(' ') ===
       'MISSION,RESULT,IMAGE,1,/IMG_0001.JPG MISSION,RESULT,IMAGE,2,/IMG_0002.JPG MISSION,RESULT,IMAGE,3,/IMG_0003.JPG', res.map((x) => x.l).join(' '));
@@ -56,6 +58,32 @@ module.exports = ({ run, check, find, all, states, CAL }) => {
       const stab = tl.filter((x) => x.l === 'MISSION,STATE,STABILIZING');
       return caps.every((c, i) => { const s = stab.filter((x) => x.t <= c.t).pop(); return s && c.t - s.t >= T[i][2] - 0.25; });
     })());
+  }
+
+  console.log('team-7: never close enough -> CAPTURE anyway mis.waitMs after the hold');
+  {
+    const out = run([...RIG, 'TEAM_SET,mis.capErr,0.01', 'TEAM_SET,mis.waitMs,3000', 'TEAM_MIS_GO,15', ...ticks(15), 'STOP', '#WAIT 20']);
+    const tl = timed(out);
+    const stab = tl.find((x) => x.l === 'MISSION,STATE,STABILIZING'), cap = tl.find((x) => x.l === '#PAYLOAD_TX CAPTURE');
+    check('capErr 0.01: CAPTURE comes >= hold 2 s + wait 3 s after STABILIZING, and the mission completes', !!stab && !!cap && cap.t - stab.t >= 4.75 &&
+      !!find(out, /^MISSION,STATE,COMPLETE$/), stab && cap ? (cap.t - stab.t).toFixed(1) + ' s' : '');
+  }
+
+  console.log('team-7: adcs.keepTune, boot reason, cam.off with the mission');
+  {
+    const out = run(['TEAM_SET,adcs.kp,4', 'ADCS_TUNE,1.000,0.500,40', 'TEAM_GET,adcs.kp', '#WAIT 10',
+      'TEAM_SET,adcs.kp,4', 'TEAM_SET,adcs.kd,2', 'TEAM_SET,adcs.keepTune,1', 'ADCS_TUNE,1.000,0.500,40', 'TEAM_GET,adcs.kp', 'TEAM_GET,adcs.kd', '#WAIT 10']);
+    const kp = all(out, /^TM,TEAM_PARAM,adcs.kp,/).map((l) => +l.split(',')[3]);
+    check('keepTune 0: ADCS_TUNE from the GS replaces kp (organizer); keepTune 1: kp/kd stay 4/2, ACK carries ours + EVT IGNORED',
+      kp[0] === 1 && kp[1] === 4 && !!find(out, /^TM,TEAM_PARAM,adcs.kd,2/) && !!find(out, /^ACK,ADCS_TUNE,4.000,2.000,/) &&
+      !!find(out, /^EVT,TEAM_KEEP_TUNE,IGNORED,1.000,0.500,40$/), kp.join(' '));
+    check('boot prints EVT,TEAM_BOOT,REASON (HOST in the sim)', !!find(out, /^EVT,TEAM_BOOT,REASON,HOST$/));
+    const cam = run([...RIG, 'TEAM_SET,cam.off,10', 'TEAM_MIS_GO,0', ...ticks(10), 'STOP', '#WAIT 20']);
+    const tl = timed(cam);
+    const c = tl.find((x) => x.l === '#PAYLOAD_TX CAPTURE');
+    const s0 = c && states(tl.filter((x) => x.l.startsWith('#STATE ') && x.t >= c.t).slice(0, 1).map((x) => x.l))[0];
+    check('cam.off 10: the mission target 0 is shot with the sun sensor at ~10 deg (target + cam.off)', !!s0 && Math.abs(s0.sun - 10) <= 1.6 &&
+      !!find(cam, /^MISSION,STATE,COMPLETE$/), s0 ? 'sun ' + s0.sun.toFixed(2) : '');
   }
 
   console.log('team-6: camera trouble and the way out');
