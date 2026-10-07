@@ -25,7 +25,7 @@ top. Every team feature can be switched back to organizer behaviour with `TEAM_S
 The host simulator compiles the real sketch with mocks and a physics/sensor world (`SunSeek/host_test/`).
 
 ```bash
-wsl -d Ubuntu -- bash /mnt/c/TYSC/SunSeek/host_test/run.sh      # e2e 166 checks + sun calibration 39 checks
+wsl -d Ubuntu -- bash /mnt/c/TYSC/SunSeek/host_test/run.sh      # e2e 178 checks + sun calibration 39 checks
 ```
 
 Mission-2 fuzz (random targets, rigs, camera faults, gyro bias, STOP/ABORT/new PREPARE mid-mission; 17 invariants):
@@ -40,8 +40,9 @@ The simulated sun sensor over-reads from ~45° and sticks at 60°; the sticky-ri
 turntable; no BLE drops, LDR lag, lamp-brightness changes or unlevel rig are modelled. Results marked "จำลอง" are
 simulation only.
 
-## Status (7 Oct 2026)
+## Status (7 Oct 2026, night)
 
-Board runs `NasaPakSoi-team-5`. `team-7` (mission 2 for the GS Competition tab, capture gate, gyro hold for targets
-past the sun sensor, plan B rescue/skip so a mission always ends) is built and host-tested, to be uploaded at the
-8 Oct rehearsal.
+Board runs `NasaPakSoi-team-7` (uploaded 7 Oct 16:30). `team-8` = fixes from the 7 Oct night audit (STOP/ABORT end both
+mission managers, hold 0 uses a fresh error, nan/inf refused, PREPARE refuses READY when the camera reports SD ERR, START stops the camera stream, mission HOLD lets go at
+mis.unlock 2, retry through the capture gate, result queue cleared on reset) is built and host-tested (e2e 178/178, fuzz
+5000 all invariants), to be uploaded at the 8 Oct rehearsal.

@@ -97,7 +97,7 @@ module.exports = ({ run, check, find, all, states, CAL }) => {
     check('mis.ghold 1 (default): captured within 3 deg of 85 and still there 25 s after START', !!c && Math.abs(c.sun - 85) <= 3 &&
       !!find(on, /^MISSION,STATE,COMPLETE$/) && Math.abs(end.sun - 85) <= 3, c ? `at capture ${c.sun.toFixed(2)}, end ${end.sun.toFixed(2)}` : 'no capture');
     check('PREPARE flags it: EVT,TEAM_MIS,FAR_TARGET,1,85.0 and MISSION,PREP ... far 1 gyro',
-      !!find(on, /^EVT,TEAM_MIS,FAR_TARGET,1,85.0$/) && !!find(on, /^MISSION,PREP,1 targets SUN EACH cam (OK|NO REPLY) far 1 gyro$/), find(on, /^MISSION,PREP,/));
+      !!find(on, /^EVT,TEAM_MIS,FAR_TARGET,1,85.0$/) && !!find(on, /^MISSION,PREP,1 targets SUN EACH cam (OK SD OK|NO STATUS|NO REPLY) far 1 gyro$/), find(on, /^MISSION,PREP,/));
     const off = far(['TEAM_SET,mis.ghold,0']);
     check('mis.ghold 0 + adcs.ghold 0: MISSION,PREP warns NO GYRO HOLD', !!find(off, /^MISSION,PREP,.* far 1 NO GYRO HOLD$/),
       `(sim body at the end ${states(off).slice(-1)[0].sun.toFixed(1)} deg)`);
@@ -160,5 +160,83 @@ module.exports = ({ run, check, find, all, states, CAL }) => {
       'MISSION_TARGET,1,0,0,2', 'START_MISSION', '#WAIT 20']);
     check('SUN target 120 -> ERR,PREPARE,TARGET_1_OUT_OF_RANGE_SUN; index gap / tol 0 rejected; START without READY refused',
       !!find(bad, /^ERR,PREPARE,TARGET_1_OUT_OF_RANGE_SUN$/) && all(bad, /^ERR,MISSION_TARGET_INVALID$/).length === 2 && !!find(bad, /^ERR,START_MISSION,NOT_READY$/));
+  }
+
+  console.log('team-8: audit 7 Oct night fixes (N5 STOP/ABORT, N4 hold 0, N7 nan, N1 camera/SD at PREPARE)');
+  {
+    const leg = run([...RIG, 'MISSION_CLEAR', 'MISSION_TARGET,20,3,2', 'MISSION_PREPARE', 'MISSION_START', '#WAIT 500', '#STATE', 'STOP', '#WAIT 300', '#STATE',
+      '#WAIT 1000', '#STATE']);
+    const l = states(leg);
+    check('N5: mis.on 0, organizer MISSION_START then STOP -> wheel stays 0 (the organizer manager used to put AUTO back)',
+      l[0].cmd !== 0 && l[1].cmd === 0 && l[2].cmd === 0 && !!find(leg, /^ACK,STOP$/), l.map((s) => s.cmd).join(' '));
+    const ab = run([...RIG, '#SET camDead 1', 'TEAM_MIS_GO,20', '#WAIT 1000', '#STATE', 'ABORT', '#WAIT 300', '#STATE']);
+    const a = states(ab);
+    check('N5: mis.on 0, ABORT during TEAM_MIS_GO -> ACK,ABORT, ABORTED, wheel 0 (it used to answer ERR,MISSION_NOT_AVAILABLE_T04)',
+      a[0].cmd !== 0 && a[1].cmd === 0 && !!find(ab, /^ACK,ABORT$/) && !!find(ab, /^MISSION,STATE,ABORTED$/) && !find(ab, /^ERR,MISSION_NOT_AVAILABLE/), a.map((s) => s.cmd).join(' '));
+
+    const T = [[0, 3, 0], [20, 3, 0], [-20, 3, 0]];
+    const h0 = run([...RIG, 'TEAM_SET,mis.on,1', '#SET camMs 300', '#BLE 1', ...gsPrepare(T), '#WAIT 300', '#BLEW START_MISSION', ...ticks(30), 'STOP', '#WAIT 20']);
+    const tl = timed(h0);
+    const caps = tl.filter((x) => x.l === '#PAYLOAD_TX CAPTURE');
+    const sAt = (t) => states(tl.filter((x) => x.l.startsWith('#STATE ') && x.t >= t).slice(0, 1).map((x) => x.l))[0];
+    const at = caps.map((c, i) => ({ sun: sAt(c.t).sun, want: T[i] ? T[i][0] : NaN }));
+    console.log(`       hold 0 captures: ${at.map((x) => `sun ${x.sun.toFixed(2)} (target ${x.want})`).join(' | ')}`);
+    check('N4: hold 0 -> each CAPTURE on its own target (it shot target 2 at 0 deg with the old error)',
+      caps.length === 3 && at.every((x) => Math.abs(x.sun - x.want) <= 3.2) && !!find(h0, /^MISSION,STATE,COMPLETE$/));
+
+    const nan = run(['ADCS_TUNE,nan,2,40', 'ADCS_TUNE,4,inf,40', 'SET_TARGET,nan', 'TEAM_MIS_GO,nan', '#WAIT 20']);
+    check('N7: nan / inf numbers are refused (ADCS_TUNE, SET_TARGET, TEAM_MIS_GO)', !find(nan, /^ACK,(ADCS_TUNE|SET_TARGET|TEAM_MIS_GO)/) &&
+      all(nan, /^ERR,/).length >= 4, all(nan, /^(ACK|ERR),/).join(' | '));
+
+    const ST = (sd) => `#PAYLOAD STATUS,READY,CAMERA,OK,STORAGE,${sd},WIFI,READY,IP,192.168.4.1,STREAM,OFF,IMAGE_COUNT,0,LAST_IMAGE,`;
+    const cam = run([...RIG, 'TEAM_SET,mis.on,1', '#BLE 1', ST('ERR'), ...gsPrepare([[10, 3, 1]]), '#WAIT 300', '#BLEW START_MISSION', '#WAIT 300',
+      ST('OK'), ...gsPrepare([[10, 3, 1]]), '#WAIT 300', ST('ERR'), 'TEAM_SET,mis.camReq,0', ...gsPrepare([[10, 3, 1]]), '#WAIT 300']);
+    const prep = all(cam, /^MISSION,PREP,/);
+    check('N1: camera STORAGE,ERR -> ERR,PREPARE,CAMERA_OK_STORAGE_ERR, no READY, START refused',
+      !!find(cam, /^ERR,PREPARE,CAMERA_OK_STORAGE_ERR$/) && prep[0] === 'MISSION,PREP,FAILED CAMERA_OK_STORAGE_ERR' && !!find(cam, /^ERR,START_MISSION,NOT_READY$/), prep.join(' | '));
+    check('N1: STORAGE,OK -> READY "cam OK SD OK"; mis.camReq 0 -> READY even with SD ERR ("cam OK SD ERR")',
+      all(cam, /^MISSION,READY$/).length === 2 && prep[1] === 'MISSION,PREP,1 targets SUN EACH cam OK SD OK' && prep[2] === 'MISSION,PREP,1 targets SUN EACH cam OK SD ERR', prep.join(' | '));
+  }
+
+  console.log('team-8: N2 camera stream off at START, N3 mission HOLD lets go at mis.unlock');
+  {
+    const on = run([...RIG, 'TEAM_MIS_GO,10', '#WAIT 500', 'STOP', '#WAIT 20']);
+    const off = run([...RIG, 'TEAM_SET,mis.camStop,0', 'TEAM_MIS_GO,10', '#WAIT 500', 'STOP', '#WAIT 20']);
+    check('N2: START sends STREAM_STOP to the camera (mis.camStop 1); none with mis.camStop 0',
+      all(on, /^#PAYLOAD_TX STREAM_STOP$/).length === 1 && all(off, /^#PAYLOAD_TX STREAM_STOP$/).length === 0);
+    // sticky rig, a push while holding target 10 (hold 15 s so the shot comes late): where does the body end up? (7 Oct bedroom:
+    // target 20 crept to 23 and stayed there inside HOLD)
+    const push = (u) => {
+      const out = run([...RIG, '#SET stick 10', `TEAM_SET,mis.unlock,${u}`, 'TEAM_SET,mis.hold,15', 'TEAM_SET,mis.capErr,0', 'TEAM_MIS_GO,10', '#WAIT 7000', '#SET bodyRate 5', ...ticks(6), 'STOP', '#WAIT 20']);
+      const s = states(out);
+      return Math.abs(s[s.length - 1].sun - 10);
+    };
+    const p2 = push(2), p0 = push(0);
+    console.log(`       sticky rig, push in HOLD, error 6 s later: mis.unlock 2 -> ${p2.toFixed(2)} deg, mis.unlock 0 (adcs.unlock 3) -> ${p0.toFixed(2)} deg`);
+    check('N3: mis.unlock 2 pulls back under 1.5 deg; adcs.unlock 3 stays stuck over 2 deg inside HOLD', p2 < 1.5 && p0 > 2, `${p2.toFixed(2)} vs ${p0.toFixed(2)}`);
+  }
+
+  console.log('team-8: N6 retry through the gate, broken IMAGE_READY; N8 results / reset / index');
+  {
+    const re = run([...RIG, '#SET camFail 1', 'TEAM_SET,mis.capMs,1500', 'TEAM_MIS_GO,15', ...ticks(20), 'STOP', '#WAIT 20']);
+    const tl = timed(re);
+    const fail = tl.find((x) => x.l === 'PAYLOAD,ERR,CAPTURE_FAILED'), caps = tl.filter((x) => x.l === '#PAYLOAD_TX CAPTURE');
+    const ce = all(re, /^EVT,TEAM_MIS,CAPTURE,/).map((l) => +l.split(',')[6]);
+    console.log(`       retry: failed at ${fail ? fail.t.toFixed(1) : '-'} s, captures at ${caps.map((x) => x.t.toFixed(1)).join(' ')} s, ERR ${ce.join(' ')}`);
+    check('N6: after ERR,CAPTURE_FAILED the retry passes the capture gate again (|ERR| <= 1.5) and gets the image',
+      !!fail && caps.length === 2 && ce.every((e) => Math.abs(e) <= 1.5) && !!find(re, /^MISSION,RESULT,IMAGE,1,/));
+    const bad = run([...RIG, '#SET camDead 1', 'TEAM_SET,mis.capMs,3000', 'TEAM_MIS_GO,5', ...ticks(8), '#PAYLOAD IMAGE_READY,,0', ...ticks(1), 'TEAM_MIS_STATUS', '#WAIT 20', 'STOP', '#WAIT 20']);
+    check('N6: IMAGE_READY with no .JPG name / size -> ERR,PAYLOAD_IMAGE_READY_INVALID, not taken as the image',
+      !!find(bad, /^ERR,PAYLOAD_IMAGE_READY_INVALID$/) && !find(bad, /^EVT,TEAM_MIS,IMAGE,/) && !!find(bad, /^TM,MISSION_STATE,.*IMG1,-$/), find(bad, /^TM,MISSION_STATE/));
+
+    const q = run([...RIG, 'TEAM_SET,mis.on,1', 'TEAM_SET,mis.gap,10000', '#BLE 1', ...gsPrepare([[10, 3, 1], [-10, 3, 1]], 'AFTER'), '#WAIT 300', '#BLEW START_MISSION',
+      ...ticks(13), '#BLEW MISSION_CLEAR_TARGETS', ...ticks(25), 'STOP', '#WAIT 20']);
+    const qt = timed(q), done = qt.find((x) => x.l === 'MISSION,STATE,COMPLETE'), res = qt.filter((x) => /^MISSION,RESULT,IMAGE,/.test(x.l));
+    console.log(`       AFTER, gap 10 s, clear at 13 s: COMPLETE at ${done ? done.t.toFixed(1) : '-'} s, results ${res.map((x) => x.l + '@' + x.t.toFixed(1)).join(' ')}`);
+    check('N8: MISSION_CLEAR_TARGETS drops the results still queued (1 sent before, none after)', !!done && done.t < 12 && res.length === 1);
+    const rs = run([...RIG, 'TEAM_SET,mis.on,1', '#BLE 1', ...gsPrepare([[30, 3, 2]]), '#WAIT 300', '#BLEW START_MISSION', '#WAIT 1500', '#BLEW MISSION_RESET', '#WAIT 300', '#STATE',
+      '#BLEW MISSION_TARGET,1.5,0,3,2', '#WAIT 20']);
+    check('N8: MISSION_RESET mid-run -> MISSION,TIMER,STOP once, wheel 0; MISSION_TARGET index 1.5 -> ERR', all(rs, /^MISSION,TIMER,STOP,\d+$/).length === 1 &&
+      states(rs).pop().cmd === 0 && !!find(rs, /^ERR,MISSION_TARGET_INVALID$/));
   }
 };

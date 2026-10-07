@@ -18,7 +18,7 @@
 #include "Config_Sensor.h"
 #include "Team_SunModel.h"
 
-#define TEAM_FW_VERSION "NasaPakSoi-team-7"
+#define TEAM_FW_VERSION "NasaPakSoi-team-8"
 #define TEAM_NVS_NAMESPACE "nps"
 
 struct TeamParams {
@@ -66,6 +66,15 @@ struct TeamParams {
   // with a GS time limit the skip comes earlier so every remaining target gets a share (>= 8 s). 0 = off.
   float misTargetS = 30, misSkipS = 45;
   float misTrust = 45;  // deg: with mis.ghold, sun readings beyond this are left to the gyro (0 = trust every lit reading)
+  // team-8 (audit N1): 1 = PREPARE refuses READY while the camera's last STATUS says CAMERA or STORAGE is not OK (7 Oct: SD
+  // not mounted -> every CAPTURE failed, yet PREPARE said cam OK and the mission ended COMPLETE with no image). 0 = off
+  int misCamReq = 1;
+  // team-8 (audit N2): 1 = START_MISSION sends STREAM_STOP to the camera. Its web server runs one request at a time and the
+  // Live View stream loop holds it, so the GS image download (5 s timeout) waits behind it. 0 = leave the stream on
+  int misCamStop = 1;
+  // team-8 (audit N3): during a mission HOLD lets go at mis.unlock deg instead of adcs.unlock (7 Oct bedroom: target 20 crept
+  // 20.1 -> 23.0 inside HOLD before the shot). 0 = adcs.unlock. Mission 1 (no mission running) is not changed
+  float misUnlock = 2;
   // reaction wheel characterization from T01
   float rwMinStart = RW_MIN_START_PERCENT;
   float rwMinStable = RW_MIN_START_PERCENT;
@@ -167,6 +176,9 @@ static TeamParamDef _tpDefs[] = {
   {"mis.trust",   TPT_FLOAT,  &TP.misTrust,      0, 0, 90},
   {"mis.targetS", TPT_FLOAT,  &TP.misTargetS,    0, 0, 600},
   {"mis.skipS",   TPT_FLOAT,  &TP.misSkipS,      0, 0, 600},
+  {"mis.camReq",  TPT_INT,    &TP.misCamReq,     0, 0, 1},
+  {"mis.camStop", TPT_INT,    &TP.misCamStop,    0, 0, 1},
+  {"mis.unlock",  TPT_FLOAT,  &TP.misUnlock,     0, 0, 30},
   {"mag.ox",      TPT_FLOAT,  &TP.magOx,         0, -20000, 20000},
   {"mag.oy",      TPT_FLOAT,  &TP.magOy,         0, -20000, 20000},
   {"mag.oz",      TPT_FLOAT,  &TP.magOz,         0, -20000, 20000},

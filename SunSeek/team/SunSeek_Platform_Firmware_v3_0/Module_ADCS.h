@@ -118,7 +118,8 @@ inline bool adcsTarget(float t){
 }
 
 // TEAM NasaPakSoi team-6 mission: next target while in AUTO whatever adcs.retarget says (same checks and reset as adcsTarget)
-inline bool adcsTeamSetTarget(float t){const int r=TP.adcsRetarget;TP.adcsRetarget=1;const bool ok=adcsTarget(t);TP.adcsRetarget=r;return ok;}
+// team-8 (audit N4): the error is still the old target's until the next control step -> mark it stale (hold 0 shot the next target before turning)
+inline bool adcsTeamSetTarget(float t){const int r=TP.adcsRetarget;TP.adcsRetarget=1;const bool ok=adcsTarget(t);TP.adcsRetarget=r;if(ok)_a.valid=false;return ok;}
 
 inline bool adcsTune(float kp,float kd,int bias){
   if(kp<0||kp>ADCS_KP_MAX||kd<0||kd>ADCS_KD_MAX||bias<0||bias>100)return false;
@@ -282,6 +283,7 @@ inline void _adcsStep(){
   if(TP.adcsLock>0&&!_aSearch){
     float unl=TP.adcsUnlock>TP.adcsLock?TP.adcsUnlock:2.0f*TP.adcsLock;
     if(_aMisTol>0&&unl>_aMisTol)unl=_aMisTol;  // team-7
+    if(_aMisTol>0&&TP.misUnlock>lk&&unl>TP.misUnlock)unl=TP.misUnlock;  // team-8 (audit N3): mission only, never at or under the lock
     if(!_aHold){
       if(ae>lk)_aInSince=n;
       else if(n-_aInSince>=(unsigned long)TP.adcsLockMs){_aHold=true;sendTelemetry("EVT,TEAM_HOLD,ON,ERR,"+String(_a.error,2));}

@@ -105,6 +105,10 @@ inline bool _tmPrepare() {
       if (!_tmAngleOk(_tmT[i].deg)) why = "TARGET_" + String(i + 1) + "_OUT_OF_RANGE_" + adcsRefText();
   }
   if (!why.length() && rwGetMode() == RW_MODE_MOMENTUM && !rwMomentumProfileReady()) why = "MOMENTUM_PROFILE_NOT_READY";
+  // team-8 (audit N1): the camera's last STATUS (it answers the STATUS sent below, so PREPARE again after a camera fix)
+  const String cam = payloadCamState(), sd = payloadStoreState();
+  if (!why.length() && TP.misCamReq && cam.length() && (cam != "OK" || sd != "OK")) why = "CAMERA_" + cam + "_STORAGE_" + (sd.length() ? sd : String("?"));
+  payloadSendCommand("STATUS");  // the GS takes the payload IP for the image download from the status line
   if (why.length()) {
     sendTelemetry("ERR,PREPARE," + why);
     sendTelemetry("MISSION,PREP,FAILED " + why);
@@ -117,10 +121,9 @@ inline bool _tmPrepare() {
     for (uint8_t i = 0; i < _tmN; i++)
       if (fabsf(_tmT[i].deg + TP.camOff) > TEAM_MIS_SUN_FOV) { far++; sendTelemetry("EVT,TEAM_MIS,FAR_TARGET," + String(i + 1) + "," + String(_tmT[i].deg, 1)); }
   const bool gyro = TP.misGhold || TP.adcsGhold;
-  payloadSendCommand("STATUS");  // the GS takes the payload IP for the image download from the status line
   sendTelemetry("ACK,PREPARE");
   sendTelemetry("MISSION,PREP," + String(_tmN) + " targets " + adcsRefText() + (_tmEach ? " EACH" : " AFTER") +
-                (payloadHasResponded() ? " cam OK" : " cam NO REPLY") + (far ? (gyro ? " far " + String(far) + " gyro" : " far " + String(far) + " NO GYRO HOLD") : ""));
+                (cam == "OK" && sd == "OK" ? " cam OK SD OK" : cam.length() ? " cam " + cam + " SD " + sd : payloadHasResponded() ? " cam NO STATUS" : " cam NO REPLY") + (far ? (gyro ? " far " + String(far) + " gyro" : " far " + String(far) + " NO GYRO HOLD") : ""));
   _tmS = TMS_READY;
   _tmFlush();
   sendTelemetry("MISSION,READY");  // MISSION,STATE,READY alone does not enable START in the GS
@@ -156,6 +159,7 @@ inline bool _tmStart() {
   _tmT0 = millis(); _tmEndAt = 0; _tmStarted = true;
   _tmTargetBegin();
   adcsTeamMissionGhold(TP.misGhold);
+  if (TP.misCamStop) payloadSendCommand("STREAM_STOP");  // team-8 (audit N2): free the camera web server for the image downloads
   sendTelemetry("ACK,START_MISSION");
   sendTelemetry("MISSION,TIMER,START");
   _tmTargetEvt();
@@ -236,8 +240,11 @@ inline void teamMissionUpdate() {
         if (_tmTry >= TEAM_MIS_TRIES) {
           sendTelemetry("EVT,TEAM_MIS,CAPTURE_FAILED," + String(_tmI + 1));
           _tmNext();
-        } else if (in) _tmCapture();
-        else _tmS = TMS_ACQ;  // off target again: hold first, then retry
+        } else {
+          // team-8 (audit N6): a retry passes the capture gate again (it used to shoot at once anywhere in the tolerance). The hold
+          // counts as done; off target -> STABILIZING drops to ACQUIRING and the hold starts over. Rescue still shoots at once.
+          _tmS = TMS_STAB; _tmHold0 = now - (unsigned long)(t.hold * 1000.0f);
+        }
       }
     }
     }
@@ -267,6 +274,15 @@ inline bool teamMissionCommand(const String& c) {
     return true;
   }
   if (c == "TEAM_MIS_STATUS") { _tmStatus(); return true; }
+  const bool abort = c == "ABORT" || c == "MISSION_ABORT";
+  // team-8 (audit N5): ABORT also ends a TEAM_MIS_GO run when mis.on is 0 (it used to answer ERR and leave the wheel running)
+  if (abort && (TP.misOn || teamMisActive() || _tmS == TMS_READY)) {
+    missionAbort(); adcsManual(); rwStop();  // ABORT always stops, mission or not (both mission managers)
+    sendTelemetry("ACK,ABORT");
+    if (teamMisActive() || _tmS == TMS_READY) sendTelemetry("EVT,TEAM_MIS,ABORTED," + String(_tmI + 1));
+    _tmEnd(TMS_ABORTED);
+    return true;
+  }
   if (!TP.misOn) return false;
 
   if (c.startsWith("MISSION_NAME,")) {
@@ -295,7 +311,7 @@ inline bool teamMissionCommand(const String& c) {
   if (c == "MISSION_CLEAR_TARGETS" || c == "MISSION_CLEAR") {
     _tmCheckAuto();
     if (!_tmConfigOk("MISSION_CLEAR_TARGETS")) return true;
-    _tmN = 0;
+    _tmN = 0; _tmQn = _tmQi = 0;  // team-8 (audit N8): results still queued would carry the new targets' names
     sendTelemetry("ACK," + c);
     return true;
   }
@@ -306,11 +322,12 @@ inline bool teamMissionCommand(const String& c) {
     if (n != 3 && n != 4) { sendTelemetry("ERR,MISSION_TARGET_FORMAT"); return true; }
     const float* p = n == 4 ? v + 1 : v;
     const int idx = n == 4 ? (int)lroundf(v[0]) - 1 : _tmN;
-    if (idx < 0 || idx > _tmN || idx >= TEAM_MIS_MAX || !isfinite(p[0]) || !(p[1] > 0 && p[1] <= 30) || !(p[2] >= 0 && p[2] <= 60)) {
+    if ((n == 4 && v[0] != floorf(v[0])) || idx < 0 || idx > _tmN || idx >= TEAM_MIS_MAX || !isfinite(p[0]) || !(p[1] > 0 && p[1] <= 30) || !(p[2] >= 0 && p[2] <= 60)) {
       sendTelemetry("ERR,MISSION_TARGET_INVALID");
       return true;
     }
     if (!_tmConfigOk("MISSION_TARGET")) return true;
+    _tmQn = _tmQi = 0;  // team-8 (audit N8)
     _tmT[idx] = {p[0], p[1], p[2], ""};
     if (idx == _tmN) _tmN++;
     sendTelemetry("ACK,MISSION_TARGET," + String(idx + 1));
@@ -318,17 +335,11 @@ inline bool teamMissionCommand(const String& c) {
   }
   if (c == "PREPARE" || c == "MISSION_PREPARE") { _tmCheckAuto(); _tmPrepare(); return true; }
   if (c == "START_MISSION" || c == "MISSION_START") { _tmStart(); return true; }
-  if (c == "ABORT" || c == "MISSION_ABORT") {
-    adcsManual(); rwStop();  // ABORT always stops, mission or not
-    sendTelemetry("ACK,ABORT");
-    if (teamMisActive() || _tmS == TMS_READY) sendTelemetry("EVT,TEAM_MIS,ABORTED," + String(_tmI + 1));
-    _tmEnd(TMS_ABORTED);
-    return true;
-  }
   if (c == "MISSION_STATUS") { _tmStatus(); return true; }
   if (c == "MISSION_RESET") {
     if (teamMisActive()) { adcsManual(); rwStop(); }
-    _tmStarted = false; _tmN = 0; _tmS = TMS_IDLE; _tmFlush();
+    if (_tmStarted) _tmEnd(TMS_ABORTED);  // team-8 (audit N8): MISSION,TIMER,STOP for a run cut by the reset
+    _tmStarted = false; _tmN = 0; _tmQn = _tmQi = 0; _tmS = TMS_IDLE; _tmFlush();
     sendTelemetry("ACK,MISSION_RESET");
     return true;
   }

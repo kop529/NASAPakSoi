@@ -217,6 +217,8 @@ int main() {
     if (line == "#STATE") { std::cout << world.state() << "\n"; continue; }
     // a BLE central (the Ground Station) connected: every sendTelemetry() then also notifies and waits delay(3)
     if (line.rfind("#BLE ", 0) == 0) { _ttcConnected = line.substr(5) == "1"; std::cout << "#OK ble\n"; continue; }
+    // team-8: a line from the camera as if it came over its UART (STATUS, ...)
+    if (line.rfind("#PAYLOAD ", 0) == 0) { _payloadSerial.feed(line.substr(9) + "\n"); advance(2, true); continue; }
     Serial.feed(line + "\n");
     advance(2, true);
   }

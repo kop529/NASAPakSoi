@@ -16,6 +16,11 @@ inline uint32_t payloadImageSeq() { return _payloadImageSeq; }
 inline uint32_t payloadCaptureErrSeq() { return _payloadCapErrSeq; }
 inline String payloadLastImageName() { return _payloadLastImage; }
 static String _payloadIp = "192.168.4.1";  // TEAM NasaPakSoi: last IP the camera reported (STATUS / WIFI_IP)
+// TEAM NasaPakSoi team-8 (audit N1): CAMERA / STORAGE from the camera's last STATUS line ("" = no STATUS yet). The camera
+// sends one at boot and after every IMAGE_READY; PREPARE asks for a new one.
+static String _payloadCam = "", _payloadStore = "";
+inline String payloadCamState() { return _payloadCam; }
+inline String payloadStoreState() { return _payloadStore; }
 
 inline String _payloadField(const String &line, const String &key) {
   int start = 0;
@@ -49,6 +54,7 @@ inline void _payloadForwardStatus(const String &line) {
   String ip = _payloadField(line, "IP");
   String count = _payloadField(line, "IMAGE_COUNT");
   String last = _payloadField(line, "LAST_IMAGE");
+  _payloadCam = camera; _payloadStore = _payloadField(line, "STORAGE");  // TEAM NasaPakSoi team-8
   if (!camera.length()) camera = "UNKNOWN";
   if (!wifi.length()) wifi = "UNKNOWN";
   if (!ip.length()) ip = "0.0.0.0";
@@ -77,6 +83,8 @@ inline void _payloadHandleLine(String line) {
     int b = line.indexOf(',', a + 1);
     String name = (a >= 0 && b > a) ? line.substring(a + 1, b) : "---";
     String bytes = b >= 0 ? line.substring(b + 1) : "0";
+    // team-8 (audit N6): a broken line (no .JPG name or no size) is a failed capture, not this target's image
+    if (!(name.endsWith(".JPG") || name.endsWith(".jpg")) || bytes.toInt() <= 0) { _payloadCapErrSeq++; sendTelemetry("ERR,PAYLOAD_IMAGE_READY_INVALID"); return; }
     _payloadLastImage = name; _payloadImageSeq++;  // team-6
     sendTelemetry("TM,CAMERA,READY,LAST_IMAGE," + name + ",IMAGE_SIZE," + bytes);
     // Refresh count/status after every successful capture.

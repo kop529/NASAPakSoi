@@ -11,7 +11,7 @@
 #include "Module_Mission.h"
 #include "Module_Payload.h"
 #include "Team_Commands.h"  // TEAM NasaPakSoi
-inline bool ttcParseNumber(String s,float &v){s.trim();if(!s.length())return false;char *e=nullptr;v=strtof(s.c_str(),&e);return e&&*e=='\0';}
+inline bool ttcParseNumber(String s,float &v){s.trim();if(!s.length())return false;char *e=nullptr;v=strtof(s.c_str(),&e);return e&&*e=='\0'&&isfinite(v);}  // TEAM NasaPakSoi team-8 (audit N7): nan/inf were accepted
 #include "Team_Mission.h"  // TEAM NasaPakSoi team-6 mission 2 (uses ttcParseNumber above)
 inline String ttcNormalizeCommand(String c){c.trim();String o="";int s=0;while(s<=c.length()){int k=c.indexOf(',',s);String t=k<0?c.substring(s):c.substring(s,k);t.trim();o+=t;if(k<0)break;o+=",";s=k+1;}return o;}
 inline void ttcSendRWTelemetry(){sendTelemetry("TM,RW_CMD,"+String(rwGetMotorCommand())+",RW_BIAS,"+String(rwGetNominalBias())+",RW_TARGET,"+String(rwGetTarget())+",RW_STATE,"+rwStateText());}
@@ -30,7 +30,7 @@ inline void ttcSendEstimatorConfig(){
   );
 }
 inline void ttcStatus(){sendTelemetry("TM,SAT_ID,"+getSpacecraftID()+",BLE,"+String(isCommunicationConnected()?"CONNECTED":"DISCONNECTED")+",ADCS_MODE,"+String(adcsModeText())+",ADCS_STRATEGY,"+rwModeText());ttcSendADCSConfig();ttcSendRWTelemetry();sensorSendHealth();ttcSendEstimatorConfig();sensorSendADCSSnapshot();teamSendInfo();}  // TEAM NasaPakSoi: + TM,TEAM_FW
-inline void ttcSafeStop(){adcsManual();rwStop();sensorSetAllStreams(false);}
+inline void ttcSafeStop(){missionAbort();adcsManual();rwStop();sensorSetAllStreams(false);}  // TEAM NasaPakSoi team-8 (audit N5): the organizer mission manager put AUTO back after STOP
 inline void ttcHelp(){sendTelemetry("TM,HELP,PAYLOAD_STATUS|PAYLOAD_PING|CAPTURE|PAYLOAD_IMAGE_COUNT|PAYLOAD_LAST_IMAGE|PAYLOAD_STREAM_START|PAYLOAD_STREAM_STOP|PAYLOAD_STREAM_STATUS");sendTelemetry("TM,HELP,ADCS_MODE,MANUAL|AUTO");sendTelemetry("TM,HELP,ADCS_REFERENCE,SUN|MAG|SET_TARGET,<deg>");sendTelemetry("TM,HELP,ADCS_STRATEGY,REACTION|MOMENTUM|ADCS_TUNE,<Kp>,<Kd>,<Bias>");sendTelemetry("TM,HELP,RW,<cmd>|RW_BIAS,<bias>|RW_CMD,<delta>,<assist>,<duration>|STATUS|STOP|SENSOR_STATUS");sendTelemetry("TM,HELP,MOM_PROFILE_BIAS,<bias>|MOM_PROFILE_CW,<delta>,<assist>,<ms>|MOM_PROFILE_CCW,<delta>,<assist>,<ms>|MOM_PROFILE_RECOVERY,<step>,<ms>|MOM_PROFILE_TRIGGER,<u>|MOM_PROFILE_STATUS|MOM_PROFILE_CLEAR");sendTelemetry("TM,HELP,ESTIMATOR_STATUS|ESTIMATOR_FILTER_ENABLE,ON|OFF|ESTIMATOR_FILTER_TYPE,MOVING_AVERAGE|LPF|CUSTOM|ESTIMATOR_MA_WINDOW,<1..500>|ESTIMATOR_FILTER,<0..1>|ESTIMATOR_FUSION,ON|OFF|ESTIMATOR_GYRO_WEIGHT,<0..1>");sendTelemetry("TM,HELP,TEAM_INFO|TEAM_LIST|TEAM_GET,<k>|TEAM_SET,<k>,<v>|TEAM_SAVE|TEAM_SUN|TEAM_STREAM,<hz>|TEAM_LUT_BEGIN/DATA/END");sendTelemetry("TM,HELP,TEAM_CSTREAM,<hz>|TEAM_CREC,<n>|TEAM_CDUMP[,<step>]|TEAM_GYRO_ZERO[,<ms>]");}  // TEAM NasaPakSoi
 inline bool parse3(String p,float&a,float&b,float&c){int i=p.indexOf(','),j=p.indexOf(',',i+1);if(i<0||j<0||p.indexOf(',',j+1)>=0)return false;return ttcParseNumber(p.substring(0,i),a)&&ttcParseNumber(p.substring(i+1,j),b)&&ttcParseNumber(p.substring(j+1),c);}
 inline bool parse2(String p,float&a,float&b){int i=p.indexOf(',');if(i<0||p.indexOf(',',i+1)>=0)return false;return ttcParseNumber(p.substring(0,i),a)&&ttcParseNumber(p.substring(i+1),b);}
@@ -52,7 +52,7 @@ inline void processTelecommand(String command){command=ttcNormalizeCommand(comma
  if(command=="PAYLOAD_STREAM_START"){payloadSendCommand("STREAM_START");sendTelemetry("ACK,PAYLOAD_STREAM_START");return;}
  if(command=="PAYLOAD_STREAM_STOP"){payloadSendCommand("STREAM_STOP");sendTelemetry("ACK,PAYLOAD_STREAM_STOP");return;}
  if(command=="PAYLOAD_STREAM_STATUS"){payloadSendCommand("STREAM_STATUS");sendTelemetry("ACK,PAYLOAD_STREAM_STATUS");return;}
-if(command=="STATUS"){sendTelemetry("ACK,STATUS");ttcStatus();return;} if(command=="HELP"){ttcHelp();return;} if(command=="STOP"){ttcSafeStop();sendTelemetry("ACK,STOP");sendTelemetry("EVT,SAFE");return;} if(command=="RW_STOP"){adcsManual();rwStop();sendTelemetry("ACK,RW_STOP");return;}
+if(command=="STATUS"){sendTelemetry("ACK,STATUS");ttcStatus();return;} if(command=="HELP"){ttcHelp();return;} if(command=="STOP"){ttcSafeStop();sendTelemetry("ACK,STOP");sendTelemetry("EVT,SAFE");return;} if(command=="RW_STOP"){missionAbort();adcsManual();rwStop();sendTelemetry("ACK,RW_STOP");return;}
  if(command=="TM_STREAM,ALL,ON"){telemetryStreamSetAll(true);sendTelemetry("ACK,TM_STREAM,ALL,ON");return;}
  if(command=="TM_STREAM,ALL,OFF"){telemetryStreamSetAll(false);sendTelemetry("ACK,TM_STREAM,ALL,OFF");return;}
  if(command=="TM_STREAM,SUN,ON"){_tmStream.sun=true;sendTelemetry("ACK,TM_STREAM,SUN,ON");return;}
