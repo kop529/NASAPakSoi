@@ -58,6 +58,9 @@ struct TeamParams {
   // team-7: 1 = ADCS_TUNE (sent by every GS PREPARE / RUN / Competition PREPARE) keeps our adcs.kp/kd/bias and answers
   // ACK with them + EVT,TEAM_KEEP_TUNE,IGNORED,<their values>; 0 = organizer (the GS numbers replace ours in RAM)
   int adcsKeepTune = 0;
+  // team-7: 1 = the gyro hold (adcs.ghold) is on while a team mission runs (also after COMPLETE while still in AUTO).
+  // Sim: adcs.ghold 0 + target 75 / 85 deg (past the sun sensor) -> the body spins and never captures; on -> within 1.5 deg
+  int misGhold = 1;
   // reaction wheel characterization from T01
   float rwMinStart = RW_MIN_START_PERCENT;
   float rwMinStable = RW_MIN_START_PERCENT;
@@ -155,6 +158,7 @@ static TeamParamDef _tpDefs[] = {
   {"mis.capRate", TPT_FLOAT,  &TP.misCapRate,    0, 0, 100},
   {"mis.waitMs",  TPT_FLOAT,  &TP.misWaitMs,     0, 0, 60000},
   {"adcs.keepTune",TPT_INT,   &TP.adcsKeepTune,  0, 0, 1},
+  {"mis.ghold",   TPT_INT,    &TP.misGhold,      0, 0, 1},
   {"mag.ox",      TPT_FLOAT,  &TP.magOx,         0, -20000, 20000},
   {"mag.oy",      TPT_FLOAT,  &TP.magOy,         0, -20000, 20000},
   {"mag.oz",      TPT_FLOAT,  &TP.magOz,         0, -20000, 20000},

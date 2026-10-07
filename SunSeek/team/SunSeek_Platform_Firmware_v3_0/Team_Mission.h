@@ -23,6 +23,7 @@
 enum TeamMisState : uint8_t { TMS_IDLE, TMS_READY, TMS_ACQ, TMS_STAB, TMS_CAP, TMS_DONE, TMS_ABORTED, TMS_FAILED };
 #define TEAM_MIS_MAX 10
 #define TEAM_MIS_TRIES 3
+#define TEAM_MIS_SUN_FOV 55.0f  // deg: beyond this the lamp is at the edge of / outside the sun sensor view
 struct TeamMisTarget { float deg, tol, hold; String img; };
 static TeamMisTarget _tmT[TEAM_MIS_MAX];
 static uint8_t _tmN = 0, _tmI = 0, _tmTry = 0;
@@ -107,10 +108,16 @@ inline bool _tmPrepare() {
     if (!teamMisActive()) { _tmS = TMS_IDLE; _tmFlush(); }
     return false;
   }
+  // team-7: targets past the sun sensor (6 Oct calibration: -60..+50 deg) are reached on the gyro alone
+  uint8_t far = 0;
+  if (adcsGet().ref == ADCS_SUN)
+    for (uint8_t i = 0; i < _tmN; i++)
+      if (fabsf(_tmT[i].deg + TP.camOff) > TEAM_MIS_SUN_FOV) { far++; sendTelemetry("EVT,TEAM_MIS,FAR_TARGET," + String(i + 1) + "," + String(_tmT[i].deg, 1)); }
+  const bool gyro = TP.misGhold || TP.adcsGhold;
   payloadSendCommand("STATUS");  // the GS takes the payload IP for the image download from the status line
   sendTelemetry("ACK,PREPARE");
   sendTelemetry("MISSION,PREP," + String(_tmN) + " targets " + adcsRefText() + (_tmEach ? " EACH" : " AFTER") +
-                (payloadHasResponded() ? " cam OK" : " cam NO REPLY"));
+                (payloadHasResponded() ? " cam OK" : " cam NO REPLY") + (far ? (gyro ? " far " + String(far) + " gyro" : " far " + String(far) + " NO GYRO HOLD") : ""));
   _tmS = TMS_READY;
   _tmFlush();
   sendTelemetry("MISSION,READY");  // MISSION,STATE,READY alone does not enable START in the GS
@@ -127,6 +134,7 @@ inline bool _tmStart() {
   _tmI = 0; _tmTry = 0; _tmQn = _tmQi = 0; _tmResMs = 0; _tmLimitSaid = false;
   for (uint8_t i = 0; i < _tmN; i++) _tmT[i].img = "";
   _tmT0 = millis(); _tmEndAt = 0; _tmStarted = true;
+  adcsTeamMissionGhold(TP.misGhold);
   sendTelemetry("ACK,START_MISSION");
   sendTelemetry("MISSION,TIMER,START");
   _tmTargetEvt();
@@ -198,6 +206,7 @@ inline void teamMissionUpdate() {
       }
     }
   }
+  adcsTeamMissionGhold(TP.misGhold && (teamMisActive() || (_tmS == TMS_DONE && adcsGet().mode == ADCS_AUTO)));
   if (_tmS != _tmSaid && now - _tmSaidMs >= 200) _tmFlush();  // latest state, at most 5 lines/s
   if (_tmQi < _tmQn && now - _tmResMs >= (unsigned long)TP.misGap) {
     const uint8_t i = _tmQ[_tmQi++];

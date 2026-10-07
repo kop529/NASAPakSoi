@@ -86,6 +86,23 @@ module.exports = ({ run, check, find, all, states, CAL }) => {
       !!find(cam, /^MISSION,STATE,COMPLETE$/), s0 ? 'sun ' + s0.sun.toFixed(2) : '');
   }
 
+  console.log('team-7: a target past the sun sensor (85 deg) with the board setting adcs.ghold 0');
+  {
+    const far = (extra) => run([...RIG, ...extra, 'TEAM_MIS_GO,85', ...ticks(25), 'STOP', '#WAIT 20']);
+    const on = far([]);
+    const tl = timed(on);
+    const cap = tl.find((x) => x.l === '#PAYLOAD_TX CAPTURE');
+    const c = cap && states(tl.filter((x) => x.l.startsWith('#STATE ') && x.t >= cap.t).slice(0, 1).map((x) => x.l))[0];
+    const end = states(on).slice(-1)[0];
+    check('mis.ghold 1 (default): captured within 3 deg of 85 and still there 25 s after START', !!c && Math.abs(c.sun - 85) <= 3 &&
+      !!find(on, /^MISSION,STATE,COMPLETE$/) && Math.abs(end.sun - 85) <= 3, c ? `at capture ${c.sun.toFixed(2)}, end ${end.sun.toFixed(2)}` : 'no capture');
+    check('PREPARE flags it: EVT,TEAM_MIS,FAR_TARGET,1,85.0 and MISSION,PREP ... far 1 gyro',
+      !!find(on, /^EVT,TEAM_MIS,FAR_TARGET,1,85.0$/) && !!find(on, /^MISSION,PREP,1 targets SUN EACH cam (OK|NO REPLY) far 1 gyro$/), find(on, /^MISSION,PREP,/));
+    const off = far(['TEAM_SET,mis.ghold,0']);
+    check('mis.ghold 0 + adcs.ghold 0: MISSION,PREP warns NO GYRO HOLD', !!find(off, /^MISSION,PREP,.* far 1 NO GYRO HOLD$/),
+      `(sim body at the end ${states(off).slice(-1)[0].sun.toFixed(1)} deg)`);
+  }
+
   console.log('team-6: camera trouble and the way out');
   {
     const out = run([...RIG, '#SET camFail 2', 'TEAM_SET,mis.capMs,1500', 'TEAM_MIS_GO,15', ...ticks(15), 'TEAM_MIS_STATUS', '#WAIT 20', 'STOP', '#WAIT 20']);

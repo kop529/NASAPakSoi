@@ -65,6 +65,10 @@ static float _aSatDir = 0;           // wheel command at +-adcs.max in the last 
 static bool _aRat = false;
 static unsigned long _aRatT0 = 0;
 static float _aRatDir = 0;
+// team-7: the team mission turns the gyro hold on for itself (mis.ghold) while it runs, whatever adcs.ghold says
+static bool _aMisGhold = false;
+inline void adcsTeamMissionGhold(bool on) { _aMisGhold = on; }
+inline bool adcsGholdOn() { return TP.adcsGhold || _aMisGhold; }
 inline bool adcsTeamHold() { return _aHold; }
 inline bool adcsTeamSearching() { return _aSearch; }
 
@@ -142,7 +146,7 @@ inline bool adcsRead(){
   // TEAM NasaPakSoi F8 (adcs.ghold): lamp not seen -> feed the estimator its own gyro prediction, so the angle
   // continues on the gyro alone (no pull toward the meaningless dark/edge reading). Lets SET_TARGET go past the
   // sun sensor's range (camera targets); the lamp seen again pulls the estimate back (fusion correction).
-  if(TP.adcsGhold&&_a.ref==ADCS_SUN&&!_aSunSeen&&_aEverSeen){
+  if(adcsGholdOn()&&_a.ref==ADCS_SUN&&!_aSunSeen&&_aEverSeen){
     const EstimatorState e0=estimatorGet();
     if(e0.valid)_a.rawReference=e0.estimatedAngleDeg+_a.rate*(ADCS_CONTROL_PERIOD_MS/1000.0f);
   }
@@ -248,7 +252,7 @@ inline void _adcsStep(){
   // TEAM NasaPakSoi F7: lamp not seen for 0.3 s -> turn at adcs.srate toward where it was last seen (gyro rate loop),
   // seen again for 0.2 s -> back to the normal law, the integrator taking over the wheel command (no jump).
   const float dtS=ADCS_CONTROL_PERIOD_MS/1000.0f;
-  if(TP.adcsSrate>0&&_a.ref==ADCS_SUN&&!TP.adcsGhold){  // F8 on: no search, the gyro carries the angle
+  if(TP.adcsSrate>0&&_a.ref==ADCS_SUN&&!adcsGholdOn()){  // F8 on: no search, the gyro carries the angle
     if(_aSunSeen)_aLostSince=n; else _aSeenSince=n;  // lost since = last time seen, and the other way round
     if(!_aSearch&&!_aSunSeen&&n-_aLostSince>=300){
       _aSearch=true;_aS=_a.u;
