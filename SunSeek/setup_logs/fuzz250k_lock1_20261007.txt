@@ -1,0 +1,5 @@
+stopped at chunk 100 (user), 7 Oct 23:41
+runs 255000 (seeds 1..255000), board set adcs.lock=1
+211144 complete, 468941 photos, worst photo error (|target|<=40) 5.10 deg, every photo within tol+1
+16 of 17 invariants pass in every chunk
+FAIL only: stays at the last target after COMPLETE: 676 runs (0.27%), off up to 5.5 deg, all sim rig 3 (stick 5, ratio 0.02, wheelTau 2.5); same seeds with lock 1.5 pass 24/24

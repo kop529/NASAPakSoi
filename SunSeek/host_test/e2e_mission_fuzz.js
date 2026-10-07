@@ -12,7 +12,9 @@
 module.exports = ({ run, check, all, states, CAL }) => {
   const N = +(process.env.MFUZZ_N || 24), SEED = +(process.env.MFUZZ_SEED || 1);
   const BOARD = ['TEAM_SET,rw.minStart,10', 'TEAM_SET,rw.minStable,5', 'TEAM_SET,rw.slew,500', 'TEAM_SET,adcs.kp,4', 'TEAM_SET,adcs.kd,2',
-    'TEAM_SET,adcs.ki,1', 'TEAM_SET,adcs.db,0.5', 'TEAM_SET,adcs.kick,20', 'TEAM_SET,adcs.max,60', 'TEAM_SET,adcs.lock,1.5', 'TEAM_SET,adcs.unlock,3'];
+    'TEAM_SET,adcs.ki,1', 'TEAM_SET,adcs.db,0.5', 'TEAM_SET,adcs.kick,20', 'TEAM_SET,adcs.max,60', 'TEAM_SET,adcs.lock,1.5', 'TEAM_SET,adcs.unlock,3',
+    // MFUZZ_SET="k=v;k=v": extra TEAM_SET values after the board ones (e.g. adcs.lock=1, the value saved on the board 7 Oct night)
+    ...(process.env.MFUZZ_SET || '').split(';').filter(Boolean).map((kv) => 'TEAM_SET,' + kv.replace('=', ','))];
   const RIGS = [['#SET drag 0.05'], ['#SET drag 0.15'], ['#SET drag 0.05', '#SET stick 10'], ['#SET drag 0.05', '#SET stick 5', '#SET ratio 0.02', '#SET wheelTau 2.5']];
   const rng = (seed) => () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const STATE_NAMES = /^MISSION,STATE,(IDLE|READY|ACQUIRING|STABILIZING|CAPTURING|COMPLETE|ABORTED|FAILED)$/;
