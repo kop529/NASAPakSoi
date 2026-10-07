@@ -50,6 +50,12 @@ TEAM_MIS_GO,20,-20,0
 - จบแล้วต้องเห็น `MISSION,STATE,COMPLETE` ยานยังอยู่ AUTO ที่เป้าสุดท้าย → พิมพ์ `STOP`
 - ถ้าบอร์ดต่อ USB อยู่ → `TEAM_CDUMP` เก็บ black box ไว้ดู
 
+### ตัวสำรอง (plan B): ภารกิจต้องจบเสมอ
+- เป้าไหนเกิน `mis.targetS` (30 วิ) ยังไม่ได้รูป → `EVT,TEAM_MIS,RESCUE,<i>` แล้วถ่ายทันทีที่อยู่ในระยะคลาด ไม่รอนิ่ง
+- เกิน `mis.skipS` (45 วิ) → `EVT,TEAM_MIS,SKIP,<i>` ข้ามไปเป้าถัดไป
+- ถ้า GS ตั้งเวลาจำกัด เวลาที่เหลือจะแบ่งให้ทุกเป้าที่ยังไม่ได้ทำ (อย่างน้อยเป้าละ 8 วิ) ดูได้จาก `RESCUE_S` / `SKIP_S` ในบรรทัด `EVT,TEAM_MIS,TARGET`
+- ถามผู้จัดว่าให้คะแนนจากอะไร แล้วปรับ: เน้นครบทุกเป้า → ลด `mis.targetS` / `mis.skipS`; เน้นแม่น → เพิ่ม
+
 ## 6. แท็บ Competition ของ GS
 - ช่องค่า: Reference SUN, Strategy REACTION, kp 4 / kd 2 / bias 40 (ถึงพิมพ์ผิด keepTune ก็กันไว้), Transfer EACH, เป้า 2–3 แถว (เช่น 20 / −20 / 0, tol 3, hold 2)
 - กด **PREPARE** → ปุ่ม START ต้องกดได้, log มี `MISSION,READY` และ `MISSION,PREP,3 targets SUN EACH cam OK`
