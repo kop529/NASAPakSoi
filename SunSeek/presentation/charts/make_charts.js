@@ -83,18 +83,18 @@ const stat = (rows) => {
 };
 
 // 1 (slide 45): two settings on the rig, same +-45 deg step
-chart({ name: 'c1_two_runs', x: [0, 60], xLabel: 'เวลาหลังกด AUTO (วินาที)', legend: [['รอบ 20:13 · kd 1', C.blue], ['รอบ 20:30 · kd 2 + HOLD', C.lime]],
-  panels: [{ y: [-50, 50], yLabel: 'มุมจากเซนเซอร์แสง (องศา) · เป้า = 0', series: [{ pts: pts(a, 'ang'), color: C.blue }, { pts: pts(b, 'ang'), color: C.lime }] }] });
+chart({ name: 'c1_two_runs', x: [0, 60], xLabel: 'เวลาหลังกด AUTO (วินาที)', legend: [['รอบ 20:13 (kd 1)', C.blue], ['รอบ 20:30 (kd 2 + HOLD)', C.lime]],
+  panels: [{ y: [-50, 50], yLabel: 'มุมจากเซนเซอร์แสง (องศา) เป้าอยู่ที่ 0', series: [{ pts: pts(a, 'ang'), color: C.blue }, { pts: pts(b, 'ang'), color: C.lime }] }] });
 
 // 2 (slide 48): three ways to know the angle during the fast approach (20:13)
 {
   const r = a.filter((x) => x.s <= 4);
   const at = r.reduce((p, x) => (Math.abs(x.s - 0.9) < Math.abs(p.s - 0.9) ? x : p));
-  chart({ name: 'c2_three_angles', x: [0, 4], xLabel: 'เวลาหลังกด AUTO (วินาที) · รอบ 20:13',
+  chart({ name: 'c2_three_angles', x: [0, 4], xLabel: 'เวลาหลังกด AUTO (วินาที) รอบ 20:13',
     legend: [['เซนเซอร์แสง (ANG)', C.blue], ['มุมประมาณ ที่ตัวคุมใช้ (EST)', C.lime], ['gyro อย่างเดียว', C.pink]],
     panels: [{ y: [-50, 10], yLabel: 'มุม (องศา)', series: [{ pts: pts(r, 'ang'), color: C.blue }, { pts: pts(r, 'est'), color: C.lime }, { pts: pts(r, 'gyro'), color: C.pink }],
       marks: [[at.s, at.ang, C.blue], [at.s, at.est, C.lime]],
-      notes: [[at.s + 0.08, (at.ang + at.est) / 2, `ที่ ${at.s.toFixed(1)} วิ: แสง ${at.ang.toFixed(1)}° · ประมาณ ${at.est.toFixed(1)}° · หมุน ${Math.abs(at.gz).toFixed(0)}°/วิ`]] }] });
+      notes: [[at.s + 0.08, (at.ang + at.est) / 2, `ที่ ${at.s.toFixed(1)} วิ: แสง ${at.ang.toFixed(1)}° ประมาณ ${at.est.toFixed(1)}° หมุน ${Math.abs(at.gz).toFixed(0)}°/วิ`]] }] });
   console.log(`   c2 at ${at.s.toFixed(2)} s ang ${at.ang} est ${at.est} gyro ${at.gyro.toFixed(1)} gz ${at.gz}`);
 }
 
@@ -102,7 +102,7 @@ chart({ name: 'c1_two_runs', x: [0, 60], xLabel: 'เวลาหลังกด
 {
   const r = a.filter((x) => x.s >= 15 && x.s <= 45);
   const kicks = r.filter((x, k) => k && Math.abs(x.K - r[k - 1].K) > 5);
-  chart({ name: 'c3_kicks', H: 900, x: [15, 45], xLabel: 'เวลาหลังกด AUTO (วินาที) · รอบ 20:13 (kd 1, ยังไม่มี HOLD)',
+  chart({ name: 'c3_kicks', H: 900, x: [15, 45], xLabel: 'เวลาหลังกด AUTO (วินาที) รอบ 20:13 (kd 1 ยังไม่มี HOLD)',
     panels: [{ y: [-5, 5], yLabel: 'มุมจากเซนเซอร์แสง (องศา)', series: [{ pts: pts(r, 'ang'), color: C.blue }], marks: kicks.map((x) => [x.s, x.ang, C.pink]) },
       { y: [-40, 40], yLabel: 'kick ที่ตัวคุมเพิ่ม (% ล้อ)', series: [{ pts: pts(r, 'K'), color: C.pink }] }] });
   console.log('   c3 kicks at', kicks.map((x) => `${x.s.toFixed(1)}s K${x.K} ang${x.ang}`).join(' | '));
@@ -115,9 +115,9 @@ chart({ name: 'c1_two_runs', x: [0, 60], xLabel: 'เวลาหลังกด
   const bars = (h, n) => Object.keys(h).map(Number).sort((p, q) => p - q).flatMap((k) => [[k, 0], [k, 100 * h[k] / n], [k + 2, 100 * h[k] / n], [k + 2, 0]]);
   const ha = hist(sa.d), hb = hist(sb.d);
   const ymax = Math.ceil(Math.max(...Object.values(ha).map((v) => 100 * v / sa.d.length), ...Object.values(hb).map((v) => 100 * v / sb.d.length)) / 10) * 10;
-  chart({ name: 'c4_loop_spacing', H: 900, x: [30, 102], xLabel: 'ระยะห่างระหว่างแถวในกล่องดำ (ms) · ควรเป็น 40',
-    panels: [{ y: [0, ymax], yLabel: `รอบ 20:13 · % ของแถว · p95 ${sa.p95} ms · สูงสุด ${sa.max} ms`, series: [{ pts: bars(ha, sa.d.length), color: C.blue, w: 2 }], bands: [[38, 42]] },
-      { y: [0, ymax], yLabel: `รอบ 20:30 · % ของแถว · p95 ${sb.p95} ms · สูงสุด ${sb.max} ms`, series: [{ pts: bars(hb, sb.d.length), color: C.lime, w: 2 }], bands: [[38, 42]] }] });
+  chart({ name: 'c4_loop_spacing', H: 900, x: [30, 102], xLabel: 'ระยะห่างระหว่างแถวในกล่องดำ (ms) ควรเป็น 40',
+    panels: [{ y: [0, ymax], yLabel: `รอบ 20:13 (% ของแถว) 95% ไม่เกิน ${sa.p95} ms ช้าสุด ${sa.max} ms`, series: [{ pts: bars(ha, sa.d.length), color: C.blue, w: 2 }], bands: [[38, 42]] },
+      { y: [0, ymax], yLabel: `รอบ 20:30 (% ของแถว) 95% ไม่เกิน ${sb.p95} ms ช้าสุด ${sb.max} ms`, series: [{ pts: bars(hb, sb.d.length), color: C.lime, w: 2 }], bands: [[38, 42]] }] });
   console.log(`   c4 20:13 p50 ${sa.p50} p95 ${sa.p95} max ${sa.max} n ${sa.d.length} · 20:30 p50 ${sb.p50} p95 ${sb.p95} max ${sb.max} n ${sb.d.length}`);
 }
 
@@ -127,7 +127,7 @@ chart({ name: 'c1_two_runs', x: [0, 60], xLabel: 'เวลาหลังกด
   const g0 = r[0].gyro - r[0].ang;
   const gp = r.map((x) => [x.s, x.gyro - g0]);
   const e = r[r.length - 1];
-  chart({ name: 'c5_gyro_drift', x: [4, 60], xLabel: 'เวลาหลังกด AUTO (วินาที) · รอบ 20:30 ยานนิ่งใน HOLD',
+  chart({ name: 'c5_gyro_drift', x: [4, 60], xLabel: 'เวลาหลังกด AUTO (วินาที) รอบ 20:30 ยานนิ่งใน HOLD',
     legend: [['เซนเซอร์แสง (ANG)', C.blue], ['gyro อย่างเดียว (เริ่มที่ค่าเดียวกัน)', C.pink]],
     panels: [{ y: [-4, 6], yLabel: 'มุม (องศา)', series: [{ pts: pts(r, 'ang'), color: C.blue }, { pts: gp, color: C.pink }],
       notes: [[59, gp[gp.length - 1][1] + 0.6, `gyro ${(gp[gp.length - 1][1] - r[0].ang).toFixed(1)}° ใน ${(e.s - 4).toFixed(0)} วิ`, 'end'], [59, e.ang - 0.9, `แสง ${(e.ang - r[0].ang).toFixed(1)}°`, 'end']] }] });
@@ -159,8 +159,8 @@ chart({ name: 'c1_two_runs', x: [0, 60], xLabel: 'เวลาหลังกด
   });
   const sh = (a) => a.map(([t, v]) => [t - t0, v]);
   const mn = Math.min(...ang.map((x) => x[1]));
-  chart({ name: 'c6_three_turns', H: 900, x: [-2, 30], xLabel: 'เวลาหลังกด AUTO (วินาที) · 6 ต.ค. 15:36 จาก log ของ GS',
-    panels: [{ y: [-1200, 100], yLabel: 'ยานหมุนไปสะสม (องศา) · อินทิเกรตอัตราหมุนจาก gyro', series: [...[-360, -720, -1080].map((v) => ({ pts: [[-2, v], [30, v]], color: '#4A5345', w: 2 })), { pts: sh(ang), color: C.blue }],
+  chart({ name: 'c6_three_turns', H: 900, x: [-2, 30], xLabel: 'เวลาหลังกด AUTO (วินาที) 6 ต.ค. 15:36 จาก log ของ GS',
+    panels: [{ y: [-1200, 100], yLabel: 'ยานหมุนไปสะสม (องศา) จากอัตราหมุนของ gyro', series: [...[-360, -720, -1080].map((v) => ({ pts: [[-2, v], [30, v]], color: '#4A5345', w: 2 })), { pts: sh(ang), color: C.blue }],
       notes: [[-1.7, -360 - 60, '1 รอบ'], [-1.7, -720 - 60, '2 รอบ'], [-1.7, -1080 - 60, '3 รอบ']] },
     { y: [-60, 60], yLabel: 'คำสั่งล้อ (%)', series: [{ pts: sh(cmd), color: C.pink }] }] });
   console.log(`   c6 AUTO at ${t0.toFixed(1)} s after log start, min turned ${mn.toFixed(0)} deg, rows ${rows.length}`);

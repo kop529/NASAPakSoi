@@ -69,7 +69,7 @@ module.exports = { pts, spin, c, er, ec };
     svg += `<text x="${X(v)}" y="${MT + S + 34}" font-size="26" fill="${C.muted}" text-anchor="middle">${v}</text><text x="${ML - 14}" y="${Y(v) + 9}" font-size="26" fill="${C.muted}" text-anchor="end">${v}</text>`;
   }
   svg += `<text x="${ML + S / 2}" y="${H - 14}" font-size="26" fill="${C.muted}" text-anchor="middle">แม่เหล็กแกน x (µT)</text>`;
-  svg += `<text x="${ML}" y="${MT - 22}" font-size="26" fill="${C.muted}">แม่เหล็กแกน y (µT) · ยานหมุน 3 รอบ 15:36</text>`;
+  svg += `<text x="${ML}" y="${MT - 22}" font-size="26" fill="${C.muted}">แม่เหล็กแกน y (µT) ยานหมุน 3 รอบ 15:36</text>`;
   svg += `<circle cx="${X(c.cx)}" cy="${Y(c.cy)}" r="${c.r * k}" fill="none" stroke="${C.lime}" stroke-width="2" stroke-dasharray="8 8"/>`;
   for (const p of spin) svg += `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="5" fill="${C.blue}" opacity="0.8"/>`;
   svg += `<circle cx="${X(0)}" cy="${Y(0)}" r="10" fill="${C.bg}" stroke="${C.text}" stroke-width="3"/><text x="${X(0) + 16}" y="${Y(0) + 38}" font-size="26" fill="${C.text}">(0, 0) ที่โค้ดใช้</text>`;
