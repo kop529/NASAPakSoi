@@ -154,6 +154,28 @@ const capSvg = (() => {
   return s + '</svg>';
 })();
 
+const wifiSvg = (() => {
+  // 2.4 GHz scan at the hotel, 7 Oct 22:40 (netsh): strongest network per channel; each channel is ~20 MHz wide, 5 MHz apart
+  const ch = { 1: [['กล้องเรา', 96, 'us'], ['กล้องอีกทีม', 78, 'cam'], ['Wi-Fi โรงแรม', 75, ''], ['SciusCMU', 57, '']], 6: [['Wi-Fi โรงแรม', 80, '']], 11: [['Wi-Fi โรงแรม', 67, '']] };
+  const x = (c) => 130 + (c - 1) * 58, base = 330;
+  let s = `<svg class="svgfig" style="left:112px;top:300px" width="900" height="420" viewBox="0 0 900 420">`;
+  s += `<text class="m" x="0" y="24" font-size="22">ช่อง Wi-Fi 2.4 GHz ที่ห้องพัก ความสูง = ความแรงสัญญาณ</text>`;
+  for (let c = 1; c <= 13; c++) s += `<text class="m" x="${x(c)}" y="${base + 32}" font-size="22" text-anchor="middle">${c}</text>`;
+  s += `<line x1="40" y1="${base}" x2="900" y2="${base}" stroke="#2C3328" stroke-width="2"/>`;
+  for (const [c, nets] of Object.entries(ch)) nets.forEach(([name, p, k], i) => {
+    const h = p * 2.2, cx = x(+c);
+    const col = k === 'us' ? LIME : k === 'cam' ? PINK : '#4A5345';
+    s += `<path d="M${cx - 62} ${base} Q${cx} ${base - 2 * h} ${cx + 62} ${base}" fill="${col}" fill-opacity="${k ? 0.55 : 0.35}" stroke="${col}" stroke-width="2"/>`;
+  });
+  s += `<text x="${x(2) + 20}" y="60" font-size="22" style="fill:${LIME}">กล้องเรา 96%</text>`;
+  s += `<text x="${x(2) + 20}" y="88" font-size="22" style="fill:${PINK}">กล้องอีกทีม 78%</text>`;
+  s += `<text class="m" x="${x(2) + 20}" y="116" font-size="22">+ Wi-Fi โรงแรมและอื่น ๆ</text>`;
+  s += `<rect x="${x(13) - 26}" y="${base - 210}" width="52" height="210" fill="none" stroke="${LIME}" stroke-width="3" stroke-dasharray="8 6"/>`;
+  s += `<text x="${x(13)}" y="${base - 222}" font-size="22" text-anchor="middle" style="fill:${LIME}">ว่าง</text>`;
+  s += `<text class="m" x="0" y="${base + 70}" font-size="20">แต่ละช่องกว้าง ~20 MHz แต่ห่างกันแค่ 5 MHz ช่องที่ติดกันจึงทับกัน</text>`;
+  return s + '</svg>';
+})();
+
 const slides = [
   // ---------------- main pages ----------------
   [3, 'vehicle', 'ยานของเรา', '', `  <div class="head">
@@ -465,5 +487,18 @@ ${capSvg}
     <p><b>เป้าที่เลยมุมที่เซนเซอร์แสงเห็น:</b> ใช้ gyro นับมุมต่อ แล้วสุ่มทดสอบ 5,000 ภารกิจ เจอปัญหาเพิ่ม 4 เรื่อง แก้แล้วผ่านครบทุกรอบ</p>
   </div>
   <div class="source">ตัวเลขทั้งหมดในหน้านี้มาจากตัวจำลอง</div>`],
+  ['B9', 'camwifi', 'Wi-Fi กล้อง', '', `  <div class="head">
+    <div class="eyebrow">ภาคผนวก ลองที่ห้องพัก คืนวันที่ 7</div>
+    <h2>Live View หลุดบ่อย กล้องไม่ได้ดับ แต่<em>ช่อง Wi-Fi แน่น</em></h2>
+  </div>
+${wifiSvg}
+  <div class="notes" style="left:1080px;width:728px">
+    <p><b>อาการ:</b> ช่วง 22:15–22:38 ที่ลองเปิด Live View อยู่ Wi-Fi กล้องหลุด 4 ครั้ง Windows บันทึกว่า "disconnected by the driver"</p>
+    <p><b>ไม่ใช่กล้องดับ:</b> ถ้ากล้องรีบูตจะส่งบรรทัด BOOT มาทางสายถึงบอร์ด แต่ไม่มีเลย และหลังหลุดยังเห็นสัญญาณกล้อง 96%</p>
+    <p><b>ที่เจอ:</b> กล้อง ESP32-CAM ทุกตัวเปิด Wi-Fi ที่ช่อง 1 เป็นค่าเริ่มต้น ช่องเดียวกับกล้องอีกทีมและ Wi-Fi โรงแรม ทุกตัวต้องผลัดกันส่ง วิดีโอจึงหลุดก่อน วันแข่งกล้องทุกทีมจะอยู่ช่อง 1 เหมือนกัน</p>
+    <p><b>เจอเพิ่ม:</b> ระหว่างสตรีม เว็บของกล้องรับได้ทีละงาน GS จึงดึงรูปไม่ได้ ตอนกด START เฟิร์มแวร์เราสั่งปิดสตรีมก่อน</p>
+    <p class="key"><b>จะแก้:</b> ย้ายกล้องไปช่อง 13 ที่ว่าง (ทับช่อง 11 อยู่ครึ่งหนึ่ง) แล้วนับว่าหลุดน้อยลงไหม</p>
+  </div>
+  <div class="source">สแกนด้วย netsh ตอน 22:40 แสดงเฉพาะ Wi-Fi ที่แรงสุดของแต่ละชื่อในแต่ละช่อง ช่อง 13 ยังไม่ได้แฟลชลงกล้อง</div>`],
 ];
 for (const [n, file, title, cls, body] of slides) { fs.writeFileSync(D + file + '.html', page(n, title, cls, body)); console.log(file); }
