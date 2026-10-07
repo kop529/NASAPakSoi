@@ -1,0 +1,31 @@
+start 22:13:57.169
+22:13:59.316 NO REPLY (Accor)
+22:15:31.265 OK storage=True count=7 stream=OFF last=/IMG_0007.JPG
+22:15:43.368 NO REPLY (SUNSEEK-PAYLOAD-NasaPakSoi)
+22:16:04.172 NO REPLY (False)
+22:16:06.744 NO REPLY ()
+22:16:38.782 OK storage=True count=7 stream=ON last=/IMG_0007.JPG
+22:16:44.434 OK storage=True count=7 stream=OFF last=/IMG_0007.JPG
+22:16:47.048 NO REPLY (SUNSEEK-PAYLOAD-NasaPakSoi)
+22:19:25.893 NO REPLY ()
+22:19:29.163 NO REPLY (Accor)
+22:24:46.641 OK storage=True count=7 stream=ON last=/IMG_0007.JPG
+22:24:53.150 OK storage=True count=7 stream=OFF last=/IMG_0007.JPG
+22:24:56.488 NO REPLY (SUNSEEK-PAYLOAD-NasaPakSoi)
+22:25:18.688 NO REPLY (False)
+22:25:19.270 NO REPLY ()
+22:25:23.893 NO REPLY (SUNSEEK-PAYLOAD-NasaPakSoi)
+22:25:34.970 OK storage=True count=7 stream=ON last=/IMG_0007.JPG
+22:26:13.471 NO REPLY ()
+22:26:19.895 OK storage=True count=7 stream=ON last=/IMG_0007.JPG
+22:26:22.712 OK storage=True count=7 stream=OFF last=/IMG_0007.JPG
+22:26:25.988 NO REPLY (SUNSEEK-PAYLOAD-NasaPakSoi)
+22:32:40.287 NO REPLY ()
+end 22:33:58.323
+start 22:36:50.250
+22:36:52.399 NO REPLY ()
+22:37:08.884 OK storage=True count=9 stream=ON last=/IMG_0009.JPG
+22:37:12.584 OK storage=True count=9 stream=OFF last=/IMG_0009.JPG
+22:37:15.884 NO REPLY (SUNSEEK-PAYLOAD-NasaPakSoi)
+22:37:57.411 NO REPLY (False)
+22:37:59.992 NO REPLY ()

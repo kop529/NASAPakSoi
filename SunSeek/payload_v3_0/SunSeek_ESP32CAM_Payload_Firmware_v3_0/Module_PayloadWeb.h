@@ -17,7 +17,7 @@ inline esp_err_t hStream(httpd_req_t*r){if(!cameraModuleReady())return webSendTe
 inline esp_err_t hRoot(httpd_req_t*r){String h="<!doctype html><html><body><h2>SunSeek Payload v3.0</h2><p>Engineering / fallback interface</p><p><a href='/status'>Status</a> | <a href='/images'>Images</a> | <a href='/stream'>Live Stream</a></p><p>STREAM must be ON. Use Serial/OBC command STREAM_START.</p></body></html>";return webSendText(r,"text/html",h);}
 inline void payloadWebBegin(){
 #if PAYLOAD_WIFI_AP_MODE
- WiFi.mode(WIFI_AP);WiFi.softAP(PAYLOAD_WIFI_SSID,PAYLOAD_WIFI_PASSWORD);
+ WiFi.mode(WIFI_AP);WiFi.softAP(PAYLOAD_WIFI_SSID,PAYLOAD_WIFI_PASSWORD,PAYLOAD_WIFI_CHANNEL);  /* NasaPakSoi: channel */
 #else
  WiFi.mode(WIFI_STA);WiFi.begin(PAYLOAD_STA_SSID,PAYLOAD_STA_PASSWORD);unsigned long t=millis();while(WiFi.status()!=WL_CONNECTED&&millis()-t<15000)delay(100);
 #endif
