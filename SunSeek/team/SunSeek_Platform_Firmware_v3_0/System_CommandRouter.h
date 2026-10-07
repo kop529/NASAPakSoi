@@ -12,6 +12,7 @@
 #include "Module_Payload.h"
 #include "Team_Commands.h"  // TEAM NasaPakSoi
 inline bool ttcParseNumber(String s,float &v){s.trim();if(!s.length())return false;char *e=nullptr;v=strtof(s.c_str(),&e);return e&&*e=='\0';}
+#include "Team_Mission.h"  // TEAM NasaPakSoi team-6 mission 2 (uses ttcParseNumber above)
 inline String ttcNormalizeCommand(String c){c.trim();String o="";int s=0;while(s<=c.length()){int k=c.indexOf(',',s);String t=k<0?c.substring(s):c.substring(s,k);t.trim();o+=t;if(k<0)break;o+=",";s=k+1;}return o;}
 inline void ttcSendRWTelemetry(){sendTelemetry("TM,RW_CMD,"+String(rwGetMotorCommand())+",RW_BIAS,"+String(rwGetNominalBias())+",RW_TARGET,"+String(rwGetTarget())+",RW_STATE,"+rwStateText());}
 inline void ttcSendMomentumProfile(){MomentumProfile p=rwMomentumProfileGet();sendTelemetry("TM,MOM_PROFILE,READY,"+String(rwMomentumProfileReady()?"1":"0")+",BIAS,"+String(p.bias)+",CW_DELTA,"+String(p.cw.delta)+",CW_ASSIST,"+String(p.cw.assist)+",CW_MS,"+String(p.cw.durationMs)+",CCW_DELTA,"+String(p.ccw.delta)+",CCW_ASSIST,"+String(p.ccw.assist)+",CCW_MS,"+String(p.ccw.durationMs)+",REC_STEP,"+String(p.recoveryStep)+",REC_MS,"+String(p.recoveryIntervalMs)+",TRIGGER,"+String(p.trigger,2));}
@@ -41,6 +42,7 @@ inline void processTelecommand(String command){command=ttcNormalizeCommand(comma
  if(command=="GYRO_OFFSET"){if(adcsGet().mode==ADCS_AUTO||rwGetMotorCommand()!=0){sendTelemetry("ERR,GYRO_OFFSET_REQUIRES_MANUAL_WHEEL_STOPPED");return;}sensorGyroOffsetAssistant();return;}
  if(command=="MAG_CAL_START"){sensorMagCalStart();return;}
  if(command=="MAG_CAL_STOP"){if(sensorMagCalStop())teamMagCalApply();return;}  // team-4: and apply it
+ if(teamMissionCommand(command))return;  // TEAM NasaPakSoi team-6: mission 2 (GS Competition tab when mis.on 1, TEAM_MIS_*)
  if(command.startsWith("TEAM_")){teamHandleCommand(command);return;}  // TEAM NasaPakSoi
  if(command=="PAYLOAD_PING"){payloadSendCommand("PING");sendTelemetry("ACK,PAYLOAD_PING");return;}
  if(command=="PAYLOAD_STATUS"){payloadSendCommand("STATUS");sendTelemetry("ACK,PAYLOAD_STATUS");return;}

@@ -49,10 +49,24 @@ void MockSerial::writeText(const std::string& s) {
   }
   std::cout.flush();
 }
+static HardwareSerial* g_cam = nullptr;
+static uint64_t g_camDueUs = 0;
+static int g_camImg = 0;
 void HardwareSerial::writeText(const std::string& s) {
   std::string t = s;
   if (!t.empty() && t.back() == '\n') t.pop_back();
   if (!t.empty()) std::cout << "#PAYLOAD_TX " << t << "\n";
+  // the payload camera (team-6 mission tests): CAPTURE -> EVENT,CAPTURE_STARTED, IMAGE_READY after camMs
+  if (t == "CAPTURE" && !world.camDead) { g_cam = this; feed("EVENT,CAPTURE_STARTED\n"); g_camDueUs = g_us + (uint64_t)(world.camMs * 1000); }
+}
+static void camStep() {
+  if (!g_camDueUs || g_us < g_camDueUs) return;
+  g_camDueUs = 0;
+  if (world.camFail > 0) { world.camFail -= 1; g_cam->feed("ERR,CAPTURE_FAILED\n"); return; }
+  char b[48];
+  ++g_camImg;
+  snprintf(b, sizeof(b), "IMAGE_READY,/IMG_%04d.JPG,%d\n", g_camImg, 20000 + g_camImg);
+  g_cam->feed(b);
 }
 
 // ---------------- I2C: GY-89 registers from the world ----------------
@@ -174,6 +188,7 @@ static void advance(uint32_t ms, bool runLoop) {
   for (uint32_t i = 0; i < ms; i++) {
     world.step(0.001);
     g_us += 1000;
+    camStep();
     if ((g_us / 1000) % 2 == 0) {  // the sun sampler task runs every 2 ms
       teamSunSamplerStep(millis(), analogRead(SUN_LEFT_PIN), analogReadMilliVolts(SUN_LEFT_PIN),
                          analogRead(SUN_RIGHT_PIN), analogReadMilliVolts(SUN_RIGHT_PIN));

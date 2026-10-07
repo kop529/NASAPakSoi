@@ -42,6 +42,7 @@ void loop(){
   sensorADCSUpdate();
   sensorTelemetryUpdate();
   missionUpdate();
+  teamMissionUpdate();  // TEAM NasaPakSoi team-6: mission 2
   teamTelemetryUpdate();  // TEAM NasaPakSoi: TM,TEAM_T over USB when team.tm > 0
   if(rwTakeManeuverCompleteEvent()){
     sendTelemetry("EVT,RW_MANEUVER_COMPLETE,"+String(rwGetTarget()));

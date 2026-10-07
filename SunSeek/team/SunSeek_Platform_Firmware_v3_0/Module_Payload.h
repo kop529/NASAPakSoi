@@ -9,6 +9,12 @@ static HardwareSerial _payloadSerial(1);
 static String _payloadLine;
 static bool _payloadSeen = false;
 static unsigned long _payloadLastRxMs = 0;
+// TEAM NasaPakSoi team-6 mission: IMAGE_READY / ERR,CAPTURE_* counters and the last image name (Team_Mission.h polls them)
+static uint32_t _payloadImageSeq = 0, _payloadCapErrSeq = 0;
+static String _payloadLastImage = "";
+inline uint32_t payloadImageSeq() { return _payloadImageSeq; }
+inline uint32_t payloadCaptureErrSeq() { return _payloadCapErrSeq; }
+inline String payloadLastImageName() { return _payloadLastImage; }
 static String _payloadIp = "192.168.4.1";  // TEAM NasaPakSoi: last IP the camera reported (STATUS / WIFI_IP)
 
 inline String _payloadField(const String &line, const String &key) {
@@ -71,6 +77,7 @@ inline void _payloadHandleLine(String line) {
     int b = line.indexOf(',', a + 1);
     String name = (a >= 0 && b > a) ? line.substring(a + 1, b) : "---";
     String bytes = b >= 0 ? line.substring(b + 1) : "0";
+    _payloadLastImage = name; _payloadImageSeq++;  // team-6
     sendTelemetry("TM,CAMERA,READY,LAST_IMAGE," + name + ",IMAGE_SIZE," + bytes);
     // Refresh count/status after every successful capture.
     payloadSendCommand("STATUS");
@@ -110,6 +117,7 @@ inline void _payloadHandleLine(String line) {
     return;
   }
   if (line.startsWith("ERR,")) {
+    if (line.startsWith("ERR,CAPTURE")) _payloadCapErrSeq++;  // team-6
     sendTelemetry("PAYLOAD," + line);
     return;
   }

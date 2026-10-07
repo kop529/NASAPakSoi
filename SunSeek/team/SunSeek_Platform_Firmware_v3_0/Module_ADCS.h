@@ -106,6 +106,9 @@ inline bool adcsTarget(float t){
   return true;
 }
 
+// TEAM NasaPakSoi team-6 mission: next target while in AUTO whatever adcs.retarget says (same checks and reset as adcsTarget)
+inline bool adcsTeamSetTarget(float t){const int r=TP.adcsRetarget;TP.adcsRetarget=1;const bool ok=adcsTarget(t);TP.adcsRetarget=r;return ok;}
+
 inline bool adcsTune(float kp,float kd,int bias){
   if(kp<0||kp>ADCS_KP_MAX||kd<0||kd>ADCS_KD_MAX||bias<0||bias>100)return false;
   _a.kp=kp;_a.kd=kd;_a.bias=bias;

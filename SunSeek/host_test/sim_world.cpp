@@ -84,7 +84,7 @@ bool SimWorld::set(const std::string& k, double v) {
     {"ambient", &ambient}, {"flicker", &flicker}, {"noise", &noiseMv}, {"alpha", &alpha}, {"gamma", &gamma},
     {"q", &q}, {"minStart", &minStartPct}, {"minStable", &minStablePct}, {"wheelMax", &wheelMaxRate},
     {"wheelTau", &wheelTau}, {"coast", &wheelCoastTau}, {"ratio", &inertiaRatio}, {"drag", &bearingDrag}, {"stick", &bodyStick}, {"air", &wheelAir}, {"gyroBias", &gyroBiasDps},
-    {"gyroNoise", &gyroNoiseDps}, {"north", &magNorthDeg}, {"magOx", &magOx}, {"magOy", &magOy}, {"magSy", &magSy},
+    {"gyroNoise", &gyroNoiseDps}, {"north", &magNorthDeg}, {"magOx", &magOx}, {"magOy", &magOy}, {"magSy", &magSy}, {"camMs", &camMs}, {"camFail", &camFail}, {"camDead", &camDead},
   };
   for (auto& d : dbl) if (k == d.key) { *d.p = v; return true; }
   if (k == "swap") { swapLdrPins = v != 0; return true; }

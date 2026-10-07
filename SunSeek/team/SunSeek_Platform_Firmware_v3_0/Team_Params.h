@@ -18,7 +18,7 @@
 #include "Config_Sensor.h"
 #include "Team_SunModel.h"
 
-#define TEAM_FW_VERSION "NasaPakSoi-team-5"
+#define TEAM_FW_VERSION "NasaPakSoi-team-6"
 #define TEAM_NVS_NAMESPACE "nps"
 
 struct TeamParams {
@@ -46,6 +46,12 @@ struct TeamParams {
   int adcsMiss = 5;
   // team-5: SUN estimate wrapped to +-180 (1) or unbounded like the organizer (0)
   int estWrap = 1;
+  // team-6 mission 2 (Team_Mission.h): the GS Competition tab names (PREPARE / START_MISSION / ABORT / MISSION_*) run the team
+  // mission (1) or stay with the organizer router (0 = ERR,MISSION_NOT_AVAILABLE_T04 as in v3.0). TEAM_MIS_GO works either way.
+  int misOn = 0;
+  float misTol = 3, misHold = 2;  // TEAM_MIS_GO tolerance (deg) / hold (s) per target (the GS sends its own)
+  float misCapMs = 6000;          // no IMAGE_READY after this -> CAPTURE again (3 tries)
+  float misGap = 2500;            // ms between MISSION,RESULT,IMAGE lines (the GS reads the name back 300 ms later)
   // reaction wheel characterization from T01
   float rwMinStart = RW_MIN_START_PERCENT;
   float rwMinStable = RW_MIN_START_PERCENT;
@@ -134,6 +140,11 @@ static TeamParamDef _tpDefs[] = {
   {"imu.rsign",   TPT_SIGN,   &TP.imuRsign,      0, -1, 1},
   {"adcs.miss",   TPT_INT,    &TP.adcsMiss,      0, 0, 25},
   {"est.wrap",    TPT_INT,    &TP.estWrap,       0, 0, 1},
+  {"mis.on",      TPT_INT,    &TP.misOn,         0, 0, 1},
+  {"mis.tol",     TPT_FLOAT,  &TP.misTol,        0, 0.1, 30},
+  {"mis.hold",    TPT_FLOAT,  &TP.misHold,       0, 0, 60},
+  {"mis.capMs",   TPT_FLOAT,  &TP.misCapMs,      0, 1000, 20000},
+  {"mis.gap",     TPT_FLOAT,  &TP.misGap,        0, 500, 10000},
   {"mag.ox",      TPT_FLOAT,  &TP.magOx,         0, -20000, 20000},
   {"mag.oy",      TPT_FLOAT,  &TP.magOy,         0, -20000, 20000},
   {"mag.oz",      TPT_FLOAT,  &TP.magOz,         0, -20000, 20000},
