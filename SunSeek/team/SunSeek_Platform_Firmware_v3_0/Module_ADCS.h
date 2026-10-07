@@ -70,10 +70,12 @@ static bool _aMisGhold = false;
 inline void adcsTeamMissionGhold(bool on) { _aMisGhold = on; }
 inline bool adcsGholdOn() { return TP.adcsGhold || _aMisGhold; }
 // team-7: the HOLD band must fit inside the mission tolerance (fuzz seed 171: tol 2, unlock 3 -> the body sat 2.2 deg off in
-// HOLD, no kick allowed, never captured). While a mission target is active: lock <= tol/2, unlock <= tol.
+// HOLD, no kick allowed, never captured). While a mission target is active: unlock <= tol, lock <= 0.75 tol (lock is not
+// cut further: below lock there is no HOLD, so a kick may fire close to the target -> fuzz 1711: tol/2 let a kick at 1.1 deg
+// throw the body 5 deg, the slip seen on the rig on 6 Oct).
 static float _aMisTol = 0;
 inline void adcsTeamMissionTol(float tol) { _aMisTol = tol; }
-inline float adcsLockEff() { return _aMisTol > 0 && TP.adcsLock > 0.5f * _aMisTol ? 0.5f * _aMisTol : TP.adcsLock; }
+inline float adcsLockEff() { return _aMisTol > 0 && TP.adcsLock > 0.75f * _aMisTol ? 0.75f * _aMisTol : TP.adcsLock; }
 inline bool adcsTeamHold() { return _aHold; }
 inline bool adcsTeamSearching() { return _aSearch; }
 
@@ -151,9 +153,11 @@ inline bool adcsRead(){
   // TEAM NasaPakSoi F8 (adcs.ghold): lamp not seen -> feed the estimator its own gyro prediction, so the angle
   // continues on the gyro alone (no pull toward the meaningless dark/edge reading). Lets SET_TARGET go past the
   // sun sensor's range (camera targets); the lamp seen again pulls the estimate back (fusion correction).
-  // team-7: during a team mission a reading past mis.trust deg counts as not seen too (sim: the sensor over-reads from ~45 deg
-  // and sticks at 60 deg while still "lit" -> the gyro hold started from a wrong angle, photos 4-9 deg off)
-  const bool trusted=_aSunSeen&&!(_aMisGhold&&TP.misTrust>0&&fabsf(s.angleDeg)>TP.misTrust);
+  // team-7: during a team mission, while the TARGET is past mis.trust deg, a reading past mis.trust counts as not seen too
+  // (sim: the sensor over-reads from ~45 deg and sticks at 60 deg while still "lit" -> the gyro hold started from a wrong
+  // angle, photos 4-9 deg off). Targets inside mis.trust use every lit reading (fuzz 5000: distrusting them there too left a
+  // gyro-drifted estimate that never re-synced, photo 6.9 deg off at -37.8).
+  const bool trusted=_aSunSeen&&!(_aMisGhold&&TP.misTrust>0&&fabsf(adcsTargetEff())>TP.misTrust&&fabsf(s.angleDeg)>TP.misTrust);
   if(adcsGholdOn()&&_a.ref==ADCS_SUN&&!trusted&&_aEverSeen){
     const EstimatorState e0=estimatorGet();
     if(e0.valid)_a.rawReference=e0.estimatedAngleDeg+_a.rate*(ADCS_CONTROL_PERIOD_MS/1000.0f);

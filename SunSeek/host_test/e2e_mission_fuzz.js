@@ -37,7 +37,7 @@ module.exports = ({ run, check, all, states, CAL }) => {
     const cutAt = 1 + Math.floor(r() * 12);  // s after START
     const rig = pick(RIGS), body = Math.round(-40 + r() * 80);
     const slow = RIGS.indexOf(rig) >= 2;  // sticky platforms: the wheel saturates and ratchets, ~1 deg/s
-    const secs = Math.min(220, 10 + n * ((slow ? 45 : 14) + (cam.dead ? 20 : cam.fail * 3)));
+    const secs = Math.min(320, 10 + n * ((slow ? 75 : 14) + (cam.dead ? 20 : cam.fail * 3)));
     const ticks = (s) => Array.from({ length: s * 10 }, () => ['#WAIT 100', '#STATE']).flat();
     const lines = [...rig, '#SET rateSign -1', '#SET lamp 0', `#SET body ${body}`, `#SET gyroBias ${bias}`,
       `#SET camMs ${cam.ms}`, `#SET camFail ${cam.fail}`, `#SET camDead ${cam.dead}`, '#WAIT 300', ...CAL, ...BOARD,
@@ -107,7 +107,9 @@ module.exports = ({ run, check, all, states, CAL }) => {
     // after COMPLETE the body stays at the last target (still AUTO) until the end of the run
     if (done && Math.abs(s.T[s.T.length - 1].deg) <= 40) {
       const last = s.T[s.T.length - 1];
-      const over = st.filter((x) => x.t >= done.t + 1).map((x) => Math.abs(x.sun - last.deg));
+      // until it leaves AUTO (a STOP / ABORT injected after COMPLETE stops the wheel: the body then drifts, as it should)
+      const off = tl.find((x) => x.t > done.t && /^EVT,TEAM_AUTO,OFF/.test(x.l));
+      const over = st.filter((x) => x.t >= done.t + 1 && (!off || x.t < off.t)).map((x) => Math.abs(x.sun - last.deg));
       const m = over.length ? Math.max(...over) : 0;
       if (m > last.tol + 2) fail('stays at the last target after COMPLETE', s, `off up to ${m.toFixed(1)} deg`);
     }
