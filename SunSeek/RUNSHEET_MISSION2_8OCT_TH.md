@@ -20,8 +20,11 @@ arduino-cli upload -p COM7 --fqbn esp32:esp32:esp32s3:CDCOnBoot=default --input-
 ```
 TEAM_SET,mis.on,1
 TEAM_SET,adcs.keepTune,1
+TEAM_SET,adcs.ghold,1
 TEAM_SAVE
 ```
+- `adcs.ghold 1` = เป้าที่เลยมุมที่เซนเซอร์แสงเห็น ยานจะใช้ไจโรนับมุมต่อ (จำลอง: ghold 0 + เป้า 75/85° → ยานหมุนไม่หยุด; ghold 1 → ถึงเป้าทั้ง 60/75/85°)
+- ลองบนแท่น: `TEAM_MIS_GO,0,70,0` แล้วดู Live View ว่าที่ 70° หันไปถูกทิศจริงไหม
 - `mis.on 1` = ทีมเราตอบปุ่มในแท็บ Competition เอง
 - `adcs.keepTune 1` = GS ส่ง `ADCS_TUNE` มาก็ไม่ทับ kp/kd ของเรา จะเห็น `EVT,TEAM_KEEP_TUNE,IGNORED,...`
 
