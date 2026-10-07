@@ -69,6 +69,11 @@ static float _aRatDir = 0;
 static bool _aMisGhold = false;
 inline void adcsTeamMissionGhold(bool on) { _aMisGhold = on; }
 inline bool adcsGholdOn() { return TP.adcsGhold || _aMisGhold; }
+// team-7: the HOLD band must fit inside the mission tolerance (fuzz seed 171: tol 2, unlock 3 -> the body sat 2.2 deg off in
+// HOLD, no kick allowed, never captured). While a mission target is active: lock <= tol/2, unlock <= tol.
+static float _aMisTol = 0;
+inline void adcsTeamMissionTol(float tol) { _aMisTol = tol; }
+inline float adcsLockEff() { return _aMisTol > 0 && TP.adcsLock > 0.5f * _aMisTol ? 0.5f * _aMisTol : TP.adcsLock; }
 inline bool adcsTeamHold() { return _aHold; }
 inline bool adcsTeamSearching() { return _aSearch; }
 
@@ -146,7 +151,10 @@ inline bool adcsRead(){
   // TEAM NasaPakSoi F8 (adcs.ghold): lamp not seen -> feed the estimator its own gyro prediction, so the angle
   // continues on the gyro alone (no pull toward the meaningless dark/edge reading). Lets SET_TARGET go past the
   // sun sensor's range (camera targets); the lamp seen again pulls the estimate back (fusion correction).
-  if(adcsGholdOn()&&_a.ref==ADCS_SUN&&!_aSunSeen&&_aEverSeen){
+  // team-7: during a team mission a reading past mis.trust deg counts as not seen too (sim: the sensor over-reads from ~45 deg
+  // and sticks at 60 deg while still "lit" -> the gyro hold started from a wrong angle, photos 4-9 deg off)
+  const bool trusted=_aSunSeen&&!(_aMisGhold&&TP.misTrust>0&&fabsf(s.angleDeg)>TP.misTrust);
+  if(adcsGholdOn()&&_a.ref==ADCS_SUN&&!trusted&&_aEverSeen){
     const EstimatorState e0=estimatorGet();
     if(e0.valid)_a.rawReference=e0.estimatedAngleDeg+_a.rate*(ADCS_CONTROL_PERIOD_MS/1000.0f);
   }
@@ -266,10 +274,12 @@ inline void _adcsStep(){
 
   // TEAM NasaPakSoi F5: HOLD after adcs.lockMs inside adcs.lock, released only beyond adcs.unlock (never while searching)
   const float ae=fabsf(_a.error);
+  const float lk=adcsLockEff();
   if(TP.adcsLock>0&&!_aSearch){
-    const float unl=TP.adcsUnlock>TP.adcsLock?TP.adcsUnlock:2.0f*TP.adcsLock;
+    float unl=TP.adcsUnlock>TP.adcsLock?TP.adcsUnlock:2.0f*TP.adcsLock;
+    if(_aMisTol>0&&unl>_aMisTol)unl=_aMisTol;  // team-7
     if(!_aHold){
-      if(ae>TP.adcsLock)_aInSince=n;
+      if(ae>lk)_aInSince=n;
       else if(n-_aInSince>=(unsigned long)TP.adcsLockMs){_aHold=true;sendTelemetry("EVT,TEAM_HOLD,ON,ERR,"+String(_a.error,2));}
     }else if(ae>unl){_aHold=false;_aInSince=n;sendTelemetry("EVT,TEAM_HOLD,OFF,ERR,"+String(_a.error,2));}
   }else{_aHold=false;_aInSince=n;}
@@ -281,7 +291,7 @@ inline void _adcsStep(){
     const float dir=(!_aEverSeen||adcsTargetEff()-_aLastSeenAngle>=0)?1.0f:-1.0f;  // d(angle)/dt = +BODY_RATE (W3 check)
     _aS=constrain(_aS+TP.adcsSk*(dir*TP.adcsSrate-_a.rate)*dtS,-TP.adcsMax,TP.adcsMax);
     u=_aS;
-  }else if(fabsf(_a.error)>=(_aHold&&TP.adcsLock>TP.adcsDb?TP.adcsLock:TP.adcsDb)){  // F5: in HOLD the deadband is adcs.lock
+  }else if(fabsf(_a.error)>=(_aHold&&lk>TP.adcsDb?lk:TP.adcsDb)){  // F5: in HOLD the deadband is adcs.lock
     pd=true;
     // TEAM NasaPakSoi F4: integral term (adcs.ki); clamped to +-adcs.max. adcs.aw 1: no integrating further into a
     // saturated wheel command (15:36: I ran up to the limit while the body stuck at -5 deg, then held the wheel at +40

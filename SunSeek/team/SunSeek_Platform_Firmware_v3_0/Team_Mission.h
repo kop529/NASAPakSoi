@@ -207,6 +207,7 @@ inline void teamMissionUpdate() {
     }
   }
   adcsTeamMissionGhold(TP.misGhold && (teamMisActive() || (_tmS == TMS_DONE && adcsGet().mode == ADCS_AUTO)));
+  adcsTeamMissionTol(teamMisActive() ? _tmT[_tmI].tol : 0);
   if (_tmS != _tmSaid && now - _tmSaidMs >= 200) _tmFlush();  // latest state, at most 5 lines/s
   if (_tmQi < _tmQn && now - _tmResMs >= (unsigned long)TP.misGap) {
     const uint8_t i = _tmQ[_tmQi++];

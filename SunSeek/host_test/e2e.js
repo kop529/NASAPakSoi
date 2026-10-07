@@ -376,6 +376,7 @@ require('./e2e_auto_diag.js')({ run, check, find, all, kv, states, CAL });
 require('./e2e_fuzz.js')({ run, check, find, kv, states, CAL });
 require('./e2e_team4.js')({ run, check, find, all, kv, states, CAL });
 require('./e2e_mission.js')({ run, check, find, all, states, CAL });
+require('./e2e_mission_fuzz.js')({ run, check, all, states, CAL });
 
 console.log(`\n${passes} passed, ${fails} failed`);
 process.exitCode = fails ? 1 : 0;
