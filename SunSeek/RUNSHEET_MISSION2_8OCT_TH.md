@@ -1,90 +1,79 @@
 # ภารกิจ 2 (ถ่ายรูปตามมุม) — ขั้นตอนวันซ้อม 8 ต.ค.
 
-เฟิร์มแวร์ **team-7** อยู่บนบอร์ดแล้ว (อัป 7 ต.ค. 16:30) และ **team-8** (แก้ตาม audit: STOP/ABORT, hold 0, nan, เช็ค SD ตอน PREPARE, ปิดสตรีมตอน START, HOLD ในภารกิจปล่อยแค่ 2°) build + ทดสอบจำลองแล้ว รออัปวันซ้อม
-ทุกขั้นต้องอยู่ MANUAL ยกเว้นตอนที่ภารกิจกำลังวิ่ง และ **อัปเฟิร์มแวร์ได้หลังผู้ใช้พิมพ์ "อัปได้" เท่านั้น**
+บนบอร์ดเป็น **team-8** แล้ว (อัป 7 ต.ค. 22:30) ไม่ต้องอัปอะไรเพิ่ม · กล้องอยู่ **ช่อง 11 กว้าง 20 MHz** (แฟลช 7 ต.ค. 22:55)
+ทุกขั้นต้องอยู่ MANUAL ยกเว้นตอนที่ภารกิจกำลังวิ่ง · อัปเฟิร์มแวร์ได้หลังผู้ใช้พิมพ์ "อัปได้" เท่านั้น
 
-## 0. ก่อนอัป
-- `TEAM_INFO` → ต้องเห็น `NasaPakSoi-team-5` และ `UNSAVED,0`
-- `TEAM_LIST` → เก็บ log ไว้เทียบค่า
-- ค่าที่ควรเห็น: kp 4, kd 2, max 60, lock 1.5, unlock 3, wrap 1, miss 5, est.wrap 1
+## 0. เช็คบอร์ด (1 นาที)
+- `TEAM_INFO` → `NasaPakSoi-team-8`, `UNSAVED,0`
+- `TEAM_LIST` → mis.on 1, adcs.keepTune 1, adcs.ghold 1, mis.camReq 1, mis.camStop 1, mis.unlock 2, kp 4 kd 2 ki 1 max 60, **lock 1**, unlock 3
+- ถ้าค่าไม่ครบ ตั้งด้วย `TEAM_SET,<ชื่อ>,<ค่า>` แล้ว `TEAM_SAVE`
 
-## 1. อัป team-7 (ขอ "อัปได้" ก่อน)
-```
-node C:\TYSC\SunSeek\tools\compile_sunseek.js
-arduino-cli upload -p COM7 --fqbn esp32:esp32:esp32s3:CDCOnBoot=default --input-dir "$env:TEMP\sunseek_compile\team" C:\TYSC\SunSeek\team\SunSeek_Platform_Firmware_v3_0
-```
-- `TEAM_INFO` → ต้องเห็น `NasaPakSoi-team-7`, `UNSAVED,0` และ `BOOT,<เหตุ>,UP_S,<วินาที>`
-- `TEAM_LIST` → ค่าที่บันทึกไว้ต้องอยู่ครบเหมือนข้อ 0
+## 1. ถามผู้จัด (จดคำตอบไว้)
+1. มุมเป้าหมายวัดจากเซนเซอร์แสง (ด้านหน้า) หรือจากกล้อง (ด้านซ้าย ห่าง ~90°)?
+2. วันแข่งใช้แท็บ Competition ของ GS ไหม? tolerance และ hold เท่าไหร่?
+3. ตัดสินจากอะไร: รูป, มุมใน GS หรือเวลา?
+4. ใช้เข็มทิศ (MAG) ไหม?
 
-## 2. ตั้งค่าภารกิจ (MANUAL)
-```
-TEAM_SET,mis.on,1
-TEAM_SET,adcs.keepTune,1
-TEAM_SET,adcs.ghold,1
-TEAM_SAVE
-```
-- `adcs.ghold 1` = เป้าที่เลยมุมที่เซนเซอร์แสงเห็น ยานจะใช้ไจโรนับมุมต่อ (จำลอง: ghold 0 + เป้า 75/85° → ยานหมุนไม่หยุด; ghold 1 → ถึงเป้าทั้ง 60/75/85°)
-- ลองบนแท่น: `TEAM_MIS_GO,0,70,0` แล้วดู Live View ว่าที่ 70° หันไปถูกทิศจริงไหม
-- `mis.on 1` = ทีมเราตอบปุ่มในแท็บ Competition เอง
-- `adcs.keepTune 1` = GS ส่ง `ADCS_TUNE` มาก็ไม่ทับ kp/kd ของเรา จะเห็น `EVT,TEAM_KEEP_TUNE,IGNORED,...`
+## 2. เตรียมกล้อง (ลำดับสำคัญ)
+1. เปิดแบตยาน รอกล้องบูต (บอร์ดจะพ่นบรรทัด `PAYLOAD,...` ออกมา)
+2. ผู้ใช้ต่อ Wi-Fi โน้ตบุ๊กเข้า `SUNSEEK-PAYLOAD-NasaPakSoi` เอง (Claude ไม่สลับ Wi-Fi ให้)
+3. เปิด `http://192.168.4.1/status` → ต้องได้ `"storage":true`
+   - ถ้า false → ปิดแบต + ถอด USB ทุกเส้นให้กล้องดับจริง แล้วเปิดใหม่ (กด CAPTURE ซ้ำไม่หาย)
+4. GS: กด **Live View ครั้งเดียว** (GS จะได้ IP กล้อง) → เห็นภาพแล้ว **กด STOP LIVE VIEW**
+   - เหตุผล: ระหว่างสตรีม กล้องไม่ตอบ /status และ /image (เว็บเซิร์ฟเวอร์ของกล้องทำทีละคำขอ)
+5. ลอง `CAPTURE` → ต้องได้ `IMAGE_READY,/IMG_xxxx.JPG,...`
 
-## 3. ถามผู้จัด (จดคำตอบไว้)
-1. มุมเป้าหมายในภารกิจ 2 วัดจากเซนเซอร์แสง (ด้านหน้า) หรือจากกล้อง (ด้านซ้าย ห่าง ~90°)?
-2. วันแข่งใช้แท็บ Competition ของ GS ไหม? ค่า tolerance และ hold ที่จะใช้คือเท่าไหร่?
-3. กรรมการตัดสินจากอะไร: รูป, มุมใน GS หรือเวลา?
-4. GS ดึงรูปจากกล้องผ่าน Wi-Fi ของกล้อง → ต้องให้โน้ตบุ๊กต่อ AP ของกล้องตลอดภารกิจใช่ไหม?
-
-## 4. ตรวจกล้อง
-- **ก่อน PREPARE ทุกครั้ง:** `http://192.168.4.1/status` ต้องได้ `"storage":true` ถ้า false → ปิดแบต + ถอด USB ทุกเส้นให้กล้องดับจริง แล้วเปิดใหม่ (7 ต.ค.: กด CAPTURE ซ้ำไม่หาย)
-- team-8: ถ้ากล้องบอก SD ERR, PREPARE จะไม่ READY (`ERR,PREPARE,CAMERA_OK_STORAGE_ERR`) แก้กล้องแล้วกด PREPARE ใหม่; ฉุกเฉิน `TEAM_SET,mis.camReq,0`
-- GS ต้องเปิด Live View ก่อน PREPARE (เอา IP กล้อง) แล้วลองปิดก่อน START ดูว่ารูปขึ้นไหม (audit N2: สตรีมค้างอาจบังการดึงรูป)
-- ต่อ Wi-Fi กล้อง: `netsh wlan connect name="SUNSEEK-PAYLOAD-NasaPakSoi"`
-- `PAYLOAD_STATUS` → ต้องตอบ
-- `CAPTURE` → ต้องได้ `IMAGE_READY,/IMG_xxxx.JPG,...`
-
-## 5. ลองด้วยคำสั่งเราก่อน (ไม่ต้องใช้แท็บ Competition)
-- ก่อนเริ่มภารกิจทุกครั้ง วางยานนิ่ง ๆ แล้วพิมพ์ `TEAM_GYRO_ZERO` เพราะเป้าที่เลย ±45° ยานใช้ไจโรล้วน ไจโรลอย 0.1°/s = คลาด 1° ทุก 10 วินาที
+## 3. ลองด้วยคำสั่งเราก่อน (ไม่ใช้แท็บ Competition)
 ```
 TEAM_GYRO_ZERO
 TEAM_MIS_GO,20,-20,0
 ```
-- ดูบรรทัด `EVT,TEAM_MIS,CAPTURE,<i>,<ครั้งที่>,ERR,<e>,RATE,<r>,TGT,<มุม>`
-  - ERR ควรไม่เกิน 1.5 ถ้าเกินแปลว่ารอครบ `mis.waitMs` แล้วถ่ายเลย
-- จบแล้วต้องเห็น `MISSION,STATE,COMPLETE` ยานยังอยู่ AUTO ที่เป้าสุดท้าย → พิมพ์ `STOP`
-- ถ้าบอร์ดต่อ USB อยู่ → `TEAM_CDUMP` เก็บ black box ไว้ดู
+- วางยานนิ่งก่อน `TEAM_GYRO_ZERO` ทุกครั้ง (ไจโรลอย 0.1°/s = คลาด 1° ทุก 10 วิ)
+- ดู `EVT,TEAM_MIS,CAPTURE,<i>,<ครั้งที่>,ERR,<e>,RATE,<r>,TGT,<มุม>` → ERR ควร ≤ 1.5
+- จบต้องเห็น `MISSION,STATE,COMPLETE` ยานค้างที่เป้าสุดท้าย → พิมพ์ `STOP`
+- **ดูหลัง COMPLETE 20 วิ:** ยานไหลช้า ๆ ทั้งที่ล้อนิ่ง แล้วกระตุกเลยเป้าไหม (เจอในตัวจำลองแท่นแบบสุดโต่ง) เจอแล้วจดไว้
+- ต่อ USB อยู่ → `TEAM_CDUMP` เก็บ black box
 
-### ตัวสำรอง (plan B): ภารกิจต้องจบเสมอ
-- เป้าไหนเกิน `mis.targetS` (30 วิ) ยังไม่ได้รูป → `EVT,TEAM_MIS,RESCUE,<i>` แล้วถ่ายทันทีที่อยู่ในระยะคลาด ไม่รอนิ่ง
-- เกิน `mis.skipS` (45 วิ) → `EVT,TEAM_MIS,SKIP,<i>` ข้ามไปเป้าถัดไป
-- ถ้า GS ตั้งเวลาจำกัด เวลาที่เหลือจะแบ่งให้ทุกเป้าที่ยังไม่ได้ทำ (อย่างน้อยเป้าละ 8 วิ) ดูได้จาก `RESCUE_S` / `SKIP_S` ในบรรทัด `EVT,TEAM_MIS,TARGET`
-- ถามผู้จัดว่าให้คะแนนจากอะไร แล้วปรับ: เน้นครบทุกเป้า → ลด `mis.targetS` / `mis.skipS`; เน้นแม่น → เพิ่ม
+## 4. แท็บ Competition ของ GS (ของจริงวันแข่ง)
+- ช่องค่า: Reference SUN, Strategy REACTION, kp 4 / kd 2 / bias 40, Transfer EACH, เป้า 3 แถว เช่น 20 / −20 / 0, tol 3, hold 2
+- เช็ค `/status` storage:true และ **Live View ปิดอยู่** → กด **PREPARE**
+  - ต้องเห็น `MISSION,READY` และ `MISSION,PREP,3 targets SUN EACH cam OK SD OK` ปุ่ม START กดได้
+  - ถ้าได้ `ERR,PREPARE,CAMERA_OK_STORAGE_ERR` → แก้กล้องตามข้อ 2.3 แล้ว PREPARE ใหม่ (ฉุกเฉิน: `TEAM_SET,mis.camReq,0`)
+  - ถ้า PREPARE ค้าง → GS ยังไม่มี IP กล้อง → ทำข้อ 2.4 ใหม่
+- กด **START** → ACQUIRING → STABILIZING → CAPTURING ทีละเป้า รูปต้องขึ้นในแผง GS (team-8 สั่งปิดสตรีมเองตอน START)
+- จบต้องเห็น COMPLETE และ `MISSION,TIMER,STOP,<ms>` → จดเวลา, ERR แต่ละเป้า, รูปครบไหม
 
-## 6. แท็บ Competition ของ GS
-- ช่องค่า: Reference SUN, Strategy REACTION, kp 4 / kd 2 / bias 40 (ถึงพิมพ์ผิด keepTune ก็กันไว้), Transfer EACH, เป้า 2–3 แถว (เช่น 20 / −20 / 0, tol 3, hold 2)
-- กด **PREPARE** → ปุ่ม START ต้องกดได้, log มี `MISSION,READY` และ `MISSION,PREP,3 targets SUN EACH cam OK`
-  - ถ้า START ยังกดไม่ได้: ดู log ว่ามี `ERR,...` ไหม แล้วกด PREPARE ซ้ำ
-- กด **START** → สถานะต้องไล่ ACQUIRING → STABILIZING → CAPTURING ทีละเป้า และรูปต้องขึ้นในแผงของ GS
-- จบแล้วต้องเห็น COMPLETE และเวลาใน `MISSION,TIMER,STOP,<ms>`
-
-## 7. ทดสอบหยุด
-- เริ่มภารกิจใหม่ แล้วกด **ABORT** ระหว่างยานกำลังหมุน → ต้องเห็น `ACK,ABORT` + `MISSION,STATE,ABORTED` และล้อหยุด
+## 5. ทดสอบหยุด
+- เริ่มภารกิจใหม่ กด **ABORT** ระหว่างหมุน → `ACK,ABORT` + `MISSION,STATE,ABORTED` ล้อหยุด
 - ลองซ้ำด้วย `STOP` → ผลต้องเหมือนกัน
 
-## 8. ถ้าผลไม่ดี (ปรับด้วย TEAM_SET ได้ ไม่ต้องอัปใหม่)
+## 6. A/B (ถ้ามีเวลา) — อย่างละ 3 รอบ เป้า 20 / −20 / 0
+| ทดสอบ | ค่า | ดู |
+|---|---|---|
+| lock | `adcs.lock` 1 (ตอนนี้) เทียบ 1.5 | ERR ตอนถ่าย, kick, ยานหลุดหลัง COMPLETE |
+| HOLD ในภารกิจ | `mis.unlock` 2 (ตอนนี้) เทียบ 0 | ERR ตอนถ่าย, kick ใกล้เป้า, เวลารวม |
+
+ใช้ค่าที่ดีกว่าแล้ว `TEAM_SAVE`
+
+### ตัวสำรอง (plan B): ภารกิจต้องจบเสมอ
+- เป้าไหนเกิน `mis.targetS` (30 วิ) ยังไม่ได้รูป → `RESCUE` ถ่ายทันทีที่อยู่ในระยะ ไม่รอนิ่ง
+- เกิน `mis.skipS` (45 วิ) → `SKIP` ข้ามไปเป้าถัดไป
+- GS ตั้งเวลาจำกัด → เวลาที่เหลือแบ่งให้ทุกเป้าที่ยังไม่ทำ (อย่างน้อยเป้าละ 8 วิ)
+
+## 7. ถ้าผลไม่ดี (TEAM_SET ได้ ไม่ต้องอัปใหม่)
 | อาการ | ปรับ |
 |---|---|
-| (team-8) A/B ความแม่น: `mis.unlock` 2 (ค่าเริ่ม) เทียบ 0 (= adcs.unlock 3) อย่างละ 3 รอบ เป้า 0→20→−20→0 ดู ERR ตอน CAPTURE, kick ใกล้เป้า, เวลารวม | ใช้ค่าที่ดีกว่าแล้ว TEAM_SAVE |
 | ERR ตอนถ่ายเกิน 1.5 บ่อย | `mis.capErr` 2 หรือ `adcs.unlock` 2 |
-| ถ่ายตอนยังหมุนอยู่ / รูปเบลอ | `mis.capRate` 1 |
+| ถ่ายตอนยังหมุน / รูปเบลอ | `mis.capRate` 1 |
 | กล้องตอบช้ากว่า 6 s | `mis.capMs` 10000 |
 | GS ไม่โหลดรูปเป้า 2 | `mis.gap` 4000 |
-| calibrate แล้วพบว่าเซนเซอร์แม่นถึงแค่ ±N° | `mis.trust` N (ค่าเริ่ม 45: เกินนี้ระหว่างภารกิจใช้ไจโรแทน) |
-| ภารกิจตั้ง tol เล็ก (เช่น 2°) | ไม่ต้องทำอะไร: ระหว่างภารกิจ HOLD แคบลงเองให้พอดี tol (lock ≤ tol/2, unlock ≤ tol) |
-| ผู้จัดบอกว่ามุมวัดจากกล้อง | `cam.off` ±90 (ดูทิศจาก Live View + BORESIGHT ก่อน) → เซนเซอร์แสงจะไม่เห็นหลอด → ต้องลองกับ `adcs.ghold 1` |
+| เซนเซอร์แม่นแค่ ±N° | `mis.trust` N (เกินนี้ใช้ไจโรแทน) |
+| ผู้จัดบอกว่ามุมวัดจากกล้อง | `cam.off` ±90 (ดูทิศจาก Live View ก่อน) + ต้องมี `adcs.ghold 1` |
+| Wi-Fi กล้องหลุดบ่อยในห้องแข่ง | สแกนช่องด้วยแอปมือถือ เลือกช่องที่ว่าง → แฟลชกล้องใหม่ (ไม่กี่นาที ขอ "อัปได้") |
 
-## 9. ตัวช่วยถ้าทุกอย่างพัง
-- `TEAM_SET,mis.on,0` → กลับไปเป็นแบบผู้จัด (ตอบ `ERR,MISSION_NOT_AVAILABLE_T04`)
+## 8. ตัวช่วยถ้าทุกอย่างพัง
+- `TEAM_SET,mis.on,0` → กลับเป็นแบบผู้จัด
 - หรือทำเองทีละเป้า: `SET_TARGET,<มุม>` → `ADCS_MODE,AUTO` → รอนิ่ง → `CAPTURE`
 
-## 10. ปิดงาน
+## 9. ปิดงาน
 `STOP` → `ADCS_MODE,MANUAL` → `TEAM_SAVE` → `TEAM_INFO` ต้องเห็น `UNSAVED,0`
