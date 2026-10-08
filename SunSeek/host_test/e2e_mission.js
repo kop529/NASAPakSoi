@@ -88,7 +88,7 @@ module.exports = ({ run, check, find, all, states, CAL }) => {
 
   console.log('team-7: a target past the sun sensor (85 deg) with the board setting adcs.ghold 0');
   {
-    const far = (extra) => run([...RIG, ...extra, 'TEAM_MIS_GO,85', ...ticks(25), 'STOP', '#WAIT 20']);
+    const far = (extra) => run([...RIG, 'TEAM_SET,mis.endStop,0', ...extra, 'TEAM_MIS_GO,85', ...ticks(25), 'STOP', '#WAIT 20']);
     const on = far([]);
     const tl = timed(on);
     const cap = tl.find((x) => x.l === '#PAYLOAD_TX CAPTURE');

@@ -26,6 +26,9 @@ struct SimWorld {
 
   // ---- sensor truth (the team model with these values is exact) ----
   double alpha = 30, gamma = 0.6, q = 1.0, r10 = 15000, rf = 10000, vcc = 3300, fov = 85;
+  // team-9: false reading past the edge (8 Oct hotel, room light): past |aliasAt| deg the LDR pair reads as if the lamp sat
+  // at aliasAt - aliasK * (|s| - aliasAt) (folds back), never beyond +-aliasAt and still "lit". 0 = off
+  double aliasAt = 0, aliasK = 3;
   bool swapLdrPins = false;  // true = the LDR on SUN_LEFT_PIN is on the body's right side
 
   // ---- actuator / dynamics ----

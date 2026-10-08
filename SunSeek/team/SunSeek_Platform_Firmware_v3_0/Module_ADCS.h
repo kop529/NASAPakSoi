@@ -74,6 +74,10 @@ inline bool adcsGholdOn() { return TP.adcsGhold || _aMisGhold; }
 // cut further: below lock there is no HOLD, so a kick may fire close to the target -> fuzz 1711: tol/2 let a kick at 1.1 deg
 // throw the body 5 deg, the slip seen on the rig on 6 Oct).
 static float _aMisTol = 0;
+// team-9 sun/gyro gate (adcs.gate): reading left out / re-sync in progress / start of the disagreement
+static bool _aGateOn = false, _aGateRe = false, _aGated = false;
+static unsigned long _aGateT0 = 0;
+static float _aGateS0 = 0, _aGateG = 0;  // reading at the start of the motion check, gyro turn since then
 inline void adcsTeamMissionTol(float tol) { _aMisTol = tol; }
 inline float adcsLockEff() { return _aMisTol > 0 && TP.adcsLock > 0.75f * _aMisTol ? 0.75f * _aMisTol : TP.adcsLock; }
 inline bool adcsTeamHold() { return _aHold; }
@@ -159,7 +163,41 @@ inline bool adcsRead(){
   // angle, photos 4-9 deg off). Targets inside mis.trust use every lit reading (fuzz 5000: distrusting them there too left a
   // gyro-drifted estimate that never re-synced, photo 6.9 deg off at -37.8).
   const bool trusted=_aSunSeen&&!(_aMisGhold&&TP.misTrust>0&&fabsf(adcsTargetEff())>TP.misTrust&&fabsf(s.angleDeg)>TP.misTrust);
-  if(adcsGholdOn()&&_a.ref==ADCS_SUN&&!trusted&&_aEverSeen){
+  // team-9 (adcs.gate): in AUTO a lit reading that jumps more than adcs.gate deg away from the gyro prediction is left out,
+  // the angle runs on the gyro. 8 Oct hotel (target +50, cdump_20261008_m2_50): past ~+52 deg the reading fell 35 -> 0 -> -25
+  // while the gyro had the body going on to +75, all of it "lit"; the estimate followed the reading down, the error grew,
+  // the wheel pushed on and the body spun 3 turns. A real disagreement that lasts adcs.gateMs (a wrong estimate) is taken
+  // again until the two agree within adcs.gate / 2 (re-sync) when the reading moves WITH the gyro (over >= 10 deg of turn the
+  // reading changed 0.5..1.5 x the gyro turn: a wrong estimate, the sensor is fine). A false reading past the edge moves the
+  // other way or sticks, so it never qualifies (sim: a plain 4 s timeout let it back in with the body parked just past the
+  // edge at target -50 and the spin came back). adcs.gateMs (20 s) = the last resort if the body never turns.
+  _aGated=false;
+  if(TP.adcsGate>0&&_a.mode==ADCS_AUTO&&_a.ref==ADCS_SUN&&trusted&&_aEverSeen){
+    const EstimatorState e0=estimatorGet();
+    if(e0.valid){
+      const unsigned long gn=millis();
+      const float pred=e0.estimatedAngleDeg+_a.rate*(ADCS_CONTROL_PERIOD_MS/1000.0f);
+      const float inn=adcsWrap180(s.angleDeg-pred);
+      char gb[96];
+      if(_aGateRe){
+        if(fabsf(inn)<0.5f*TP.adcsGate){_aGateRe=false;snprintf(gb,sizeof(gb),"EVT,TEAM_GATE,SYNCED,ANG,%.2f,EST,%.2f",s.angleDeg,pred);sendTelemetry(gb);}
+      }else if(fabsf(inn)>TP.adcsGate){
+        if(!_aGateOn){_aGateOn=true;_aGateT0=gn;_aGateS0=s.angleDeg;_aGateG=0;snprintf(gb,sizeof(gb),"EVT,TEAM_GATE,ON,ANG,%.2f,EST,%.2f",s.angleDeg,pred);sendTelemetry(gb);}
+        _aGateG+=_a.rate*(ADCS_CONTROL_PERIOD_MS/1000.0f);
+        bool moved=false;
+        if(fabsf(_aGateG)>=10.0f){
+          const float r=adcsWrap180(s.angleDeg-_aGateS0)/_aGateG;
+          moved=r>=0.5f&&r<=1.5f;
+          _aGateS0=s.angleDeg;_aGateG=0;
+        }
+        const bool late=TP.adcsGateMs>0&&gn-_aGateT0>=(unsigned long)TP.adcsGateMs;
+        if(moved||late){
+          _aGateOn=false;_aGateRe=true;snprintf(gb,sizeof(gb),"EVT,TEAM_GATE,RESYNC,ANG,%.2f,EST,%.2f,%s",s.angleDeg,pred,moved?"MOVE":"TIME");sendTelemetry(gb);
+        }else _aGated=true;
+      }else if(_aGateOn){_aGateOn=false;snprintf(gb,sizeof(gb),"EVT,TEAM_GATE,OFF,ANG,%.2f,EST,%.2f,MS,%lu",s.angleDeg,pred,gn-_aGateT0);sendTelemetry(gb);}
+    }
+  }
+  if((adcsGholdOn()&&_a.ref==ADCS_SUN&&!trusted&&_aEverSeen)||_aGated){
     const EstimatorState e0=estimatorGet();
     if(e0.valid)_a.rawReference=e0.estimatedAngleDeg+_a.rate*(ADCS_CONTROL_PERIOD_MS/1000.0f);
   }
@@ -206,7 +244,7 @@ inline void teamRecPush(){
   TeamRecSample& r=_recBuf[_recN++];
   r.t=millis(); r.tgt=_recQ(adcsTargetEff()); r.ang=_recQ(_aAng); r.est=_recQ(_a.estimatedAngle); r.err=_recQ(_a.error);
   r.gz=_recQ(_a.rate); r.u=_recQ(_a.u); r.i=_recQ(_aI); r.k=_recQ(_aK); r.rw=(int8_t)constrain(rwGetAppliedCommand(),-100,100);
-  r.fl=(_aSunSeen?1:0)|(_aHold?2:0)|(_aSearch?4:0)|(_aSatDir>0?8:0)|(_aSatDir<0?16:0);
+  r.fl=(_aSunSeen?1:0)|(_aHold?2:0)|(_aSearch?4:0)|(_aSatDir>0?8:0)|(_aSatDir<0?16:0)|(_aGated?32:0)|(_aGateRe?64:0);
 }
 
 inline bool adcsAuto(){
@@ -221,6 +259,7 @@ inline bool adcsAuto(){
   _a.mode=ADCS_AUTO;
   _aLast=0;
   _aSatDir=0;
+  _aGateOn=false;_aGateRe=false;_aGated=false;  // team-9: the AUTO entry read above is the sync point
   {
     char b[180];
     snprintf(b,sizeof(b),"EVT,TEAM_AUTO,ON,TGT,%.2f,EST,%.2f,ANG,%.2f,LIT,%d,ERR,%.2f,KP,%g,KD,%g,KI,%g,SIGN,%d,RSIGN,%d,MAX,%g,DB,%g,WRAP,%d,SYNC,%d,STRAT,%s",

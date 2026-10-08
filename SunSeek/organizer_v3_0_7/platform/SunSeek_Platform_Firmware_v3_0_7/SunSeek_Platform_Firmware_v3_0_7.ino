@@ -2,7 +2,7 @@
    Reorganized training architecture: Config / Module / System.
    Runtime baseline: T07 FIX6 Estimator Continuous + MA500. */
 #include "Module_ReactionWheel.h"
-#include "Module_ManualSequence.h"  // TEAM NasaPakSoi team-9 (organizer v3.0.7)
+#include "Module_ManualSequence.h"
 #include "System_TTC.h"
 #include "Module_IMU.h"
 #include "Module_SunSensor.h"
@@ -15,21 +15,17 @@
 #include "System_CommandRouter.h"
 
 void setup(){
-  Serial.setTxBufferSize(4096);  // TEAM NasaPakSoi team-4: core 3.3.11 default 0 -> println blocks the loop
   Serial.begin(115200);
   delay(1000);
   rwBegin();
-  teamParamsBegin();   // TEAM NasaPakSoi: saved team parameters, before anything that uses them
   imuBegin();
   sunSensorBegin();
   adcsBegin();
   payloadUARTBegin();
   communicationBegin(processTelecommand);
-  Serial.println("SUNSEEK PLATFORM v3.0 — Training Firmware");
+  Serial.println("SUNSEEK PLATFORM v3.0.7 — Training Firmware");
   Serial.println("Spacecraft ID: "+getSpacecraftID());
   Serial.println("Payload UART: TX=GPIO41 RX=GPIO42 @115200");
-  Serial.println("TEAM FIRMWARE: " TEAM_FW_VERSION);  // TEAM NasaPakSoi
-  Serial.println("EVT,TEAM_BOOT,REASON," + teamResetReason());  // TEAM NasaPakSoi team-7 (also in TEAM_INFO)
   sensorSendHealth();
   ttcSendADCSConfig();
   payloadSendCommand("STATUS");
@@ -39,18 +35,23 @@ void loop(){
   communicationUpdate();
   payloadUARTUpdate();
   rwUpdate();
+  manualSequenceUpdate();
   adcsUpdate();
   sensorUpdate();
   sensorADCSUpdate();
   sensorTelemetryUpdate();
+  static MissionState _prevMissionState=MISSION_IDLE;
   missionUpdate();
-  teamMissionUpdate();  // TEAM NasaPakSoi team-6: mission 2
-  // TEAM NasaPakSoi team-9: organizer v3.0.7 Manual Profile; AUTO entered any other way drops a running sequence
-  if(manualSequenceRunning()&&adcsGet().mode==ADCS_AUTO)manualSequenceClear();
-  manualSequenceUpdate();
+  MissionState _ms=missionGet().state;
+  if(_ms!=_prevMissionState){
+    if(_ms==MISSION_READY) sendTelemetry("EVT,MISSION_READY");
+    else if(_ms==MISSION_COMPLETE) sendTelemetry("EVT,MISSION_COMPLETE");
+    else if(_ms==MISSION_ABORTED) sendTelemetry("EVT,MISSION_ABORTED");
+    else if(_ms==MISSION_FAILED) sendTelemetry("EVT,MISSION_FAILED");
+    _prevMissionState=_ms;
+  }
   if(manualSequenceTakeStepEvent()) sendTelemetry("EVT,MAN_SEQ_STEP,"+String(manualSequenceIndex()+1));
   if(manualSequenceTakeDoneEvent()) sendTelemetry("EVT,MAN_SEQ_COMPLETE");
-  teamTelemetryUpdate();  // TEAM NasaPakSoi: TM,TEAM_T over USB when team.tm > 0
   if(rwTakeManeuverCompleteEvent()){
     sendTelemetry("EVT,RW_MANEUVER_COMPLETE,"+String(rwGetTarget()));
     ttcSendRWTelemetry();

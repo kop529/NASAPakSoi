@@ -19,12 +19,13 @@
 #include "Module_ADCS.h"
 #include "Module_ReactionWheel.h"
 #include "Module_Payload.h"
+#include "Module_ManualSequence.h"  // team-9: ABORT / START also end a running MAN_SEQ
 
 enum TeamMisState : uint8_t { TMS_IDLE, TMS_READY, TMS_ACQ, TMS_STAB, TMS_CAP, TMS_DONE, TMS_ABORTED, TMS_FAILED };
 #define TEAM_MIS_MAX 10
 #define TEAM_MIS_TRIES 3
 #define TEAM_MIS_SUN_FOV 55.0f  // deg: beyond this the lamp is at the edge of / outside the sun sensor view
-struct TeamMisTarget { float deg, tol, hold; String img; };
+struct TeamMisTarget { float deg, tol, hold; String img; bool cap; };  // team-9 cap: action CAPTURE (else NONE)
 static TeamMisTarget _tmT[TEAM_MIS_MAX];
 static uint8_t _tmN = 0, _tmI = 0, _tmTry = 0;
 static TeamMisState _tmS = TMS_IDLE, _tmSaid = TMS_IDLE;
@@ -36,6 +37,7 @@ static unsigned long _tmTgt0 = 0, _tmRescueMs = 0, _tmSkipMs = 0;  // team-7 pla
 static bool _tmRescue = false;
 static uint8_t _tmQ[TEAM_MIS_MAX];  // targets whose MISSION,RESULT,IMAGE line is still to send
 static uint8_t _tmQn = 0, _tmQi = 0;
+static unsigned long _tmStatMs = 0;  // team-9: last TM,MISSION_STATE / TM,MISSION_ACTIVITY
 
 inline const char* teamMisText(TeamMisState s) {
   switch (s) {
@@ -49,12 +51,16 @@ inline const char* teamMisText(TeamMisState s) {
     default: return "IDLE";
   }
 }
+// team-9: the state names of organizer v3.0.7 telemetry (TM,MISSION_STATE / TM,MISSION_ACTIVITY; GS v1.11.x CURRENT ACTIVITY)
+inline const char* teamMisTmText(TeamMisState s) { return s == TMS_STAB ? "HOLDING" : teamMisText(s); }
+inline void _tmStatus(bool full = true);
 inline bool teamMisActive() { return _tmS == TMS_ACQ || _tmS == TMS_STAB || _tmS == TMS_CAP; }
 inline unsigned long _tmElapsed() { return _tmStarted ? millis() - _tmT0 : (_tmEndAt ? _tmEndAt - _tmT0 : 0); }
 inline void _tmFlush() {
   sendTelemetry(String("MISSION,STATE,") + teamMisText(_tmS));
   _tmSaid = _tmS;
   _tmSaidMs = millis();
+  _tmStatus(false);  // team-9: the v3.0.7 status lines at every state change (terminal states freeze the GS timer)
 }
 inline bool _tmAngleOk(float d) { return adcsGet().ref == ADCS_MAG ? (d >= 0 && d < 360) : (d >= -90 && d <= 90); }
 inline void _tmTargetEvt() {
@@ -154,6 +160,7 @@ inline bool _tmStart() {
   else if (!adcsTeamSetTarget(_tmT[0].deg)) why = "TARGET";
   else if (adcsGet().mode != ADCS_AUTO && !adcsAuto()) why = "ADCS_SENSOR_NOT_READY";
   if (why.length()) { sendTelemetry("ERR,START_MISSION," + why); return false; }
+  if (manualSequenceRunning()) manualSequenceClear();  // team-9: AUTO owns the wheel now (no rwStop: AUTO is driving)
   _tmI = 0; _tmTry = 0; _tmQn = _tmQi = 0; _tmResMs = 0; _tmLimitSaid = false;
   for (uint8_t i = 0; i < _tmN; i++) _tmT[i].img = "";
   _tmT0 = millis(); _tmEndAt = 0; _tmStarted = true;
@@ -172,7 +179,9 @@ inline void _tmNext() {
   _tmI++;
   if (_tmI >= _tmN) {
     _tmI = _tmN - 1;
-    _tmEnd(TMS_DONE);  // stays in AUTO on the last target; STOP ends it
+    _tmEnd(TMS_DONE);
+    // team-9 (mis.endStop 1): safe state at COMPLETE like organizer v3.0.6+ (T07 C7); 0 = stay in AUTO on the last target
+    if (TP.misEndStop && adcsGet().mode == ADCS_AUTO) { adcsManual(); rwStop(); sendTelemetry("EVT,TEAM_MIS,SAFE_STOP"); }
     if (!_tmEach) for (uint8_t i = 0; i < _tmN; i++) if (_tmT[i].img.length()) _tmQ[_tmQn++] = i;
     return;
   }
@@ -190,11 +199,38 @@ inline void _tmCapture() {
   _tmS = TMS_CAP;
 }
 
-inline void _tmStatus() {
-  String s = "TM,MISSION_STATE," + String(teamMisText(_tmS)) + ",TARGET_INDEX," + String(_tmI + 1) + ",TARGET_COUNT," + String(_tmN) +
-             ",MISSION_TIME_MS," + String(_tmElapsed()) + ",MIS_ON," + String(TP.misOn);
-  for (uint8_t i = 0; i < _tmN; i++) s += ",IMG" + String(i + 1) + "," + (_tmT[i].img.length() ? _tmT[i].img : String("-"));
+// team-9: organizer v3.0.7 format first (GS v1.11.x reads MISSION_STATE / TARGET_INDEX / TARGET_COUNT / MISSION_TIME_MS and
+// MISSION_ACTIVITY / POINTING / HOLD_MS / HOLD_REQUIRED_MS as key-value pairs); full = + MIS_ON and the image names
+inline void _tmStatus(bool full) {
+  const unsigned long now = millis();
+  _tmStatMs = now;
+  const char* st = teamMisTmText(_tmS);
+  String s = "TM,MISSION_STATE," + String(st) + ",TARGET_INDEX," + String(_tmN ? _tmI + 1 : 0) + ",TARGET_COUNT," + String(_tmN) +
+             ",MISSION_TIME_MS," + String(_tmElapsed());
+  if (full) {
+    s += ",MIS_ON," + String(TP.misOn);
+    for (uint8_t i = 0; i < _tmN; i++) s += ",IMG" + String(i + 1) + "," + (_tmT[i].img.length() ? _tmT[i].img : String("-"));
+  }
   sendTelemetry(s);
+  String pt = "---";
+  unsigned long hm = 0, hr = 0;
+  if (_tmN && _tmI < _tmN) {
+    const TeamMisTarget& t = _tmT[_tmI];
+    hr = (unsigned long)(t.hold * 1000.0f);
+    const ADCSState a = adcsGet();
+    if (teamMisActive() && a.valid) {
+      pt = fabsf(a.error) <= t.tol ? "IN_TOLERANCE" : "OUT_OF_TOLERANCE";
+      if (_tmS == TMS_STAB) hm = now - _tmHold0 < hr ? now - _tmHold0 : hr;
+      else if (_tmS == TMS_CAP) hm = hr;
+    }
+  }
+  sendTelemetry("TM,MISSION_ACTIVITY," + String(st) + ",POINTING," + pt + ",HOLD_MS," + String(hm) + ",HOLD_REQUIRED_MS," + String(hr));
+}
+// team-9: the target's action after the hold: CAPTURE, or NONE = done, next target
+inline void _tmAct() {
+  if (_tmT[_tmI].cap) { _tmCapture(); return; }
+  sendTelemetry("EVT,TEAM_MIS,HOLD_DONE," + String(_tmI + 1) + ",ERR," + String(adcsGet().error, 2));
+  _tmNext();
 }
 
 inline void teamMissionUpdate() {
@@ -220,15 +256,15 @@ inline void teamMissionUpdate() {
       sendTelemetry("EVT,TEAM_MIS,RESCUE," + String(_tmI + 1) + ",ERR," + String(a.error, 2));
     }
     if (_tmS == TMS_ACQ) {
-      if (in && _tmRescue) _tmCapture();
+      if (in && _tmRescue) _tmAct();
       else if (in) { _tmS = TMS_STAB; _tmHold0 = now; }
     } else if (_tmS == TMS_STAB) {
       if (!in) _tmS = TMS_ACQ;  // the hold restarts after any sample outside the tolerance (organizer rule)
-      else if (_tmRescue) _tmCapture();
+      else if (_tmRescue) _tmAct();
       else if (now - _tmHold0 >= (unsigned long)(t.hold * 1000.0f)) {
         // team-7: shoot when close and still (sim: the hold ended while the body coasted to the tolerance edge)
         const bool good = (TP.misCapErr <= 0 || fabsf(a.error) <= TP.misCapErr) && (TP.misCapRate <= 0 || fabsf(a.rate) <= TP.misCapRate);
-        if (good || now - _tmHold0 >= (unsigned long)(t.hold * 1000.0f + TP.misWaitMs)) _tmCapture();
+        if (good || now - _tmHold0 >= (unsigned long)(t.hold * 1000.0f + TP.misWaitMs)) _tmAct();
       }
     } else if (_tmS == TMS_CAP) {
       if (payloadImageSeq() != _tmImg0) {
@@ -252,6 +288,7 @@ inline void teamMissionUpdate() {
   adcsTeamMissionGhold(TP.misGhold && (teamMisActive() || (_tmS == TMS_DONE && adcsGet().mode == ADCS_AUTO)));
   adcsTeamMissionTol(teamMisActive() ? _tmT[_tmI].tol : 0);
   if (_tmS != _tmSaid && now - _tmSaidMs >= 200) _tmFlush();  // latest state, at most 5 lines/s
+  else if (teamMisActive() && now - _tmStatMs >= 250) _tmStatus(false);  // team-9: HOLD_MS / POINTING for the GS, 4 per s
   if (_tmQi < _tmQn && now - _tmResMs >= (unsigned long)TP.misGap) {
     const uint8_t i = _tmQ[_tmQi++];
     sendTelemetry("MISSION,RESULT,IMAGE," + String(i + 1) + "," + _tmT[i].img);
@@ -267,7 +304,7 @@ inline bool teamMissionCommand(const String& c) {
     const int n = _tmParseList(c.substring(12), v, TEAM_MIS_MAX);
     if (n < 1) { sendTelemetry("ERR,TEAM_MIS_GO,FORMAT_1_TO_10_ANGLES"); return true; }
     if (!_tmConfigOk("TEAM_MIS_GO")) return true;
-    for (int i = 0; i < n; i++) _tmT[i] = {v[i], TP.misTol, TP.misHold, ""};
+    for (int i = 0; i < n; i++) _tmT[i] = {v[i], TP.misTol, TP.misHold, "", true};
     _tmN = n; _tmEach = true; _tmLimitMs = 0; _tmName = "TEAM";
     sendTelemetry("ACK,TEAM_MIS_GO," + String(n));
     if (_tmPrepare()) _tmStart();
@@ -275,10 +312,12 @@ inline bool teamMissionCommand(const String& c) {
   }
   if (c == "TEAM_MIS_STATUS") { _tmStatus(); return true; }
   const bool abort = c == "ABORT" || c == "MISSION_ABORT";
+  if (abort && manualSequenceRunning()) manualSequenceStop();  // team-9
   // team-8 (audit N5): ABORT also ends a TEAM_MIS_GO run when mis.on is 0 (it used to answer ERR and leave the wheel running)
   if (abort && (TP.misOn || teamMisActive() || _tmS == TMS_READY)) {
     missionAbort(); adcsManual(); rwStop();  // ABORT always stops, mission or not (both mission managers)
     sendTelemetry("ACK,ABORT");
+    if (c == "MISSION_ABORT") { sendTelemetry("ACK,MISSION_ABORT"); sendTelemetry("EVT,MISSION_ABORTED"); }  // team-9: GS v1.11.x names
     if (teamMisActive() || _tmS == TMS_READY) sendTelemetry("EVT,TEAM_MIS,ABORTED," + String(_tmI + 1));
     _tmEnd(TMS_ABORTED);
     return true;
@@ -316,9 +355,15 @@ inline bool teamMissionCommand(const String& c) {
     return true;
   }
   if (c.startsWith("MISSION_TARGET,")) {
-    // GS: <i>,<deg>,<tol>,<hold> ; organizer form: <deg>,<tol>,<hold> (appended)
+    // GS: <i>,<deg>,<tol>,<hold> ; organizer form: <deg>,<tol>,<hold> (appended). team-9: either may end with NONE|CAPTURE
+    // (GS v1.11.x Operation tab: MISSION_TARGET,<deg>,<tol>,<hold>,<NONE|CAPTURE>); no action field = CAPTURE (imaging mission)
+    String body = c.substring(15);
+    bool cap = true;
+    const int lc = body.lastIndexOf(',');
+    const String last = lc >= 0 ? body.substring(lc + 1) : body;
+    if (lc >= 0 && (last == "NONE" || last == "CAPTURE")) { cap = last == "CAPTURE"; body = body.substring(0, lc); }
     float v[4];
-    const int n = _tmParseList(c.substring(15), v, 4);
+    const int n = _tmParseList(body, v, 4);
     if (n != 3 && n != 4) { sendTelemetry("ERR,MISSION_TARGET_FORMAT"); return true; }
     const float* p = n == 4 ? v + 1 : v;
     const int idx = n == 4 ? (int)lroundf(v[0]) - 1 : _tmN;
@@ -328,13 +373,17 @@ inline bool teamMissionCommand(const String& c) {
     }
     if (!_tmConfigOk("MISSION_TARGET")) return true;
     _tmQn = _tmQi = 0;  // team-8 (audit N8)
-    _tmT[idx] = {p[0], p[1], p[2], ""};
+    _tmT[idx] = {p[0], p[1], p[2], "", cap};
     if (idx == _tmN) _tmN++;
     sendTelemetry("ACK,MISSION_TARGET," + String(idx + 1));
     return true;
   }
-  if (c == "PREPARE" || c == "MISSION_PREPARE") { _tmCheckAuto(); _tmPrepare(); return true; }
-  if (c == "START_MISSION" || c == "MISSION_START") { _tmStart(); return true; }
+  if (c == "PREPARE" || c == "MISSION_PREPARE") {
+    _tmCheckAuto();
+    if (_tmPrepare() && c == "MISSION_PREPARE") { sendTelemetry("ACK,MISSION_PREPARE"); sendTelemetry("EVT,MISSION_READY"); }  // team-9
+    return true;
+  }
+  if (c == "START_MISSION" || c == "MISSION_START") { if (_tmStart() && c == "MISSION_START") sendTelemetry("ACK,MISSION_START"); return true; }
   if (c == "MISSION_STATUS") { _tmStatus(); return true; }
   if (c == "MISSION_RESET") {
     if (teamMisActive()) { adcsManual(); rwStop(); }

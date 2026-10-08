@@ -114,7 +114,7 @@ module.exports = ({ run, check, all, states, CAL }) => {
     if (done && Math.abs(s.T[s.T.length - 1].deg) <= 40 && !!out.find((l) => l.startsWith(`EVT,TEAM_MIS,IMAGE,${s.T.length},`))) {
       const last = s.T[s.T.length - 1];
       // until it leaves AUTO (a STOP / ABORT injected after COMPLETE stops the wheel: the body then drifts, as it should)
-      const off = tl.find((x) => x.t > done.t && /^EVT,TEAM_AUTO,OFF/.test(x.l));
+      const off = tl.find((x) => x.t >= done.t && /^EVT,TEAM_AUTO,OFF/.test(x.l));  // team-9 mis.endStop 1: right at COMPLETE
       const over = st.filter((x) => x.t >= done.t + 1 && (!off || x.t < off.t)).map((x) => Math.abs(x.sun - last.deg));
       const m = over.length ? Math.max(...over) : 0;
       if (m > last.tol + 2) fail('stays at the last target after COMPLETE', s, `off up to ${m.toFixed(1)} deg`);
@@ -130,6 +130,12 @@ module.exports = ({ run, check, all, states, CAL }) => {
     if (done && !s.cut && res.length !== all(out, /^EVT,TEAM_MIS,IMAGE,/).length) fail('one result line per image', s, `${res.length} vs ${all(out, /^EVT,TEAM_MIS,IMAGE,/).length}`);
     if (s.transfer === 'AFTER' && done && res.some((x) => x.t < done.t)) fail('AFTER: results only after COMPLETE', s);
 
+    // team-9 (mis.endStop 1, organizer v3.0.6+ / T07 C7): COMPLETE leaves the wheel stopped until a new mission starts
+    if (done) {
+      const again = tl.find((x) => x.t > done.t && x.l === 'MISSION,TIMER,START');
+      const aft = st.filter((x) => x.t >= done.t + 0.2 && (!again || x.t < again.t));
+      if (aft.some((x) => x.cmd !== 0) || !out.includes('EVT,TEAM_MIS,SAFE_STOP')) fail('COMPLETE -> safe stop (MANUAL, wheel 0)', s, `cmd ${aft.map((x) => x.cmd).filter((c) => c).slice(0, 3).join(' ')}`);
+    }
     const starts = all(out, /^MISSION,TIMER,START$/).length, stops = all(out, /^MISSION,TIMER,STOP,[1-9]\d*$/).length;
     if (starts !== stops) fail('TIMER,STOP once per started mission', s, `${starts} START / ${stops} STOP`);
     if (lastTick && process.env.MFUZZ_VERBOSE)
@@ -139,7 +145,7 @@ module.exports = ({ run, check, all, states, CAL }) => {
   console.log(`       ${completes} complete, ${photos} photos; |target| <= 40: worst photo error ${worst.toFixed(2)} deg; |target| > 40 (gyro, not checked): ${fs2.length} shots, error median ${q(0.5)} / 90% ${q(0.9)} / max ${q(1)} deg`);
   const keys = ['no unexpected ERR', 'only GS state names', 'ends COMPLETE when nothing interrupts it', 'STOP mid-mission -> ABORTED', 'ABORT mid-mission -> ABORTED',
     'PREPARE mid-mission -> ABORTED', 'wheel 0 after STOP / ABORT', 'a new PREPARE mid-mission -> READY again', 'photo within tol + 1 deg (true angle)',
-    'stays at the last target after COMPLETE', 'every target ends: image, CAPTURE_FAILED or SKIP', 'no wild spin (|rate| <= 200 deg/s)', 'result lines in target order', 'result lines >= 2.4 s apart',
+    'stays at the last target after COMPLETE', 'COMPLETE -> safe stop (MANUAL, wheel 0)', 'every target ends: image, CAPTURE_FAILED or SKIP', 'no wild spin (|rate| <= 200 deg/s)', 'result lines in target order', 'result lines >= 2.4 s apart',
     'one result line per image', 'AFTER: results only after COMPLETE', 'TIMER,STOP once per started mission'];
   for (const k of keys) check(`mission fuzz: ${k}`, !bad[k], bad[k] ? `seeds ${bad[k].slice(0, 4).join(', ')}${bad[k].length > 4 ? ` +${bad[k].length - 4}` : ''}` : '');
 };

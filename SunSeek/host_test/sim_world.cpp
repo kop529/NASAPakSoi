@@ -50,7 +50,12 @@ double SimWorld::mvForPin(int pin, double tNow) {
   // pin 17 = SUN_LEFT_PIN looks at +alpha (left), pin 16 looks at -alpha, unless the LDRs are swapped
   bool left = pin == 17;
   if (swapLdrPins) left = !left;
-  const double inc = sunAngleBody() - (left ? alpha : -alpha);
+  double sb = sunAngleBody();
+  if (aliasAt > 0 && std::fabs(sb) > aliasAt) {
+    const double sg = sb > 0 ? 1 : -1, f = aliasAt - aliasK * (std::fabs(sb) - aliasAt);
+    sb = sg * std::max(-aliasAt, std::min(aliasAt, f));
+  }
+  const double inc = sb - (left ? alpha : -alpha);
   const double c = std::cos(inc * kDeg);
   double vign = (fov - std::fabs(inc)) / 12.0;
   vign = vign < 0 ? 0 : vign > 1 ? 1 : vign;
@@ -84,7 +89,7 @@ bool SimWorld::set(const std::string& k, double v) {
     {"ambient", &ambient}, {"flicker", &flicker}, {"noise", &noiseMv}, {"alpha", &alpha}, {"gamma", &gamma},
     {"q", &q}, {"minStart", &minStartPct}, {"minStable", &minStablePct}, {"wheelMax", &wheelMaxRate},
     {"wheelTau", &wheelTau}, {"coast", &wheelCoastTau}, {"ratio", &inertiaRatio}, {"drag", &bearingDrag}, {"stick", &bodyStick}, {"air", &wheelAir}, {"gyroBias", &gyroBiasDps},
-    {"gyroNoise", &gyroNoiseDps}, {"north", &magNorthDeg}, {"magOx", &magOx}, {"magOy", &magOy}, {"magSy", &magSy}, {"camMs", &camMs}, {"camFail", &camFail}, {"camDead", &camDead},
+    {"gyroNoise", &gyroNoiseDps}, {"north", &magNorthDeg}, {"magOx", &magOx}, {"magOy", &magOy}, {"magSy", &magSy}, {"camMs", &camMs}, {"camFail", &camFail}, {"camDead", &camDead}, {"aliasAt", &aliasAt}, {"aliasK", &aliasK},
   };
   for (auto& d : dbl) if (k == d.key) { *d.p = v; return true; }
   if (k == "swap") { swapLdrPins = v != 0; return true; }

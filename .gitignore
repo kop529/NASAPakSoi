@@ -5,3 +5,6 @@ NasaSat/firmware/host_test/build/
 SunSeek/**/build/
 NasaSat/ai/logs/
 *.tmp
+
+# GS v1.11.8 binaries (120 MB)
+SunSeek/organizer_v3_0_7/gs/

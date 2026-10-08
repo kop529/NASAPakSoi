@@ -18,7 +18,7 @@
 #include "Config_Sensor.h"
 #include "Team_SunModel.h"
 
-#define TEAM_FW_VERSION "NasaPakSoi-team-8"
+#define TEAM_FW_VERSION "NasaPakSoi-team-9"
 #define TEAM_NVS_NAMESPACE "nps"
 
 struct TeamParams {
@@ -75,6 +75,15 @@ struct TeamParams {
   // team-8 (audit N3): during a mission HOLD lets go at mis.unlock deg instead of adcs.unlock (7 Oct bedroom: target 20 crept
   // 20.1 -> 23.0 inside HOLD before the shot). 0 = adcs.unlock. Mission 1 (no mission running) is not changed
   float misUnlock = 2;
+  // team-9: 1 = COMPLETE ends in the safe state like organizer v3.0.6+ / T07 C7 (MANUAL, wheel stopped). 0 = stay in AUTO on
+  // the last target until STOP (team-6..8 behaviour)
+  int misEndStop = 1;
+  // team-9: sun reading vs gyro gate (AUTO, SUN). 8 Oct hotel, target +50: past ~+52 deg the sensor read 35 -> 0 -> -25 while
+  // the body turned on to +75 ("lit" all the way, room light), the estimate followed it, the controller pushed on and the
+  // body spun 3 turns. A reading more than adcs.gate deg away from the gyro prediction is left out (the angle runs on the
+  // gyro); taken again (re-sync) once it moves with the gyro, or after adcs.gateMs of continuous disagreement. 0 = off
+  // sim (hold +50, false reading from 52, push 20/40 deg/s): gate 15 parked the body at 62 (late), 8 brought it back to 52
+  float adcsGate = 8, adcsGateMs = 20000;
   // reaction wheel characterization from T01
   float rwMinStart = RW_MIN_START_PERCENT;
   float rwMinStable = RW_MIN_START_PERCENT;
@@ -179,6 +188,9 @@ static TeamParamDef _tpDefs[] = {
   {"mis.camReq",  TPT_INT,    &TP.misCamReq,     0, 0, 1},
   {"mis.camStop", TPT_INT,    &TP.misCamStop,    0, 0, 1},
   {"mis.unlock",  TPT_FLOAT,  &TP.misUnlock,     0, 0, 30},
+  {"mis.endStop", TPT_INT,    &TP.misEndStop,    0, 0, 1},
+  {"adcs.gate",   TPT_FLOAT,  &TP.adcsGate,      0, 0, 180},
+  {"adcs.gateMs", TPT_FLOAT,  &TP.adcsGateMs,    0, 0, 60000},
   {"mag.ox",      TPT_FLOAT,  &TP.magOx,         0, -20000, 20000},
   {"mag.oy",      TPT_FLOAT,  &TP.magOy,         0, -20000, 20000},
   {"mag.oz",      TPT_FLOAT,  &TP.magOz,         0, -20000, 20000},
