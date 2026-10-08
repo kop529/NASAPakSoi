@@ -44,6 +44,7 @@
     <button data-tab="tune"><span class="nn"></span>จูนค่า</button>
     <button data-tab="sign" class="ss-only" hidden><span class="nn"></span>ตรวจทิศ (SunSeek)</button>
     <button data-tab="adcs" class="ss-only" hidden><span class="nn"></span>จูน ADCS (SunSeek)</button>
+    <button data-tab="img"><span class="nn"></span>รูปจากกล้อง (SunSeek)</button>
     <button data-tab="ev"><span class="nn"></span>หลักฐาน &amp; AI</button>
     <div class="nav-foot">
       <div>Space / Esc = STOP</div>
@@ -721,6 +722,34 @@
     </section>
 
     <!-- ============ EVIDENCE & AI ============ -->
+    <!-- ============ SUNSEEK CAMERA PICTURES ============ -->
+    <section id="tab-img" class="tab">
+      <div class="pagehead">
+        <div><h1>รูปจากกล้อง</h1><p class="lead">ดึงรูปจาก SD ของกล้อง SunSeek (ESP32-CAM) ผ่าน Wi-Fi กล้อง ไม่ต้องต่อบอร์ด · หมุนภาพให้ตั้งตรง แล้วดูเส้นแดงกลางภาพว่าตกช่องไหนบนโปสเตอร์ (กรรมการดูเส้นกลางแบบนี้)</p></div>
+        <div class="pageact"><button id="ciLatest" class="primary">รูปล่าสุด<small>หาเลขแล้วโหลด 1 รูป</small></button></div>
+      </div>
+      <div class="sec">
+        <div class="row">
+          <label>IP กล้อง <input id="ciIp" value="192.168.4.1" style="width:9em"></label>
+          <label>เลขรูปล่าสุด <input type="number" id="ciLast" min="1" max="9999" step="1" style="width:6em"></label>
+          <button id="ciFind">หาเลขล่าสุด<small>ลองโหลดทีละเลข</small></button>
+          <label>จำนวนรูป <input type="number" id="ciN" value="6" min="1" max="40" step="1" style="width:4em"></label>
+          <label>หมุนภาพ <select id="ciRot"><option value="0">0°</option><option value="90" selected>90°</option><option value="180">180°</option><option value="270">270°</option></select></label>
+          <button id="ciGo" class="primary">ดึงรูป</button>
+          <button id="ciCopy">คัดลอกคำสั่งบันทึก<small>PowerShell → Desktop\sunseek_img</small></button>
+        </div>
+        <p class="note">ต้องต่อ Wi-Fi <b>SUNSEEK-PAYLOAD-NasaPakSoi</b> และปิด Live View ก่อน (เว็บกล้องตอบทีละคำขอ) · เลขรูปล่าสุดดูได้จาก <code>IMAGE_COUNT</code> ในบรรทัด PAYLOAD,STATUS ของ GS · บันทึกรูป: กดชื่อไฟล์ (เปิดแท็บใหม่) แล้ว Ctrl+S หรือใช้ปุ่มคัดลอกคำสั่งบันทึก</p>
+        <div id="ciOut" class="kv muted">ยังไม่ได้ดึง</div>
+        <textarea id="ciPs" hidden rows="3" style="width:100%"></textarea>
+      </div>
+      <div class="sec" id="ciViewer" hidden>
+        <div id="ciBigName" class="kv"></div>
+        <canvas id="ciBig" class="ci-big"></canvas>
+        <p class="note"><a id="ciBigOpen" target="_blank" rel="noopener">เปิดไฟล์เต็ม (ภาพดิบ ยังไม่หมุน)</a></p>
+      </div>
+      <div class="sec"><div id="ciGrid" class="ci-grid"></div></div>
+    </section>
+
     <section id="tab-ev" class="tab">
       <div class="pagehead">
         <div><h1>หลักฐาน &amp; AI</h1><p class="lead">รวบรวมสถานะให้ AI ช่วยดู และเก็บหลักฐานไว้โชว์กรรมการ</p></div>

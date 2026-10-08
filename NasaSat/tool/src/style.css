@@ -362,3 +362,11 @@ label.radio:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
 #adTable td.ad-params { font-size: 12px; min-width: 260px; }
 #adTable td.ad-params .muted { margin-top: 2px; }
 #tab-adcs .tablebox { max-height: 56vh; }
+
+/* SunSeek camera pictures (09c_camimg.js) */
+.ci-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.ci-card{border:1px solid var(--line,#8884);border-radius:8px;padding:6px;background:var(--card,transparent)}
+.ci-card canvas{width:100%;height:auto;display:block;cursor:zoom-in;border-radius:4px}
+.ci-card.ci-miss{opacity:.55}
+.ci-cap{font-size:12px;margin-top:4px;word-break:break-all}
+.ci-big{max-width:100%;max-height:70vh;display:block;margin:8px auto;border-radius:6px}
